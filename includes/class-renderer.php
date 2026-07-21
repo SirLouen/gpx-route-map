@@ -1,0 +1,291 @@
+<?php
+/**
+ * Shared HTML renderer for the block and the shortcode.
+ *
+ * @package GpxRouteMap
+ */
+
+declare( strict_types=1 );
+
+namespace Gpxrm;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Builds the map markup and enqueues the frontend assets.
+ */
+class Renderer {
+
+	const BLOCK_NAME = 'gpx-route-map/map';
+
+	/**
+	 * Default raster tile template. Filterable so site owners can point the
+	 * plugin at their own tile server (see the OpenStreetMap tile usage policy).
+	 *
+	 * @return string
+	 */
+	public static function default_tile_url(): string {
+		$default = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+		$url     = apply_filters( 'gpxrm_tile_url', $default );
+		return is_string( $url ) ? $url : $default;
+	}
+
+	/**
+	 * Default attribution HTML shown in the map's attribution control.
+	 *
+	 * @return string
+	 */
+	public static function default_attribution(): string {
+		$default = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+		$value   = apply_filters( 'gpxrm_tile_attribution', $default );
+		return is_string( $value ) ? $value : $default;
+	}
+
+	/**
+	 * Render the map for a set of block/shortcode attributes.
+	 *
+	 * @param array<string, mixed> $atts               Raw attributes.
+	 * @param string               $wrapper_attributes Pre-built wrapper attributes (block context).
+	 * @return string
+	 */
+	public static function render( array $atts, string $wrapper_attributes = '' ): string {
+		$a = self::normalize( $atts );
+
+		if ( '' === $a['gpx_url'] ) {
+			if ( current_user_can( 'edit_posts' ) ) {
+				return '<div class="gpxrm-notice">' . esc_html__( 'GPX Route Map: no GPX file selected.', 'gpx-route-map' ) . '</div>';
+			}
+			return '';
+		}
+
+		if ( ! self::assets_registered() ) {
+			if ( current_user_can( 'edit_posts' ) ) {
+				return '<div class="gpxrm-notice">' . esc_html__( 'GPX Route Map: plugin assets are not built. Run "pnpm install && pnpm run build" in the plugin directory.', 'gpx-route-map' ) . '</div>';
+			}
+			return '';
+		}
+
+		self::enqueue_assets();
+
+		if ( '' === $wrapper_attributes ) {
+			$wrapper_attributes = 'class="wp-block-gpx-route-map-map gpxrm-shortcode"';
+		}
+
+		$stats = $a['show_stats'] ? self::server_stats( $a['gpx_path'] ) : null;
+
+		$map = sprintf(
+			'<div class="gpxrm-map" style="height:%1$dpx" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" role="application" aria-label="%6$s">%7$s</div>',
+			$a['height'],
+			esc_url( $a['gpx_url'] ),
+			esc_attr( '' !== $a['tile_url'] ? $a['tile_url'] : self::default_tile_url() ),
+			esc_attr( self::default_attribution() ),
+			$a['max_zoom'],
+			esc_attr__( 'Interactive route map', 'gpx-route-map' ),
+			self::placeholder_html()
+		);
+
+		$stats_html     = $a['show_stats'] ? self::stats_html( $stats ) : '';
+		$elevation_html = $a['show_elevation'] ? self::elevation_html() : '';
+
+		return sprintf(
+			'<div %1$s><div class="gpxrm">%2$s%3$s%4$s</div></div>',
+			$wrapper_attributes,
+			$map,
+			$stats_html,
+			$elevation_html
+		);
+	}
+
+	/**
+	 * Normalize block attributes and shortcode atts into one shape.
+	 *
+	 * @param array<string, mixed> $atts Raw attributes.
+	 * @return array{gpx_url: string, gpx_path: string, height: int, show_stats: bool, show_elevation: bool, max_zoom: int, tile_url: string}
+	 */
+	private static function normalize( array $atts ): array {
+		$gpx_url  = '';
+		$gpx_path = '';
+
+		$attachment_id = ( isset( $atts['gpxId'] ) && is_numeric( $atts['gpxId'] ) ) ? (int) $atts['gpxId'] : 0;
+		if ( $attachment_id > 0 ) {
+			$url = wp_get_attachment_url( $attachment_id );
+			if ( is_string( $url ) ) {
+				$gpx_url  = $url;
+				$path     = get_attached_file( $attachment_id );
+				$gpx_path = is_string( $path ) ? $path : '';
+			}
+		}
+
+		if ( '' === $gpx_url && isset( $atts['gpxUrl'] ) && is_string( $atts['gpxUrl'] ) && '' !== $atts['gpxUrl'] ) {
+			$gpx_url = esc_url_raw( $atts['gpxUrl'] );
+		}
+
+		$height   = ( isset( $atts['height'] ) && is_numeric( $atts['height'] ) ) ? (int) $atts['height'] : 480;
+		$max_zoom = ( isset( $atts['maxZoom'] ) && is_numeric( $atts['maxZoom'] ) ) ? (int) $atts['maxZoom'] : 17;
+		$tile_url = self::sanitize_tile_url( $atts['tileUrl'] ?? '' );
+
+		return array(
+			'gpx_url'        => $gpx_url,
+			'gpx_path'       => $gpx_path,
+			'height'         => self::clamp( $height, 200, 1200 ),
+			'show_stats'     => self::to_bool( $atts['showStats'] ?? true ),
+			'show_elevation' => self::to_bool( $atts['showElevation'] ?? true ),
+			'max_zoom'       => self::clamp( $max_zoom, 1, 22 ),
+			'tile_url'       => $tile_url,
+		);
+	}
+
+	/**
+	 * Validate a custom tile URL template.
+	 *
+	 * @param mixed $raw Raw attribute value.
+	 * @return string The unmodified template, or '' when invalid.
+	 */
+	public static function sanitize_tile_url( $raw ): string {
+		if ( ! is_string( $raw ) ) {
+			return '';
+		}
+		$raw = trim( $raw );
+		if ( '' === $raw || ! preg_match( '#^https?://#i', $raw ) ) {
+			return '';
+		}
+		$probe = str_replace( array( '{z}', '{x}', '{y}', '{r}', '{s}' ), '0', $raw );
+		if ( false === filter_var( $probe, FILTER_VALIDATE_URL ) ) {
+			return '';
+		}
+		return $raw;
+	}
+
+	/**
+	 * Compute distance/elevation stats server-side for a local GPX file.
+	 *
+	 * @param string $gpx_path Absolute path to a local GPX file, or ''.
+	 * @return array{distance: float, gain: float, loss: float, maxElevation: float, points: int}|null
+	 */
+	private static function server_stats( string $gpx_path ): ?array {
+		if ( '' === $gpx_path || ! is_readable( $gpx_path ) ) {
+			return null;
+		}
+
+		$size = filesize( $gpx_path );
+		if ( false === $size || $size > 5 * MB_IN_BYTES ) {
+			return null;
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a local upload.
+		$contents = file_get_contents( $gpx_path );
+		if ( false === $contents ) {
+			return null;
+		}
+
+		return GpxStats::from_xml( $contents );
+	}
+
+	/**
+	 * Loading placeholder shown until the map script initializes.
+	 *
+	 * @return string
+	 */
+	private static function placeholder_html(): string {
+		return sprintf(
+			'<div class="gpxrm-placeholder" aria-live="polite"><span class="gpxrm-spinner" role="status"><span class="screen-reader-text">%1$s</span></span><span class="gpxrm-hint" aria-hidden="true">%2$s</span></div>',
+			esc_html__( 'Loading map…', 'gpx-route-map' ),
+			esc_html__( 'Scroll or tap to load the interactive map', 'gpx-route-map' )
+		);
+	}
+
+	/**
+	 * Stats bar markup. Values are filled by JS; local files get a head start.
+	 *
+	 * @param array{distance: float, gain: float, loss: float, maxElevation: float, points: int}|null $stats Server stats or null.
+	 * @return string
+	 */
+	private static function stats_html( ?array $stats ): string {
+		$rows = array(
+			'distance'  => array( __( 'Distance', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( $stats['distance'], 2 ) . ' km' ),
+			'gain'      => array( __( 'Elevation gain', 'gpx-route-map' ), null === $stats ? '—' : '+' . number_format_i18n( round( $stats['gain'] ) ) . ' m' ),
+			'loss'      => array( __( 'Elevation loss', 'gpx-route-map' ), null === $stats ? '—' : '−' . number_format_i18n( round( $stats['loss'] ) ) . ' m' ),
+			'max'       => array( __( 'Max elevation', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( round( $stats['maxElevation'] ) ) . ' m' ),
+			'waypoints' => array( __( 'Waypoints', 'gpx-route-map' ), '—' ),
+		);
+
+		$items = '';
+		foreach ( $rows as $key => $row ) {
+			$items .= sprintf(
+				'<div class="gpxrm-stat"><dt class="gpxrm-stat-label">%1$s</dt><dd class="gpxrm-stat-value" data-gpxrm-stat="%2$s">%3$s</dd></div>',
+				esc_html( $row[0] ),
+				esc_attr( $key ),
+				esc_html( $row[1] )
+			);
+		}
+
+		return '<dl class="gpxrm-stats">' . $items . '</dl>';
+	}
+
+	/**
+	 * Elevation profile markup.
+	 *
+	 * @return string
+	 */
+	private static function elevation_html(): string {
+		return sprintf(
+			'<figure class="gpxrm-elevation"><figcaption class="gpxrm-elevation-heading">%1$s</figcaption><canvas class="gpxrm-elevation-canvas" data-gpxrm-elevation role="img" aria-label="%2$s"></canvas></figure>',
+			esc_html__( 'Elevation profile', 'gpx-route-map' ),
+			esc_attr__( 'Elevation profile along the route', 'gpx-route-map' )
+		);
+	}
+
+	/**
+	 * Whether the block's view script is registered (i.e. `build/` exists and
+	 * the block registered on init). When false, rendering the map markup
+	 * would produce an eternal loading spinner with no diagnostics.
+	 *
+	 * @return bool
+	 */
+	private static function assets_registered(): bool {
+		return function_exists( 'generate_block_asset_handle' )
+			&& wp_script_is( generate_block_asset_handle( self::BLOCK_NAME, 'viewScript' ), 'registered' );
+	}
+
+	/**
+	 * Enqueue the shared view script and style registered by the block.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_assets(): void {
+		if ( function_exists( 'generate_block_asset_handle' ) ) {
+			wp_enqueue_script( generate_block_asset_handle( self::BLOCK_NAME, 'viewScript' ) );
+			wp_enqueue_style( generate_block_asset_handle( self::BLOCK_NAME, 'style' ) );
+		}
+	}
+
+	/**
+	 * Coerce a mixed value to boolean, honoring shortcode "false"/"0"/"no".
+	 *
+	 * @param mixed $value Raw value.
+	 * @return bool
+	 */
+	private static function to_bool( $value ): bool {
+		if ( is_bool( $value ) ) {
+			return $value;
+		}
+		if ( is_string( $value ) ) {
+			return ! in_array( strtolower( trim( $value ) ), array( 'false', '0', 'no', 'off', '' ), true );
+		}
+		return (bool) $value;
+	}
+
+	/**
+	 * Clamp a number to an inclusive range.
+	 *
+	 * @param int $value Value.
+	 * @param int $min   Minimum.
+	 * @param int $max   Maximum.
+	 * @return int
+	 */
+	private static function clamp( int $value, int $min, int $max ): int {
+		return max( $min, min( $max, $value ) );
+	}
+}

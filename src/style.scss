@@ -1,0 +1,205 @@
+/**
+ * Front-end styles for the GPX Route Map block and shortcode.
+ */
+
+.gpxrm {
+	--gpxrm-track: #2e7d32;
+	--gpxrm-surface: #f6f5f2;
+	--gpxrm-border: rgba(0, 0, 0, 0.1);
+	--gpxrm-text: #1f2937;
+	--gpxrm-muted: #6b7280;
+
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--gpxrm-border);
+	border-radius: 16px;
+	overflow: hidden;
+	background: var(--gpxrm-surface);
+	color: var(--gpxrm-text);
+}
+
+.gpxrm-map {
+	position: relative;
+	width: 100%;
+	min-height: 240px;
+	background: #e5e7eb;
+
+	.maplibregl-map {
+		position: absolute;
+		inset: 0;
+	}
+}
+
+.gpxrm-placeholder {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	background: #e5e7eb;
+	color: var(--gpxrm-muted);
+	transition: opacity 0.4s ease;
+	z-index: 2;
+
+	&.is-hidden {
+		opacity: 0;
+		pointer-events: none;
+	}
+}
+
+.gpxrm-spinner {
+	width: 34px;
+	height: 34px;
+	border: 3px solid rgba(46, 125, 50, 0.25);
+	border-top-color: var(--gpxrm-track);
+	border-radius: 50%;
+	animation: gpxrm-spin 0.8s linear infinite;
+}
+
+@keyframes gpxrm-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.gpxrm-spinner {
+		animation-duration: 2s;
+	}
+}
+
+.gpxrm-hint {
+	font-size: 13px;
+}
+
+.gpxrm-error {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 240px;
+	padding: 24px;
+	text-align: center;
+	color: #b91c1c;
+	font-size: 14px;
+}
+
+/* Waypoint markers */
+.gpxrm-marker {
+	width: 26px;
+	height: 26px;
+	border: 3px solid #fff;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 13px;
+	line-height: 1;
+	cursor: pointer;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+	transition: transform 0.15s ease;
+
+	&:hover {
+		transform: scale(1.15);
+	}
+}
+
+.gpxrm-popup-name {
+	font-weight: 700;
+	font-size: 14px;
+	color: #1f2937;
+}
+
+.gpxrm-popup-desc {
+	margin-top: 2px;
+	font-size: 12px;
+	color: #4b5563;
+}
+
+.gpxrm-popup-type {
+	margin-top: 4px;
+	font-size: 11px;
+	text-transform: capitalize;
+	color: #6b7280;
+}
+
+.gpxrm-popup-link {
+	display: inline-block;
+	margin-top: 6px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+/* Stats bar */
+.gpxrm-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+	gap: 1px;
+	margin: 0;
+	padding: 0;
+	background: var(--gpxrm-border);
+	border-top: 1px solid var(--gpxrm-border);
+}
+
+.gpxrm-stat {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 12px 14px;
+	background: var(--gpxrm-surface);
+	text-align: center;
+}
+
+.gpxrm-stat-label {
+	margin: 0;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--gpxrm-muted);
+}
+
+.gpxrm-stat-value {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+/* Elevation profile */
+.gpxrm-elevation {
+	margin: 0;
+	padding: 12px 14px 6px;
+	border-top: 1px solid var(--gpxrm-border);
+	background: var(--gpxrm-surface);
+}
+
+.gpxrm-elevation-heading {
+	margin: 0 0 6px;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--gpxrm-muted);
+}
+
+.gpxrm-elevation-canvas {
+	display: block;
+	width: 100%;
+	height: 150px;
+	touch-action: none;
+}
+
+/* Dark theme adaptation */
+@media (prefers-color-scheme: dark) {
+	.gpxrm {
+		--gpxrm-surface: #1f2422;
+		--gpxrm-border: rgba(255, 255, 255, 0.12);
+		--gpxrm-text: #f5f5f4;
+		--gpxrm-muted: #a8a29e;
+	}
+
+	.gpxrm-map,
+	.gpxrm-placeholder {
+		background: #2a2f2d;
+	}
+}

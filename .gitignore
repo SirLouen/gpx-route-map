@@ -1,0 +1,9 @@
+/node_modules/
+/build/
+/vendor/
+*.log
+.DS_Store
+/gpx-route-map.zip
+.wp-env.override.json
+/.phpunit.cache/
+/composer.lock

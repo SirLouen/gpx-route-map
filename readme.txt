@@ -1,0 +1,111 @@
+=== GPX Route Map ===
+Contributors: sirlouen
+Tags: gpx, map, openstreetmap, elevation, route
+Requires at least: 6.4
+Tested up to: 7.0
+Requires PHP: 7.4
+Stable tag: 1.0.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+Attach a GPX track to any post or page and render it as an interactive OpenStreetMap map with waypoints, distance and an elevation profile.
+
+== Description ==
+
+GPX Route Map turns a GPX file into an interactive map on the front end of your site. Drop the block into any post or page, pick a `.gpx` file, and visitors get:
+
+* An interactive OpenStreetMap map powered by MapLibre GL.
+* The track drawn as a route line with start and end markers.
+* Support for both GPX tracks (`<trk>`) and GPX routes (`<rte>`), e.g. Garmin Connect course exports.
+* Waypoint markers with popups for any `<wpt>` points in the file.
+* A stats bar: distance, elevation gain, elevation loss and max elevation.
+* A hand-drawn elevation profile you can scrub with mouse or touch, the position syncs onto the map.
+
+The map loads lazily (only when it scrolls into view) so it never slows down your page, and multiple maps can live on the same page.
+
+You can author tracks in any GPX tool, for example the free [gpx.studio](https://gpx.studio) editor, then upload the resulting file to your Media Library.
+
+= OpenStreetMap tile usage =
+
+By default the map uses OpenStreetMap's public tile server, an external service. When a page with a map is viewed, the visitor's browser loads map tiles directly from `tile.openstreetmap.org`, which means that server receives the visitor's IP address, browser User-Agent and the coordinates of the map area viewed. See the [OpenStreetMap Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/) and the [OSMF Privacy Policy](https://osmfoundation.org/wiki/Privacy_Policy). The same data is sent to any custom tile provider you configure instead.
+
+The public OSM tile server is rate-limited and is not intended for high-traffic sites. For busy sites, set a custom tile provider in the block's Map tiles panel (or via the `gpxrm_tile_url` filter). Attribution to OpenStreetMap is always shown, as the license requires.
+
+= Source code =
+
+The JavaScript files in `build/` are minified. The human-readable source lives in the plugin's `src/` directory, which is included in this plugin, and is also available with full build instructions at the public repository: [https://github.com/SirLouen/gpx-route-map](https://github.com/SirLouen/gpx-route-map). The plugin is built with `@wordpress/scripts` (`pnpm install && pnpm run build`).
+
+== Installation ==
+
+1. Upload the `gpx-route-map` folder to `/wp-content/plugins/`, or install through the Plugins screen.
+2. Activate the plugin.
+3. Add the **GPX Route Map** block to a post or page and select a GPX file, or use the shortcode.
+
+== Usage ==
+
+Block: search for "GPX Route Map" in the block inserter, then choose a GPX file.
+
+Shortcode: `[gpx_route_map]`
+
+Examples:
+
+`[gpx_route_map id="123"]` - render the GPX attachment with ID 123.
+`[gpx_route_map gpx="https://example.com/route.gpx" height="520" elevation="false"]`
+
+Shortcode attributes:
+
+* `id` - Attachment ID of a .gpx file uploaded to the Media Library.
+* `gpx` - Attachment ID, or an absolute URL to a .gpx file (alternative to `id`).
+* `height` - Map height in pixels, from 200 to 1200. Default: 480.
+* `stats` - Show the stats bar (distance, elevation, waypoints). `true` or `false`. Default: true.
+* `elevation` - Show the interactive elevation profile. `true` or `false`. Default: true.
+* `maxzoom` - Maximum zoom level, from 1 to 22. Default: 17.
+* `tile` - Custom raster tile URL template using `{z}/{x}/{y}`. Default: OpenStreetMap.
+
+Provide either `id` or `gpx`. The block exposes the same options in its sidebar (Source, Display and Map tiles panels).
+
+Filters (for developers):
+
+* `gpxrm_tile_url` - change the default raster tile URL template.
+* `gpxrm_tile_attribution` - change the attribution HTML.
+
+== Frequently Asked Questions ==
+
+= Does it require Advanced Custom Fields or any other plugin? =
+
+No. It has no plugin dependencies and works with core WordPress.
+
+= Where do the maps and elevation come from? =
+
+Map rendering uses MapLibre GL JS (BSD-3-Clause) with OpenStreetMap raster tiles. The track and elevation are parsed from your GPX file in the browser; stats are also computed server-side for local files so they appear without JavaScript.
+
+= Can I use my own map tiles? =
+
+Yes, set a custom tile URL in the block's Map tiles panel or with the `gpxrm_tile_url` filter.
+
+= Can I link a GPX file hosted on another site? =
+
+Only if that host allows cross-origin (CORS) requests, because the visitor's browser fetches the file directly, and most external sites don't send the required header. The front end then shows "Could not load GPX file." even though the link opens fine in a browser tab. Uploading the file to your Media Library is the reliable option.
+
+= Why don't my existing GPX files appear in the media picker? =
+
+GPX files uploaded before this plugin was activated may be stored with a generic XML type or no type at all. The picker shows GPX and XML types; files stored with an empty or unrelated type won't appear. Re-upload them to fix the stored type. On multisite, the network's "Upload file types" setting must also include `gpx`.
+
+= The front end says "Map failed to load." What's wrong? =
+
+The map library could not be downloaded. If you use an optimization plugin that combines or inlines JavaScript (i.e. Autoptimize or WP Rocket's "combine JS"), exclude this plugin's view script from it. Relocating the script breaks the loader that resolves the map library files. Visitors on a flaky connection can simply click the message to retry.
+
+== Screenshots ==
+
+1. An interactive route map with waypoints and an elevation profile.
+2. Selecting a GPX file in the block editor.
+
+== Changelog ==
+
+= 1.0.0 =
+* Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
+
+== Upgrade Notice ==
+
+= 1.0.0 =
+Initial release.

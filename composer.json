@@ -1,0 +1,26 @@
+{
+	"name": "sirlouen/gpx-route-map",
+	"description": "Render a GPX track as an interactive OpenStreetMap map with waypoints, distance and an elevation profile.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": ">=7.4"
+	},
+	"require-dev": {
+		"pestphp/pest": "^4.7",
+		"phpstan/extension-installer": "^1.4",
+		"phpstan/phpstan": "^2.2",
+		"szepeviktor/phpstan-wordpress": "^2.0"
+	},
+	"config": {
+		"allow-plugins": {
+			"pestphp/pest-plugin": true,
+			"phpstan/extension-installer": true
+		},
+		"sort-packages": true
+	},
+	"scripts": {
+		"test": "pest",
+		"analyse": "phpstan analyse"
+	}
+}

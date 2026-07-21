@@ -1,0 +1,7 @@
+parameters:
+	level: max
+	paths:
+		- gpx-route-map.php
+		- includes
+	bootstrapFiles:
+		- phpstan-bootstrap.php

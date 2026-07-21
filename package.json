@@ -1,0 +1,48 @@
+{
+  "name": "gpx-route-map",
+  "version": "1.0.0",
+  "description": "Render a GPX track as an interactive OpenStreetMap map with waypoints and an elevation profile.",
+  "author": "Manuel Camargo",
+  "license": "GPL-2.0-or-later",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "files": [
+    "gpx-route-map.php",
+    "readme.txt",
+    "LICENSE.txt",
+    "license.maplibre.txt",
+    "README.md",
+    "build/**",
+    "includes/**",
+    "src/**"
+  ],
+  "scripts": {
+    "build": "wp-scripts build",
+    "start": "wp-scripts start",
+    "format": "wp-scripts format",
+    "lint:js": "wp-scripts lint-js",
+    "lint:css": "wp-scripts lint-style",
+    "plugin-zip": "cp node_modules/maplibre-gl/LICENSE.txt license.maplibre.txt && wp-scripts plugin-zip",
+    "env": "wp-env",
+    "env:start": "wp-env start",
+    "env:stop": "wp-env stop",
+    "env:clean": "wp-env clean all",
+    "env:destroy": "wp-env destroy",
+    "env:cli": "wp-env run cli wp"
+  },
+  "prettier": "@wordpress/prettier-config",
+  "dependencies": {
+    "maplibre-gl": "^5.19.0"
+  },
+  "devDependencies": {
+    "@wordpress/env": "^10.0.0",
+    "@wordpress/prettier-config": "^4.51.0",
+    "@wordpress/scripts": "^30.0.0",
+    "typescript": "~5.3.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "typescript": "~5.3.3"
+    }
+  }
+}

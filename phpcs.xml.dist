@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<ruleset name="GPX Route Map">
+	<description>WordPress Coding Standards for the GPX Route Map plugin.</description>
+
+	<file>.</file>
+
+	<exclude-pattern>/build/</exclude-pattern>
+	<exclude-pattern>/node_modules/</exclude-pattern>
+	<exclude-pattern>/vendor/</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="basepath" value="."/>
+	<arg name="colors"/>
+	<arg value="ps"/>
+
+	<rule ref="WordPress-Core"/>
+	<rule ref="WordPress-Docs"/>
+
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>/tests/</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.FunctionComment">
+		<exclude-pattern>/tests/</exclude-pattern>
+	</rule>
+	<rule ref="Generic.Commenting.DocComment">
+		<exclude-pattern>/tests/</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Arrays.MultipleStatementAlignment">
+		<exclude-pattern>/tests/</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<exclude-pattern>/tests/</exclude-pattern>
+	</rule>
+
+	<config name="minimum_supported_wp_version" value="6.4"/>
+	<config name="testVersion" value="7.4-"/>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="gpx-route-map"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="gpxrm"/>
+				<element value="Gpxrm"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>

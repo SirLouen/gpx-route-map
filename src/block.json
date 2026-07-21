@@ -1,0 +1,52 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gpx-route-map/map",
+	"title": "GPX Route Map",
+	"category": "media",
+	"icon": "location-alt",
+	"description": "Render a GPX track as an interactive OpenStreetMap map with waypoints, distance and an elevation profile.",
+	"keywords": [ "gpx", "map", "route", "elevation", "openstreetmap", "trail", "hiking", "cycling" ],
+	"textdomain": "gpx-route-map",
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ],
+		"spacing": {
+			"margin": true
+		}
+	},
+	"attributes": {
+		"gpxId": {
+			"type": "number"
+		},
+		"gpxUrl": {
+			"type": "string",
+			"default": ""
+		},
+		"height": {
+			"type": "number",
+			"default": 480
+		},
+		"showStats": {
+			"type": "boolean",
+			"default": true
+		},
+		"showElevation": {
+			"type": "boolean",
+			"default": true
+		},
+		"maxZoom": {
+			"type": "number",
+			"default": 17
+		},
+		"tileUrl": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"render": "file:./render.php"
+}
