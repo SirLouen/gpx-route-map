@@ -19,20 +19,23 @@ import { ElevationProfile, computeElevationTotals } from './elevation';
 /**
  * Aggregate route statistics from coordinates.
  *
- * @param {Array<[number, number, number]>} coords Coordinates.
+ * @param {Array<[number, number, number]>} coords    Coordinates.
+ * @param {Set<number>}                     segStarts Indices where a new segment begins.
  * @return {{distance: number, gain: number, loss: number, maxEle: number}} Stats.
  */
-function routeStats( coords ) {
+function routeStats( coords, segStarts ) {
 	const totals = computeElevationTotals( coords.map( ( c ) => c[ 2 ] ) );
 	let distance = 0;
 	let maxEle = coords[ 0 ]?.[ 2 ] ?? 0;
 	for ( let i = 1; i < coords.length; i++ ) {
-		distance += haversine(
-			coords[ i - 1 ][ 1 ],
-			coords[ i - 1 ][ 0 ],
-			coords[ i ][ 1 ],
-			coords[ i ][ 0 ]
-		);
+		if ( ! segStarts.has( i ) ) {
+			distance += haversine(
+				coords[ i - 1 ][ 1 ],
+				coords[ i - 1 ][ 0 ],
+				coords[ i ][ 1 ],
+				coords[ i ][ 0 ]
+			);
+		}
 		if ( coords[ i ][ 2 ] > maxEle ) {
 			maxEle = coords[ i ][ 2 ];
 		}
@@ -136,7 +139,7 @@ export async function initInstance( mapEl, maplibregl ) {
 		return;
 	}
 
-	const { coords, waypoints, invalid } = parseGPX( text );
+	const { coords, waypoints, segmentStarts, invalid } = parseGPX( text );
 	if ( invalid ) {
 		showError( mapEl, 'Invalid GPX file.' );
 		return;
@@ -145,6 +148,7 @@ export async function initInstance( mapEl, maplibregl ) {
 		showError( mapEl, 'No track or route points found in GPX file.' );
 		return;
 	}
+	const segStarts = new Set( segmentStarts );
 
 	const tileUrl = mapEl.dataset.gpxrmTileUrl || DEFAULT_TILE_URL;
 	const attribution = mapEl.dataset.gpxrmAttribution || DEFAULT_ATTRIBUTION;
@@ -160,8 +164,7 @@ export async function initInstance( mapEl, maplibregl ) {
 		maxZoom,
 	} );
 
-	// Stats & elevation don't need the tiles, so compute them immediately.
-	const stats = routeStats( coords );
+	const stats = routeStats( coords, segStarts );
 	fillStats( root, stats, waypoints.length );
 
 	let profile = null;
@@ -196,16 +199,24 @@ export async function initInstance( mapEl, maplibregl ) {
 	};
 
 	if ( canvas ) {
-		profile = new ElevationProfile( canvas, coords, {
-			onScrub: ( idx, dragging ) => {
-				setPositionDot( idx );
-				if ( dragging ) {
-					const c = coords[ idx ];
-					map.easeTo( { center: [ c[ 0 ], c[ 1 ] ], duration: 100 } );
-				}
+		profile = new ElevationProfile(
+			canvas,
+			coords,
+			{
+				onScrub: ( idx, dragging ) => {
+					setPositionDot( idx );
+					if ( dragging ) {
+						const c = coords[ idx ];
+						map.easeTo( {
+							center: [ c[ 0 ], c[ 1 ] ],
+							duration: 100,
+						} );
+					}
+				},
+				onLeave: clearPositionDot,
 			},
-			onLeave: clearPositionDot,
-		} );
+			segStarts
+		);
 	}
 
 	map.on( 'load', () => {
@@ -215,6 +226,13 @@ export async function initInstance( mapEl, maplibregl ) {
 			setTimeout( () => placeholder.remove(), 400 );
 		}
 
+		const segmentLines = segmentStarts
+			.map( ( startIdx, s ) =>
+				coords
+					.slice( startIdx, segmentStarts[ s + 1 ] ?? coords.length )
+					.map( ( c ) => [ c[ 0 ], c[ 1 ] ] )
+			)
+			.filter( ( line ) => line.length > 1 );
 		const trackGeoJSON = {
 			type: 'FeatureCollection',
 			features: [
@@ -222,8 +240,8 @@ export async function initInstance( mapEl, maplibregl ) {
 					type: 'Feature',
 					properties: {},
 					geometry: {
-						type: 'LineString',
-						coordinates: coords.map( ( c ) => [ c[ 0 ], c[ 1 ] ] ),
+						type: 'MultiLineString',
+						coordinates: segmentLines,
 					},
 				},
 			],

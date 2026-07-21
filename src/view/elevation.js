@@ -92,42 +92,20 @@ export function computeElevationTotals( elevations ) {
  */
 export class ElevationProfile {
 	/**
-	 * @param {HTMLCanvasElement}                        canvas      Target canvas.
-	 * @param {Array<[number, number, number]>}          coords      [lon, lat, ele] triples.
-	 * @param {{onScrub?: Function, onLeave?: Function}} [callbacks] Scrub hooks.
+	 * @param {HTMLCanvasElement}                        canvas          Target canvas.
+	 * @param {Array<[number, number, number]>}          coords          [lon, lat, ele] triples.
+	 * @param {{onScrub?: Function, onLeave?: Function}} [callbacks]     Scrub hooks.
+	 * @param {Set<number>}                              [segmentStarts] Indices where a new segment begins.
 	 */
-	constructor( canvas, coords, callbacks = {} ) {
+	constructor( canvas, coords, callbacks = {}, segmentStarts = null ) {
 		this.canvas = canvas;
 		this.coords = coords;
 		this.onScrub = callbacks.onScrub || ( () => {} );
 		this.onLeave = callbacks.onLeave || ( () => {} );
+		this.segmentStarts = segmentStarts || new Set();
 		this.dragging = false;
 		this.state = null;
 		this.listenersBound = false;
-	}
-
-	/**
-	 * Aggregate distance/elevation stats for the stats bar.
-	 *
-	 * @return {{distance: number, gain: number, loss: number, maxEle: number}} Stats.
-	 */
-	computeStats() {
-		const { coords } = this;
-		const totals = computeElevationTotals( coords.map( ( c ) => c[ 2 ] ) );
-		let distance = 0;
-		let maxEle = coords[ 0 ]?.[ 2 ] ?? 0;
-		for ( let i = 1; i < coords.length; i++ ) {
-			distance += haversine(
-				coords[ i - 1 ][ 1 ],
-				coords[ i - 1 ][ 0 ],
-				coords[ i ][ 1 ],
-				coords[ i ][ 0 ]
-			);
-			if ( coords[ i ][ 2 ] > maxEle ) {
-				maxEle = coords[ i ][ 2 ];
-			}
-		}
-		return { distance, gain: totals.gain, loss: totals.loss, maxEle };
 	}
 
 	/**
@@ -156,12 +134,14 @@ export class ElevationProfile {
 		for ( let i = 1; i < coords.length; i++ ) {
 			dists.push(
 				dists[ i - 1 ] +
-					haversine(
-						coords[ i - 1 ][ 1 ],
-						coords[ i - 1 ][ 0 ],
-						coords[ i ][ 1 ],
-						coords[ i ][ 0 ]
-					)
+					( this.segmentStarts.has( i )
+						? 0
+						: haversine(
+								coords[ i - 1 ][ 1 ],
+								coords[ i - 1 ][ 0 ],
+								coords[ i ][ 1 ],
+								coords[ i ][ 0 ]
+						  ) )
 			);
 		}
 		const totalDist = dists[ dists.length - 1 ] || 1;

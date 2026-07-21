@@ -14,7 +14,7 @@ export const TRACK_CASING = '#1b3a1e';
  * Parse a GPX document string into track coordinates and waypoints.
  *
  * @param {string} xmlText Raw GPX XML.
- * @return {{coords: Array<[number, number, number]>, waypoints: Array<Object>, invalid: boolean}} Parsed data.
+ * @return {{coords: Array<[number, number, number]>, waypoints: Array<Object>, segmentStarts: number[], invalid: boolean}} Parsed data.
  */
 export function parseGPX( xmlText ) {
 	const doc = new window.DOMParser().parseFromString(
@@ -23,7 +23,7 @@ export function parseGPX( xmlText ) {
 	);
 
 	if ( doc.querySelector( 'parsererror' ) ) {
-		return { coords: [], waypoints: [], invalid: true };
+		return { coords: [], waypoints: [], segmentStarts: [], invalid: true };
 	}
 
 	let points = doc.querySelectorAll( 'trkpt' );
@@ -32,12 +32,19 @@ export function parseGPX( xmlText ) {
 	}
 
 	const coords = [];
+	const segmentStarts = [];
+	let lastSegment = null;
 	points.forEach( ( pt ) => {
 		const lat = parseFloat( pt.getAttribute( 'lat' ) );
 		const lon = parseFloat( pt.getAttribute( 'lon' ) );
 		if ( Number.isNaN( lat ) || Number.isNaN( lon ) ) {
 			return;
 		}
+		const segment = pt.closest( 'trkseg, trk, rte' );
+		if ( ! coords.length || segment !== lastSegment ) {
+			segmentStarts.push( coords.length );
+		}
+		lastSegment = segment;
 		const eleEl = pt.querySelector( 'ele' );
 		const ele = eleEl ? parseFloat( eleEl.textContent ) : 0;
 		coords.push( [ lon, lat, Number.isNaN( ele ) ? 0 : ele ] );
@@ -64,7 +71,7 @@ export function parseGPX( xmlText ) {
 		} );
 	} );
 
-	return { coords, waypoints, invalid: false };
+	return { coords, waypoints, segmentStarts, invalid: false };
 }
 
 /**
