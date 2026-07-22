@@ -21,7 +21,7 @@
     "build": "node bin/build.mjs",
     "start": "node bin/build.mjs --watch",
     "format": "wp-scripts format",
-    "lint:js": "wp-scripts lint-js",
+    "lint:js": "wp-scripts lint-js src bin/build.mjs",
     "lint:css": "wp-scripts lint-style",
     "plugin-zip": "cp node_modules/maplibre-gl/LICENSE.txt license.maplibre.txt && wp-scripts plugin-zip",
     "env": "wp-env",
@@ -39,6 +39,7 @@
     "@wordpress/env": "^10.0.0",
     "@wordpress/prettier-config": "^4.51.0",
     "@wordpress/scripts": "^30.0.0",
+    "rtlcss": "^4.3.0",
     "sass-embedded": "^1.100.0",
     "typescript": "~5.3.3",
     "vite": "^8.1.5"

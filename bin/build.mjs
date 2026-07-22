@@ -24,7 +24,12 @@ const OUT = path.join( ROOT, 'build' );
 
 const camel = ( s ) => s.replace( /-([a-z])/g, ( m, c ) => c.toUpperCase() );
 
-/** Collect @wordpress/* imports across the editor source tree. */
+/**
+ * Collect @wordpress/* imports across the editor source tree.
+ *
+ * @param {string[]} files Source files (relative to src/) to scan.
+ * @return {string[]} Sorted script-handle dependencies.
+ */
 function wpDependencies( files ) {
 	const deps = new Set( [ 'react-jsx-runtime' ] );
 	for ( const file of files ) {
@@ -113,8 +118,11 @@ async function buildView() {
 	} );
 
 	const code = fs.readFileSync( path.join( OUT, 'view.js' ), 'utf8' );
-	
-	fs.writeFileSync( path.join( OUT, 'view.asset.php' ), assetPhp( [], code ) );
+
+	fs.writeFileSync(
+		path.join( OUT, 'view.asset.php' ),
+		assetPhp( [], code )
+	);
 }
 
 function buildStyles() {
