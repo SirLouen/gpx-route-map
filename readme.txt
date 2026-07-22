@@ -1,7 +1,7 @@
 === GPX Route Map ===
 Contributors: sirlouen
 Tags: gpx, map, openstreetmap, elevation, route
-Requires at least: 6.4
+Requires at least: 6.6
 Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 1.0.0
@@ -33,7 +33,7 @@ The public OSM tile server is rate-limited and is not intended for high-traffic 
 
 = Source code =
 
-The JavaScript files in `build/` are minified. The human-readable source lives in the plugin's `src/` directory, which is included in this plugin, and is also available with full build instructions at the public repository: [https://github.com/SirLouen/gpx-route-map](https://github.com/SirLouen/gpx-route-map). The plugin is built with `@wordpress/scripts` (`pnpm install && pnpm run build`).
+The JavaScript files in `build/` are minified. The human-readable source lives in the plugin's `src/` directory, which is included in this plugin, and is also available with full build instructions at the public repository: [https://github.com/SirLouen/gpx-route-map](https://github.com/SirLouen/gpx-route-map). The plugin is built with Vite (`pnpm install && pnpm run build`).
 
 == Installation ==
 
@@ -93,7 +93,7 @@ GPX files uploaded before this plugin was activated may be stored with a generic
 
 = The front end says "Map failed to load." What's wrong? =
 
-The map library could not be downloaded. If you use an optimization plugin that combines or inlines JavaScript (i.e. Autoptimize or WP Rocket's "combine JS"), exclude this plugin's view script from it. Relocating the script breaks the loader that resolves the map library files. Visitors on a flaky connection can simply click the message to retry.
+The map library could not be downloaded. The plugin loads its map code as a native JavaScript module, which optimization plugins normally leave alone. But if yours is configured to combine, inline or relocate module scripts, exclude this plugin's view script from it. Visitors on a flaky connection can simply click the message to retry.
 
 == Screenshots ==
 

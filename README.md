@@ -6,16 +6,16 @@ Built with [MapLibre GL JS](https://maplibre.org/) + raster OpenStreetMap tiles 
 
 ## Features
 
-- **Block + shortcode**: `gpx-route-map/map` block and `[gpx_route_map]`.
-- **Interactive map**: track line, start/end markers, waypoint markers with popups, navigation/scale/fullscreen/geolocate controls.
-- **Stats bar**: distance, elevation gain/loss, max elevation, waypoint count. Computed server-side for local files (SSR) and in the browser.
-- **Elevation profile**: scrub with mouse/touch; the position syncs onto the map, and clicking the track highlights the profile.
-- **Lazy loading**: MapLibre loads only when a map scrolls into view; multiple maps per page are supported.
-- **Configurable tiles**: respects the OSM tile usage policy via a custom tile URL / `gpxrm_tile_url` filter.
+-   **Block + shortcode**: `gpx-route-map/map` block and `[gpx_route_map]`.
+-   **Interactive map**: track line, start/end markers, waypoint markers with popups, navigation/scale/fullscreen/geolocate controls.
+-   **Stats bar**: distance, elevation gain/loss, max elevation, waypoint count. Computed server-side for local files (SSR) and in the browser.
+-   **Elevation profile**: scrub with mouse/touch; the position syncs onto the map, and clicking the track highlights the profile.
+-   **Lazy loading**: MapLibre loads only when a map scrolls into view; multiple maps per page are supported.
+-   **Configurable tiles**: respects the OSM tile usage policy via a custom tile URL / `gpxrm_tile_url` filter.
 
 ## Development
 
-This project uses [pnpm](https://pnpm.io/) and [`@wordpress/scripts`](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-scripts/).
+This project uses [pnpm](https://pnpm.io/) and [Vite](https://vite.dev/) (see `bin/build.mjs`; `@wordpress/scripts` is retained for linting, formatting and packaging).
 
 ```bash
 pnpm install
@@ -44,8 +44,9 @@ pnpm run env:stop
 
 ### Layout
 
-```
+```text
 gpx-route-map.php          Plugin bootstrap
+bin/build.mjs              Vite build orchestrator (JS, SCSS, RTL, asset.php)
 includes/
   class-plugin.php         Hooks: block, shortcode, GPX upload MIME
   class-renderer.php       Shared HTML for block + shortcode, SSR stats, asset enqueue

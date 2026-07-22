@@ -238,27 +238,28 @@ class Renderer {
 	}
 
 	/**
-	 * Whether the block's view script is registered (i.e. `build/` exists and
-	 * the block registered on init). When false, rendering the map markup
-	 * would produce an eternal loading spinner with no diagnostics.
+	 * Whether the block registered on init.
 	 *
 	 * @return bool
 	 */
 	private static function assets_registered(): bool {
-		return function_exists( 'generate_block_asset_handle' )
-			&& wp_script_is( generate_block_asset_handle( self::BLOCK_NAME, 'viewScript' ), 'registered' );
+		return class_exists( '\WP_Block_Type_Registry' )
+			&& null !== \WP_Block_Type_Registry::get_instance()->get_registered( self::BLOCK_NAME );
 	}
 
 	/**
-	 * Enqueue the shared view script and style registered by the block.
+	 * Enqueue the shared view script module and style registered by the block.
 	 *
 	 * @return void
 	 */
 	public static function enqueue_assets(): void {
-		if ( function_exists( 'generate_block_asset_handle' ) ) {
-			wp_enqueue_script( generate_block_asset_handle( self::BLOCK_NAME, 'viewScript' ) );
-			wp_enqueue_style( generate_block_asset_handle( self::BLOCK_NAME, 'style' ) );
+		if ( ! function_exists( 'generate_block_asset_handle' ) ) {
+			return;
 		}
+		if ( function_exists( 'wp_enqueue_script_module' ) ) {
+			wp_enqueue_script_module( generate_block_asset_handle( self::BLOCK_NAME, 'viewScriptModule' ) );
+		}
+		wp_enqueue_style( generate_block_asset_handle( self::BLOCK_NAME, 'style' ) );
 	}
 
 	/**

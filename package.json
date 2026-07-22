@@ -12,13 +12,14 @@
     "LICENSE.txt",
     "license.maplibre.txt",
     "README.md",
+    "bin/**",
     "build/**",
     "includes/**",
     "src/**"
   ],
   "scripts": {
-    "build": "wp-scripts build",
-    "start": "wp-scripts start",
+    "build": "node bin/build.mjs",
+    "start": "node bin/build.mjs --watch",
     "format": "wp-scripts format",
     "lint:js": "wp-scripts lint-js",
     "lint:css": "wp-scripts lint-style",
@@ -38,7 +39,9 @@
     "@wordpress/env": "^10.0.0",
     "@wordpress/prettier-config": "^4.51.0",
     "@wordpress/scripts": "^30.0.0",
-    "typescript": "~5.3.3"
+    "sass-embedded": "^1.100.0",
+    "typescript": "~5.3.3",
+    "vite": "^8.1.5"
   },
   "pnpm": {
     "overrides": {
