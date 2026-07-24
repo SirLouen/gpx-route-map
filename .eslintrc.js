@@ -19,7 +19,10 @@ module.exports = {
 			parserOptions: { sourceType: 'module' },
 		},
 		{
-			files: [ '**/@(test|__tests__)/**/*.js', '**/?(*.)test.js' ],
+			files: [
+				'**/@(test|__tests__)/**/*.[jt]s',
+				'**/?(*.)test.[jt]s',
+			],
 			extends: [ 'plugin:@wordpress/eslint-plugin/test-unit' ],
 		},
 	],

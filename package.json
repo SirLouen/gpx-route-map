@@ -21,7 +21,10 @@
     "build": "node bin/build.mjs",
     "start": "node bin/build.mjs --watch",
     "format": "wp-scripts format",
-    "lint:js": "wp-scripts lint-js src bin/build.mjs",
+    "lint:js": "wp-scripts lint-js src bin/build.mjs tests/js",
+    "test:js": "vitest run",
+    "test:js:watch": "vitest",
+    "typecheck": "tsc --noEmit",
     "lint:css": "wp-scripts lint-style",
     "plugin-zip": "cp node_modules/maplibre-gl/LICENSE.txt license.maplibre.txt && wp-scripts plugin-zip",
     "env": "wp-env",
@@ -36,13 +39,21 @@
     "maplibre-gl": "^5.19.0"
   },
   "devDependencies": {
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@wordpress/block-editor": "^16.0.0",
+    "@wordpress/blocks": "^15.24.0",
+    "@wordpress/components": "^37.0.0",
+    "@wordpress/element": "^8.3.0",
     "@wordpress/env": "^10.0.0",
+    "@wordpress/i18n": "^6.24.0",
     "@wordpress/prettier-config": "^4.51.0",
     "@wordpress/scripts": "^30.0.0",
     "rtlcss": "^4.3.0",
     "sass-embedded": "^1.100.0",
     "typescript": "~5.3.3",
-    "vite": "^8.1.5"
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
   },
   "pnpm": {
     "overrides": {
