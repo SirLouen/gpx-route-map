@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="gpx-route-map seeder">
+  <metadata>
+    <name>Canal Towpath</name>
+    <desc>A flat track with no elevation data (distance only, no elevation profile).</desc>
+  </metadata>
+  <trk>
+    <name>Canal Towpath</name>
+    <trkseg>
+      <trkpt lat="52.2053" lon="0.1218"/>
+      <trkpt lat="52.2071" lon="0.1256"/>
+      <trkpt lat="52.2089" lon="0.1301"/>
+      <trkpt lat="52.2108" lon="0.1349"/>
+      <trkpt lat="52.2124" lon="0.1402"/>
+      <trkpt lat="52.2137" lon="0.1458"/>
+      <trkpt lat="52.2149" lon="0.1517"/>
+      <trkpt lat="52.2158" lon="0.1579"/>
+    </trkseg>
+  </trk>
+</gpx>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="gpx-route-map seeder">
+  <metadata>
+    <name>River Route</name>
+    <desc>A route (rte/rtept) rather than a recorded track.</desc>
+  </metadata>
+  <wpt lat="43.3626" lon="-5.8439">
+    <name>Put-in</name>
+    <type>water</type>
+  </wpt>
+  <rte>
+    <name>River Route</name>
+    <rtept lat="43.3626" lon="-5.8439"><ele>229.0</ele></rtept>
+    <rtept lat="43.3657" lon="-5.8674"><ele>219.0</ele></rtept>
+    <rtept lat="43.3725" lon="-5.8973"><ele>256.0</ele></rtept>
+    <rtept lat="43.3906" lon="-5.9452"><ele>219.0</ele></rtept>
+    <rtept lat="43.3968" lon="-5.9801"><ele>181.0</ele></rtept>
+  </rte>
+</gpx>

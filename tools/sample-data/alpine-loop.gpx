@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="gpx-route-map seeder">
+  <metadata>
+    <name>Alpine Loop</name>
+    <desc>A short mountain loop with elevation gain and points of interest.</desc>
+  </metadata>
+  <wpt lat="45.9237" lon="6.8694">
+    <name>Trailhead Refuge</name>
+    <desc>Mountain hut at the start of the loop.</desc>
+    <type>lodging</type>
+  </wpt>
+  <wpt lat="45.9301" lon="6.8802">
+    <name>Crest Viewpoint</name>
+    <desc>Panoramic view over the valley.</desc>
+    <type>viewpoint</type>
+  </wpt>
+  <wpt lat="45.9268" lon="6.8735">
+    <name>Spring</name>
+    <desc>Fresh water source.</desc>
+    <type>water</type>
+  </wpt>
+  <trk>
+    <name>Alpine Loop</name>
+    <trkseg>
+      <trkpt lat="45.9237" lon="6.8694"><ele>1035.0</ele></trkpt>
+      <trkpt lat="45.9251" lon="6.8712"><ele>1112.4</ele></trkpt>
+      <trkpt lat="45.9268" lon="6.8735"><ele>1240.9</ele></trkpt>
+      <trkpt lat="45.9284" lon="6.8768"><ele>1408.2</ele></trkpt>
+      <trkpt lat="45.9301" lon="6.8802"><ele>1622.7</ele></trkpt>
+      <trkpt lat="45.9313" lon="6.8779"><ele>1701.5</ele></trkpt>
+      <trkpt lat="45.9309" lon="6.8741"><ele>1588.0</ele></trkpt>
+      <trkpt lat="45.9291" lon="6.8709"><ele>1372.6</ele></trkpt>
+      <trkpt lat="45.9270" lon="6.8688"><ele>1189.3</ele></trkpt>
+      <trkpt lat="45.9252" lon="6.8676"><ele>1078.1</ele></trkpt>
+      <trkpt lat="45.9237" lon="6.8694"><ele>1035.0</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

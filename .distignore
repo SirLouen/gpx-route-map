@@ -25,7 +25,6 @@
 /composer.lock
 /phpcs.xml.dist
 /phpstan.neon.dist
-/phpstan-bootstrap.php
 /phpunit.xml.dist
 /.phpunit.cache
 
@@ -33,8 +32,9 @@
 /pnpm-lock.yaml
 /package-lock.json
 
-# Tests
+# Tests & tooling
 /tests
+/tools
 
 # Artifacts
 *.zip

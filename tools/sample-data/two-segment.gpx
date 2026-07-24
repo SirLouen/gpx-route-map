@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="gpx-route-map seeder">
+  <metadata>
+    <name>Two-Stage Hike</name>
+    <desc>A track split into two segments (a gap between them).</desc>
+  </metadata>
+  <wpt lat="43.0119" lon="-7.5560">
+    <name>Stage 1 start</name>
+    <type>lodging</type>
+  </wpt>
+  <wpt lat="42.8782" lon="-8.5448">
+    <name>Stage 2 finish</name>
+    <type>church</type>
+  </wpt>
+  <trk>
+    <name>Two-Stage Hike</name>
+    <trkseg>
+      <trkpt lat="43.0119" lon="-7.5560"><ele>465.0</ele></trkpt>
+      <trkpt lat="43.0058" lon="-7.6021"><ele>498.0</ele></trkpt>
+      <trkpt lat="42.9982" lon="-7.6503"><ele>540.0</ele></trkpt>
+      <trkpt lat="42.9910" lon="-7.6998"><ele>512.0</ele></trkpt>
+    </trkseg>
+    <trkseg>
+      <trkpt lat="42.9137" lon="-8.4103"><ele>333.0</ele></trkpt>
+      <trkpt lat="42.9061" lon="-8.4448"><ele>301.0</ele></trkpt>
+      <trkpt lat="42.8963" lon="-8.4899"><ele>270.0</ele></trkpt>
+      <trkpt lat="42.8782" lon="-8.5448"><ele>260.0</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

@@ -8,6 +8,7 @@
 	},
 	"require-dev": {
 		"pestphp/pest": "^4.7",
+		"php-stubs/wp-cli-stubs": "^2.12",
 		"phpstan/extension-installer": "^1.4",
 		"phpstan/phpstan": "^2.2",
 		"szepeviktor/phpstan-wordpress": "^2.0"
@@ -21,6 +22,8 @@
 	},
 	"scripts": {
 		"test": "pest",
-		"analyse": "phpstan analyse"
+		"analyse": "phpstan analyse",
+		"seed": "pnpm exec wp-env run cli wp --require=wp-content/plugins/gpx-route-map/tools/seeder.php gpxrm seed",
+		"seed:fresh": "pnpm exec wp-env run cli wp --require=wp-content/plugins/gpx-route-map/tools/seeder.php gpxrm seed --fresh"
 	}
 }
