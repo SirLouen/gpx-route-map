@@ -21,8 +21,10 @@ if ( ! class_exists( '\Gpxrm\Renderer' ) ) {
  *
  * @var array<string, mixed> $attributes
  */
-// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Renderer returns fully escaped HTML.
-echo \Gpxrm\Renderer::render(
+$gpxrm_markup = \Gpxrm\Renderer::render(
 	is_array( $attributes ) ? $attributes : array(),
 	get_block_wrapper_attributes()
 );
+
+// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Renderer output is fully escaped internally.
+echo $gpxrm_markup;
