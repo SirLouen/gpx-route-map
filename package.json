@@ -32,7 +32,8 @@
     "env:stop": "wp-env stop",
     "env:clean": "wp-env clean all",
     "env:destroy": "wp-env destroy",
-    "env:cli": "wp-env run cli wp"
+    "env:cli": "wp-env run cli wp",
+    "check:pcp": "wp-env run cli wp plugin check gpx-route-map --exclude-directories=node_modules,vendor,tests,.git,.github,.spec,.wordpress-org,.phpunit.cache,.vscode --ignore-codes=hidden_files,application_detected,compressed_files"
   },
   "prettier": "@wordpress/prettier-config",
   "dependencies": {

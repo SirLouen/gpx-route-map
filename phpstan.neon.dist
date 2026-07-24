@@ -4,4 +4,4 @@ parameters:
 		- gpx-route-map.php
 		- includes
 	bootstrapFiles:
-		- phpstan-bootstrap.php
+		- tests/phpstan-bootstrap.php
