@@ -1,0 +1,41 @@
+# Build/CI environment
+/node_modules
+/vendor
+
+# Version control & CI
+/.git
+/.github
+/.gitignore
+
+# Project docs & editor/dev config
+/.spec
+/.vscode
+/.editorconfig
+/.eslintignore
+/.eslintrc.js
+/.npmrc
+/.wp-env.json
+/.wp-env.override.json
+/tsconfig.json
+/vitest.config.ts
+
+# PHP dev tooling
+/composer.json
+/composer.lock
+/phpcs.xml.dist
+/phpstan.neon.dist
+/phpstan-bootstrap.php
+/phpunit.xml.dist
+/.phpunit.cache
+
+# Node packaging metadata
+/package.json
+/pnpm-lock.yaml
+/package-lock.json
+
+# Tests
+/tests
+
+# Artifacts
+*.zip
+*.log
