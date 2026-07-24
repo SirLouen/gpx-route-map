@@ -8,74 +8,32 @@ import {
 	buildRasterStyle,
 	createMap,
 	addWaypointMarkers,
-	haversine,
 	TRACK_COLOR,
 	TRACK_CASING,
 	DEFAULT_TILE_URL,
 	DEFAULT_ATTRIBUTION,
 } from './map-core';
-import { ElevationProfile, computeElevationTotals } from './elevation';
+import type { FeatureCollection } from 'geojson';
+import type { GeoJSONSource } from 'maplibre-gl';
 
-/**
- * Aggregate route statistics from coordinates.
- *
- * @param {Array<[number, number, number]>} coords    Coordinates.
- * @param {Set<number>}                     segStarts Indices where a new segment begins.
- * @return {{distance: number, gain: number, loss: number, maxEle: number}} Stats.
- */
-function routeStats( coords, segStarts ) {
-	const totals = computeElevationTotals( coords.map( ( c ) => c[ 2 ] ) );
-	let distance = 0;
-	let maxEle = coords[ 0 ]?.[ 2 ] ?? 0;
-	for ( let i = 1; i < coords.length; i++ ) {
-		if ( ! segStarts.has( i ) ) {
-			distance += haversine(
-				coords[ i - 1 ][ 1 ],
-				coords[ i - 1 ][ 0 ],
-				coords[ i ][ 1 ],
-				coords[ i ][ 0 ]
-			);
-		}
-		if ( coords[ i ][ 2 ] > maxEle ) {
-			maxEle = coords[ i ][ 2 ];
-		}
-	}
-	return { distance, gain: totals.gain, loss: totals.loss, maxEle };
-}
-
-/**
- * Index of the coordinate nearest a lng/lat (planar approximation).
- *
- * @param {Array<[number, number, number]>} coords Coordinates.
- * @param {number}                          lng    Longitude.
- * @param {number}                          lat    Latitude.
- * @return {number} Index.
- */
-function nearestIndex( coords, lng, lat ) {
-	let minD = Infinity;
-	let idx = 0;
-	for ( let i = 0; i < coords.length; i++ ) {
-		const dx = coords[ i ][ 0 ] - lng;
-		const dy = coords[ i ][ 1 ] - lat;
-		const d = dx * dx + dy * dy;
-		if ( d < minD ) {
-			minD = d;
-			idx = i;
-		}
-	}
-	return idx;
-}
+import type { Coord, MapLibreGl } from './types';
+import { ElevationProfile } from './elevation';
+import { routeStats, nearestIndex } from './stats';
+import type { RouteStats } from './stats';
 
 /**
  * Write the stats bar values inside a container.
  *
- * @param {HTMLElement} root      Instance root.
- * @param {Object}      stats     Route stats.
- * @param {number}      waypoints Waypoint count.
- * @return {void}
+ * @param root      Instance root.
+ * @param stats     Route stats.
+ * @param waypoints Waypoint count.
  */
-function fillStats( root, stats, waypoints ) {
-	const set = ( key, value ) => {
+function fillStats(
+	root: Element,
+	stats: RouteStats,
+	waypoints: number
+): void {
+	const set = ( key: string, value: string ): void => {
 		const el = root.querySelector( `[data-gpxrm-stat="${ key }"]` );
 		if ( el ) {
 			el.textContent = value;
@@ -91,22 +49,23 @@ function fillStats( root, stats, waypoints ) {
 /**
  * Show an inline error inside the map element.
  *
- * @param {HTMLElement} mapEl Map element.
- * @param {string}      msg   Message.
- * @return {void}
+ * @param mapEl Map element.
+ * @param msg   Message.
  */
-function showError( mapEl, msg ) {
+function showError( mapEl: HTMLElement, msg: string ): void {
 	mapEl.innerHTML = `<div class="gpxrm-error">${ msg }</div>`;
 }
 
 /**
  * Initialize one map instance.
  *
- * @param {HTMLElement} mapEl      The `.gpxrm-map` element.
- * @param {Object}      maplibregl MapLibre GL module.
- * @return {Promise<void>} Resolves when set up.
+ * @param mapEl      The `.gpxrm-map` element.
+ * @param maplibregl MapLibre GL module.
  */
-export async function initInstance( mapEl, maplibregl ) {
+export async function initInstance(
+	mapEl: HTMLElement,
+	maplibregl: MapLibreGl
+): Promise< void > {
 	const root = mapEl.closest( '.gpxrm' ) || mapEl.parentElement || mapEl;
 	const gpxUrl = mapEl.dataset.gpxrmGpx;
 	if ( ! gpxUrl ) {
@@ -167,16 +126,18 @@ export async function initInstance( mapEl, maplibregl ) {
 	const stats = routeStats( coords, segStarts );
 	fillStats( root, stats, waypoints.length );
 
-	let profile = null;
-	const canvas = root.querySelector( '[data-gpxrm-elevation]' );
+	let profile: ElevationProfile | null = null;
+	const canvas: HTMLCanvasElement | null = root.querySelector(
+		'[data-gpxrm-elevation]'
+	);
 
-	const setPositionDot = ( idx ) => {
+	const setPositionDot = ( idx: number ): void => {
 		const src = map.getSource( 'gpxrm-position' );
-		if ( ! src ) {
+		if ( ! src || ! ( 'setData' in src ) ) {
 			return;
 		}
 		const c = coords[ idx ];
-		src.setData( {
+		( src as GeoJSONSource ).setData( {
 			type: 'FeatureCollection',
 			features: [
 				{
@@ -191,10 +152,13 @@ export async function initInstance( mapEl, maplibregl ) {
 		} );
 	};
 
-	const clearPositionDot = () => {
+	const clearPositionDot = (): void => {
 		const src = map.getSource( 'gpxrm-position' );
-		if ( src ) {
-			src.setData( { type: 'FeatureCollection', features: [] } );
+		if ( src && 'setData' in src ) {
+			( src as GeoJSONSource ).setData( {
+				type: 'FeatureCollection',
+				features: [],
+			} );
 		}
 	};
 
@@ -230,10 +194,13 @@ export async function initInstance( mapEl, maplibregl ) {
 			.map( ( startIdx, s ) =>
 				coords
 					.slice( startIdx, segmentStarts[ s + 1 ] ?? coords.length )
-					.map( ( c ) => [ c[ 0 ], c[ 1 ] ] )
+					.map( ( c: Coord ): [ number, number ] => [
+						c[ 0 ],
+						c[ 1 ],
+					] )
 			)
 			.filter( ( line ) => line.length > 1 );
-		const trackGeoJSON = {
+		const trackGeoJSON: FeatureCollection = {
 			type: 'FeatureCollection',
 			features: [
 				{
@@ -246,7 +213,10 @@ export async function initInstance( mapEl, maplibregl ) {
 				},
 			],
 		};
-		map.addSource( 'gpxrm-track', { type: 'geojson', data: trackGeoJSON } );
+		map.addSource( 'gpxrm-track', {
+			type: 'geojson',
+			data: trackGeoJSON,
+		} );
 
 		map.addLayer( {
 			id: 'gpxrm-track-casing',
@@ -332,12 +302,13 @@ export async function initInstance( mapEl, maplibregl ) {
 	} );
 
 	if ( profile ) {
-		// Defer until layout settles so the canvas has its final width.
-		window.requestAnimationFrame( () => profile.build() );
-		let resizeTimer;
+		const boundProfile = profile;
+
+		window.requestAnimationFrame( () => boundProfile.build() );
+		let resizeTimer: ReturnType< typeof setTimeout >;
 		window.addEventListener( 'resize', () => {
 			clearTimeout( resizeTimer );
-			resizeTimer = setTimeout( () => profile.build(), 200 );
+			resizeTimer = setTimeout( () => boundProfile.build(), 200 );
 		} );
 	}
 }

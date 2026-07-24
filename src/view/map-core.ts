@@ -2,6 +2,14 @@
  * Framework-agnostic map helpers: GPX parsing, bounds, MapLibre style/markers.
  */
 
+import type * as MapLibreNs from 'maplibre-gl';
+
+import type { Bounds, Coord, MapLibreGl, ParsedGpx, Waypoint } from './types';
+
+type MapLibreMap = MapLibreNs.Map;
+type StyleSpecification = MapLibreNs.StyleSpecification;
+type LngLatBoundsLike = MapLibreNs.LngLatBoundsLike;
+
 export const DEFAULT_TILE_URL =
 	'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const DEFAULT_ATTRIBUTION =
@@ -13,10 +21,9 @@ export const TRACK_CASING = '#1b3a1e';
 /**
  * Parse a GPX document string into track coordinates and waypoints.
  *
- * @param {string} xmlText Raw GPX XML.
- * @return {{coords: Array<[number, number, number]>, waypoints: Array<Object>, segmentStarts: number[], invalid: boolean}} Parsed data.
+ * @param xmlText Raw GPX XML.
  */
-export function parseGPX( xmlText ) {
+export function parseGPX( xmlText: string ): ParsedGpx {
 	const doc = new window.DOMParser().parseFromString(
 		xmlText,
 		'application/xml'
@@ -31,12 +38,12 @@ export function parseGPX( xmlText ) {
 		points = doc.querySelectorAll( 'rtept' );
 	}
 
-	const coords = [];
-	const segmentStarts = [];
-	let lastSegment = null;
+	const coords: Coord[] = [];
+	const segmentStarts: number[] = [];
+	let lastSegment: Element | null = null;
 	points.forEach( ( pt ) => {
-		const lat = parseFloat( pt.getAttribute( 'lat' ) );
-		const lon = parseFloat( pt.getAttribute( 'lon' ) );
+		const lat = parseFloat( pt.getAttribute( 'lat' ) ?? '' );
+		const lon = parseFloat( pt.getAttribute( 'lon' ) ?? '' );
 		if ( Number.isNaN( lat ) || Number.isNaN( lon ) ) {
 			return;
 		}
@@ -46,28 +53,24 @@ export function parseGPX( xmlText ) {
 		}
 		lastSegment = segment;
 		const eleEl = pt.querySelector( 'ele' );
-		const ele = eleEl ? parseFloat( eleEl.textContent ) : 0;
+		const ele = eleEl ? parseFloat( eleEl.textContent ?? '' ) : 0;
 		coords.push( [ lon, lat, Number.isNaN( ele ) ? 0 : ele ] );
 	} );
 
-	const waypoints = [];
+	const waypoints: Waypoint[] = [];
 	doc.querySelectorAll( 'wpt' ).forEach( ( w ) => {
-		const lat = parseFloat( w.getAttribute( 'lat' ) );
-		const lon = parseFloat( w.getAttribute( 'lon' ) );
+		const lat = parseFloat( w.getAttribute( 'lat' ) ?? '' );
+		const lon = parseFloat( w.getAttribute( 'lon' ) ?? '' );
 		if ( Number.isNaN( lat ) || Number.isNaN( lon ) ) {
 			return;
 		}
-		const nameEl = w.querySelector( 'name' );
-		const descEl = w.querySelector( 'desc' );
-		const typeEl = w.querySelector( 'type' );
-		const linkEl = w.querySelector( 'link' );
 		waypoints.push( {
 			lon,
 			lat,
-			name: nameEl?.textContent || 'Waypoint',
-			desc: descEl?.textContent || '',
-			type: typeEl?.textContent || '',
-			link: linkEl?.getAttribute( 'href' ) || '',
+			name: w.querySelector( 'name' )?.textContent || 'Waypoint',
+			desc: w.querySelector( 'desc' )?.textContent || '',
+			type: w.querySelector( 'type' )?.textContent || '',
+			link: w.querySelector( 'link' )?.getAttribute( 'href' ) || '',
 		} );
 	} );
 
@@ -77,11 +80,12 @@ export function parseGPX( xmlText ) {
 /**
  * Compute a bounding box from lon/lat points.
  *
- * @param {Array<{lon: number, lat: number}>} points Points.
- * @return {[[number, number], [number, number]]} Bounds.
+ * @param points Points.
  */
-export function computeBounds( points ) {
-	return points.reduce(
+export function computeBounds(
+	points: Array< { lon: number; lat: number } >
+): Bounds {
+	return points.reduce< Bounds >(
 		( b, p ) => {
 			b[ 0 ][ 0 ] = Math.min( b[ 0 ][ 0 ], p.lon );
 			b[ 0 ][ 1 ] = Math.min( b[ 0 ][ 1 ], p.lat );
@@ -99,10 +103,9 @@ export function computeBounds( points ) {
 /**
  * Compute bounds from [lon, lat, ele] coordinate triples.
  *
- * @param {Array<[number, number, number]>} coords Coordinates.
- * @return {[[number, number], [number, number]]} Bounds.
+ * @param coords Coordinates.
  */
-export function computeBoundsFromCoords( coords ) {
+export function computeBoundsFromCoords( coords: Coord[] ): Bounds {
 	return computeBounds(
 		coords.map( ( c ) => ( { lon: c[ 0 ], lat: c[ 1 ] } ) )
 	);
@@ -111,11 +114,13 @@ export function computeBoundsFromCoords( coords ) {
 /**
  * Build a MapLibre raster style for a tile template.
  *
- * @param {string} tileUrl     Tile URL template ({z}/{x}/{y}).
- * @param {string} attribution Attribution HTML.
- * @return {Object} MapLibre style spec.
+ * @param tileUrl     Tile URL template ({z}/{x}/{y}).
+ * @param attribution Attribution HTML.
  */
-export function buildRasterStyle( tileUrl, attribution ) {
+export function buildRasterStyle(
+	tileUrl: string,
+	attribution: string
+): StyleSpecification {
 	return {
 		version: 8,
 		sources: {
@@ -130,18 +135,31 @@ export function buildRasterStyle( tileUrl, attribution ) {
 	};
 }
 
+export interface CreateMapOptions {
+	maplibregl: MapLibreGl;
+	container: HTMLElement;
+	style: StyleSpecification;
+	bounds: LngLatBoundsLike;
+	maxZoom?: number;
+}
+
 /**
  * Create a MapLibre map with the standard control set.
  *
- * @param {Object}      options            Options.
- * @param {Object}      options.maplibregl MapLibre GL module.
- * @param {HTMLElement} options.container  Map container element.
- * @param {Object}      options.style      Style spec.
- * @param {Array}       options.bounds     Initial bounds.
- * @param {number}      [options.maxZoom]  Max zoom for fitBounds.
- * @return {Object} MapLibre map instance.
+ * @param options            Options.
+ * @param options.maplibregl MapLibre GL module.
+ * @param options.container  Map container element.
+ * @param options.style      Style spec.
+ * @param options.bounds     Initial bounds.
+ * @param options.maxZoom    Max zoom for fitBounds.
  */
-export function createMap( { maplibregl, container, style, bounds, maxZoom } ) {
+export function createMap( {
+	maplibregl,
+	container,
+	style,
+	bounds,
+	maxZoom,
+}: CreateMapOptions ): MapLibreMap {
 	const map = new maplibregl.Map( {
 		container,
 		style,
@@ -168,9 +186,12 @@ export function createMap( { maplibregl, container, style, bounds, maxZoom } ) {
 	return map;
 }
 
-// Default emoji/colour set for common GPX waypoint <type> values. Unknown types
-// fall back to a neutral pin, so any GPX renders sensibly without configuration.
-const WPT_ICONS = {
+interface WaypointIcon {
+	icon: string;
+	color: string;
+}
+
+const WPT_ICONS: Record< string, WaypointIcon > = {
 	summit: { icon: '⛰', color: '#57534e' },
 	viewpoint: { icon: '👁', color: '#15803d' },
 	water: { icon: '💦', color: '#0369a1' },
@@ -192,15 +213,14 @@ const WPT_ICONS = {
 	danger: { icon: '⚠️', color: '#b91c1c' },
 	photo: { icon: '📷', color: '#7b1fa2' },
 };
-const WPT_DEFAULT = { icon: '📍', color: TRACK_COLOR };
+const WPT_DEFAULT: WaypointIcon = { icon: '📍', color: TRACK_COLOR };
 
 /**
  * Look up the icon descriptor for a waypoint type (case-insensitive).
  *
- * @param {string} type Waypoint type.
- * @return {{icon: string, color: string}} Icon descriptor.
+ * @param type Waypoint type.
  */
-function iconFor( type ) {
+function iconFor( type: string ): WaypointIcon {
 	if ( ! type ) {
 		return WPT_DEFAULT;
 	}
@@ -210,14 +230,14 @@ function iconFor( type ) {
 /**
  * Validate a waypoint link URL, allowing only safe schemes.
  *
- * @param {string} url Raw URL from the GPX file.
- * @return {string} The original URL if safe, otherwise "".
+ * @param url Raw URL from the GPX file.
+ * @return The original URL if safe, otherwise "".
  */
-export function safeLinkUrl( url ) {
+export function safeLinkUrl( url: string ): string {
 	if ( ! url ) {
 		return '';
 	}
-	let parsed;
+	let parsed: URL;
 	try {
 		parsed = new URL( url, window.location.href );
 	} catch {
@@ -231,12 +251,15 @@ export function safeLinkUrl( url ) {
 /**
  * Append a <div> with text content to a popup container.
  *
- * @param {HTMLElement} parent    Container.
- * @param {string}      className Class for the new element.
- * @param {string}      text      Text content.
- * @return {void}
+ * @param parent    Container.
+ * @param className Class for the new element.
+ * @param text      Text content.
  */
-function appendPopupRow( parent, className, text ) {
+function appendPopupRow(
+	parent: HTMLElement,
+	className: string,
+	text: string
+): void {
 	const row = document.createElement( 'div' );
 	row.className = className;
 	row.textContent = text;
@@ -246,13 +269,17 @@ function appendPopupRow( parent, className, text ) {
 /**
  * Add DOM markers with popups for each waypoint.
  *
- * @param {Object} maplibregl MapLibre GL module.
- * @param {Object} map        Map instance.
- * @param {Array}  waypoints  Parsed waypoints.
- * @param {string} bg         Map background colour used for the marker ring.
- * @return {void}
+ * @param maplibregl MapLibre GL module.
+ * @param map        Map instance.
+ * @param waypoints  Parsed waypoints.
+ * @param bg         Map background colour used for the marker ring.
  */
-export function addWaypointMarkers( maplibregl, map, waypoints, bg ) {
+export function addWaypointMarkers(
+	maplibregl: MapLibreGl,
+	map: MapLibreMap,
+	waypoints: Waypoint[],
+	bg: string
+): void {
 	waypoints.forEach( ( wpt ) => {
 		const cfg = iconFor( wpt.type );
 
@@ -301,13 +328,17 @@ export function addWaypointMarkers( maplibregl, map, waypoints, bg ) {
 /**
  * Great-circle distance between two points, in kilometres.
  *
- * @param {number} lat1 Latitude 1.
- * @param {number} lon1 Longitude 1.
- * @param {number} lat2 Latitude 2.
- * @param {number} lon2 Longitude 2.
- * @return {number} Distance in km.
+ * @param lat1 Latitude 1.
+ * @param lon1 Longitude 1.
+ * @param lat2 Latitude 2.
+ * @param lon2 Longitude 2.
  */
-export function haversine( lat1, lon1, lat2, lon2 ) {
+export function haversine(
+	lat1: number,
+	lon1: number,
+	lat2: number,
+	lon2: number
+): number {
 	const R = 6371;
 	const dLat = ( ( lat2 - lat1 ) * Math.PI ) / 180;
 	const dLon = ( ( lon2 - lon1 ) * Math.PI ) / 180;

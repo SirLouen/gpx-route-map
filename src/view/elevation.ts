@@ -3,6 +3,7 @@
  */
 
 import { haversine } from './map-core';
+import type { Coord } from './types';
 
 const THRESHOLD_M = 9.05;
 
@@ -16,14 +17,20 @@ const THEME = {
 	areaBottom: 'rgba(76, 175, 80, 0.05)',
 };
 
+export interface ElevationTotals {
+	gain: number;
+	loss: number;
+}
+
 /**
  * Filtered elevation gain/loss using a reversal threshold (matches the PHP
  * GpxStats implementation exactly).
  *
- * @param {number[]} elevations Elevation values.
- * @return {{gain: number, loss: number}} Totals.
+ * @param elevations Elevation values.
  */
-export function computeElevationTotals( elevations ) {
+export function computeElevationTotals(
+	elevations: number[]
+): ElevationTotals {
 	if ( elevations.length < 2 ) {
 		return { gain: 0, loss: 0 };
 	}
@@ -87,17 +94,52 @@ export function computeElevationTotals( elevations ) {
 	return { gain, loss };
 }
 
+interface ProfileState {
+	elevations: number[];
+	dists: number[];
+	totalDist: number;
+	minEle: number;
+	range: number;
+	padL: number;
+	padR: number;
+	padT: number;
+	padB: number;
+	plotW: number;
+	plotH: number;
+	W: number;
+	H: number;
+}
+
+export interface ProfileCallbacks {
+	onScrub?: ( idx: number, dragging: boolean ) => void;
+	onLeave?: () => void;
+}
+
 /**
  * Interactive elevation profile bound to a single <canvas>.
  */
 export class ElevationProfile {
+	canvas: HTMLCanvasElement;
+	coords: Coord[];
+	onScrub: ( idx: number, dragging: boolean ) => void;
+	onLeave: () => void;
+	segmentStarts: Set< number >;
+	dragging: boolean;
+	state: ProfileState | null;
+	listenersBound: boolean;
+
 	/**
-	 * @param {HTMLCanvasElement}                        canvas          Target canvas.
-	 * @param {Array<[number, number, number]>}          coords          [lon, lat, ele] triples.
-	 * @param {{onScrub?: Function, onLeave?: Function}} [callbacks]     Scrub hooks.
-	 * @param {Set<number>}                              [segmentStarts] Indices where a new segment begins.
+	 * @param canvas        Target canvas.
+	 * @param coords        [lon, lat, ele] triples.
+	 * @param callbacks     Scrub hooks.
+	 * @param segmentStarts Indices where a new segment begins.
 	 */
-	constructor( canvas, coords, callbacks = {}, segmentStarts = null ) {
+	constructor(
+		canvas: HTMLCanvasElement,
+		coords: Coord[],
+		callbacks: ProfileCallbacks = {},
+		segmentStarts: Set< number > | null = null
+	) {
 		this.canvas = canvas;
 		this.coords = coords;
 		this.onScrub = callbacks.onScrub || ( () => {} );
@@ -110,10 +152,8 @@ export class ElevationProfile {
 
 	/**
 	 * Build geometry, size the canvas and attach interaction listeners.
-	 *
-	 * @return {void}
 	 */
-	build() {
+	build(): void {
 		const { canvas, coords } = this;
 		const rect = canvas.getBoundingClientRect();
 		if ( rect.width === 0 ) {
@@ -130,6 +170,8 @@ export class ElevationProfile {
 		const maxEle = Math.max( ...elevations ) + 20;
 		const range = maxEle - minEle || 1;
 
+		// Segment gaps contribute zero distance so the x-axis matches the
+		// stats bar (and the PHP GpxStats numbers).
 		const dists = [ 0 ];
 		for ( let i = 1; i < coords.length; i++ ) {
 			dists.push(
@@ -174,10 +216,12 @@ export class ElevationProfile {
 	/**
 	 * Nearest sample index to a distance along the track.
 	 *
-	 * @param {number} targetDist Distance in km.
-	 * @return {number} Index.
+	 * @param targetDist Distance in km.
 	 */
-	indexAtDistance( targetDist ) {
+	indexAtDistance( targetDist: number ): number {
+		if ( ! this.state ) {
+			return 0;
+		}
 		const { dists } = this.state;
 		let idx = 0;
 		for ( let i = 1; i < dists.length; i++ ) {
@@ -194,10 +238,12 @@ export class ElevationProfile {
 	/**
 	 * Map a client X position to a sample index, or null if outside the plot.
 	 *
-	 * @param {number} clientX Pointer clientX.
-	 * @return {number|null} Index or null.
+	 * @param clientX Pointer clientX.
 	 */
-	indexAtClientX( clientX ) {
+	indexAtClientX( clientX: number ): number | null {
+		if ( ! this.state ) {
+			return null;
+		}
 		const { padL, padR, plotW, totalDist, W } = this.state;
 		const r = this.canvas.getBoundingClientRect();
 		const mx = clientX - r.left;
@@ -208,11 +254,10 @@ export class ElevationProfile {
 	}
 
 	/**
-	 * Attach mouse and touch scrubbing listeners.
-	 *
-	 * @return {void}
+	 * Attach mouse and touch scrubbing listeners. build() calls this on every
+	 * rebuild (window resize), so it must only ever attach one set.
 	 */
-	attachListeners() {
+	attachListeners(): void {
 		if ( this.listenersBound ) {
 			return;
 		}
@@ -251,7 +296,8 @@ export class ElevationProfile {
 			this.clear();
 		} );
 
-		const touchIndex = ( touch ) => this.indexAtClientX( touch.clientX );
+		const touchIndex = ( touch: Touch ): number | null =>
+			this.indexAtClientX( touch.clientX );
 
 		canvas.addEventListener(
 			'touchstart',
@@ -289,11 +335,13 @@ export class ElevationProfile {
 
 	/**
 	 * Redraw the base profile (grid, area, line, axis labels).
-	 *
-	 * @return {void}
 	 */
-	redraw() {
+	redraw(): void {
 		if ( ! this.state ) {
+			return;
+		}
+		const ctx = this.canvas.getContext( '2d' );
+		if ( ! ctx ) {
 			return;
 		}
 		const { coords } = this;
@@ -311,13 +359,13 @@ export class ElevationProfile {
 			W,
 			H,
 		} = this.state;
-		const ctx = this.canvas.getContext( '2d' );
 		const dpr = window.devicePixelRatio || 1;
 		ctx.setTransform( dpr, 0, 0, dpr, 0, 0 );
 		ctx.clearRect( 0, 0, W, H );
 
-		const x = ( d ) => padL + ( d / totalDist ) * plotW;
-		const y = ( e ) => padT + plotH - ( ( e - minEle ) / range ) * plotH;
+		const x = ( d: number ): number => padL + ( d / totalDist ) * plotW;
+		const y = ( e: number ): number =>
+			padT + plotH - ( ( e - minEle ) / range ) * plotH;
 
 		ctx.strokeStyle = THEME.grid;
 		ctx.lineWidth = 0.5;
@@ -374,15 +422,17 @@ export class ElevationProfile {
 	/**
 	 * Draw the crosshair, marker dot and tooltip for a sample index.
 	 *
-	 * @param {number} idx Sample index.
-	 * @return {void}
+	 * @param idx Sample index.
 	 */
-	highlight( idx ) {
+	highlight( idx: number ): void {
 		if ( ! this.state ) {
 			return;
 		}
 		this.redraw();
 		const ctx = this.canvas.getContext( '2d' );
+		if ( ! ctx ) {
+			return;
+		}
 		const {
 			elevations,
 			dists,
@@ -443,10 +493,8 @@ export class ElevationProfile {
 
 	/**
 	 * Clear any highlight and notify the map to hide its position dot.
-	 *
-	 * @return {void}
 	 */
-	clear() {
+	clear(): void {
 		this.redraw();
 		this.onLeave();
 	}
@@ -454,10 +502,9 @@ export class ElevationProfile {
 	/**
 	 * Sample coordinate for an index.
 	 *
-	 * @param {number} idx Index.
-	 * @return {[number, number, number]} Coordinate.
+	 * @param idx Index.
 	 */
-	coordAt( idx ) {
+	coordAt( idx: number ): Coord {
 		return this.coords[ idx ];
 	}
 }

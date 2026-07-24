@@ -3,36 +3,41 @@
  */
 
 import { initInstance } from './view/map-instance';
+import type { MapLibreGl } from './view/types';
 
-let maplibrePromise = null;
+let maplibrePromise: Promise< MapLibreGl > | null = null;
 
 /**
  * Load MapLibre GL (and its CSS) once, on demand.
- *
- * @return {Promise<Object>} The MapLibre GL module default export.
  */
-function loadMapLibre() {
-	if ( ! maplibrePromise ) {
-		maplibrePromise = Promise.all( [
-			import( 'maplibre-gl' ),
-			import( 'maplibre-gl/dist/maplibre-gl.css' ),
-		] )
-			.then( ( [ mod ] ) => mod.default || mod )
-			.catch( ( err ) => {
-				maplibrePromise = null;
-				throw err;
-			} );
+function loadMapLibre(): Promise< MapLibreGl > {
+	if ( maplibrePromise ) {
+		return maplibrePromise;
 	}
-	return maplibrePromise;
+	const loading = Promise.all( [
+		import( 'maplibre-gl' ),
+		import( 'maplibre-gl/dist/maplibre-gl.css' ),
+	] )
+		.then( ( [ mod ] ) => {
+			const ns = mod as unknown as MapLibreGl & {
+				default?: MapLibreGl;
+			};
+			return ns.default || ns;
+		} )
+		.catch( ( err ) => {
+			maplibrePromise = null;
+			throw err;
+		} );
+	maplibrePromise = loading;
+	return loading;
 }
 
 /**
  * Boot one map element: load the library, then initialize the instance.
  *
- * @param {HTMLElement} mapEl Map element.
- * @return {void}
+ * @param mapEl Map element.
  */
-function boot( mapEl ) {
+function boot( mapEl: HTMLElement ): void {
 	if ( mapEl.dataset.gpxrmBooted ) {
 		return;
 	}
@@ -51,11 +56,9 @@ function boot( mapEl ) {
 
 /**
  * Observe all maps and boot them as they approach the viewport.
- *
- * @return {void}
  */
-function setup() {
-	const maps = Array.prototype.slice.call(
+function setup(): void {
+	const maps: HTMLElement[] = Array.prototype.slice.call(
 		document.querySelectorAll( '.gpxrm-map[data-gpxrm-gpx]' )
 	);
 	if ( ! maps.length ) {
@@ -72,7 +75,7 @@ function setup() {
 			entries.forEach( ( entry ) => {
 				if ( entry.isIntersecting ) {
 					obs.unobserve( entry.target );
-					boot( entry.target );
+					boot( entry.target as HTMLElement );
 				}
 			} );
 		},

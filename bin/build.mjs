@@ -60,13 +60,12 @@ async function buildEditor() {
 			emptyOutDir: false,
 			sourcemap: false,
 			lib: {
-				entry: path.join( SRC, 'index.js' ),
+				entry: path.join( SRC, 'index.tsx' ),
 				formats: [ 'iife' ],
 				name: 'gpxrmBlock',
 				fileName: () => 'index.js',
 			},
 			rollupOptions: {
-				moduleTypes: { '.js': 'jsx' },
 				external: ( id ) =>
 					id.startsWith( '@wordpress/' ) ||
 					'react' === id ||
@@ -89,7 +88,7 @@ async function buildEditor() {
 	const code = fs.readFileSync( path.join( OUT, 'index.js' ), 'utf8' );
 	fs.writeFileSync(
 		path.join( OUT, 'index.asset.php' ),
-		assetPhp( wpDependencies( [ 'index.js', 'edit.js' ] ), code )
+		assetPhp( wpDependencies( [ 'index.tsx', 'edit.tsx' ] ), code )
 	);
 }
 
@@ -105,7 +104,7 @@ async function buildView() {
 			target: 'es2020',
 			modulePreload: { polyfill: false },
 			rollupOptions: {
-				input: { view: path.join( SRC, 'view.js' ) },
+				input: { view: path.join( SRC, 'view.ts' ) },
 				preserveEntrySignatures: false,
 				output: {
 					format: 'es',

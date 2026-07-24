@@ -2,8 +2,11 @@
  * Editor UI for the GPX Route Map block.
  */
 
+import type { KeyboardEvent } from 'react';
+
 import { __, sprintf } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
+import type { BlockEditProps } from '@wordpress/blocks';
 import {
 	useBlockProps,
 	InspectorControls,
@@ -24,6 +27,26 @@ import {
 } from '@wordpress/components';
 
 /**
+ * Attributes as declared in block.json. A type alias (not an interface) so it
+ * satisfies the Record<string, unknown> constraint of BlockEditProps.
+ */
+export type GpxBlockAttributes = {
+	gpxId?: number;
+	gpxUrl: string;
+	height: number;
+	showStats: boolean;
+	showElevation: boolean;
+	maxZoom: number;
+	tileUrl: string;
+};
+
+/** The subset of the media object the picker hands to onSelect. */
+interface SelectedMedia {
+	id: number;
+	url: string;
+}
+
+/**
  * GPX uploaded while the plugin is active gets application/gpx+xml, but files
  * uploaded before activation or imported, are stored as generic XML
  */
@@ -32,12 +55,14 @@ const GPX_TYPES = [ 'application/gpx+xml', 'application/xml', 'text/xml' ];
 /**
  * Block edit component.
  *
- * @param {Object}   props               Block props.
- * @param {Object}   props.attributes    Block attributes.
- * @param {Function} props.setAttributes Attribute setter.
- * @return {JSX.Element} Editor markup.
+ * @param props               Block props.
+ * @param props.attributes    Block attributes.
+ * @param props.setAttributes Attribute setter.
  */
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( {
+	attributes,
+	setAttributes,
+}: BlockEditProps< GpxBlockAttributes > ) {
 	const {
 		gpxId,
 		gpxUrl,
@@ -52,7 +77,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	// Draft state for the URL field: typing must not discard a selected
 	// media file, so the attribute only updates on blur or Enter.
-	const [ urlDraft, setUrlDraft ] = useState( null );
+	const [ urlDraft, setUrlDraft ] = useState< string | null >( null );
 	const committedUrl = gpxId ? '' : gpxUrl;
 
 	const commitUrl = () => {
@@ -73,7 +98,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		}
 	};
 
-	const onSelect = ( media ) => {
+	const onSelect = ( media: SelectedMedia ) => {
 		setUrlDraft( null );
 		setAttributes( { gpxId: media.id, gpxUrl: media.url } );
 	};
@@ -129,7 +154,9 @@ export default function Edit( { attributes, setAttributes } ) {
 						value={ urlDraft ?? committedUrl }
 						onChange={ setUrlDraft }
 						onBlur={ commitUrl }
-						onKeyDown={ ( event ) => {
+						onKeyDown={ (
+							event: KeyboardEvent< HTMLInputElement >
+						) => {
 							if ( 'Enter' === event.key ) {
 								commitUrl();
 							}
