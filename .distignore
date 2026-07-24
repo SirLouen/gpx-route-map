@@ -6,6 +6,7 @@
 /.git
 /.github
 /.gitignore
+/.distignore
 
 # Project docs & editor/dev config
 /.spec
@@ -29,7 +30,6 @@
 /.phpunit.cache
 
 # Node packaging metadata
-/package.json
 /pnpm-lock.yaml
 /package-lock.json
 
