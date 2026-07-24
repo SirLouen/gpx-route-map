@@ -15,18 +15,26 @@ Built with [MapLibre GL JS](https://maplibre.org/) + raster OpenStreetMap tiles 
 
 ## Development
 
-This project uses [pnpm](https://pnpm.io/) and [Vite](https://vite.dev/) (see `bin/build.mjs`; `@wordpress/scripts` is retained for linting, formatting and packaging).
+This project uses [pnpm](https://pnpm.io/) and [Vite](https://vite.dev/).
 
 ```bash
 pnpm install
 pnpm run start      # watch/dev build
 pnpm run build      # production build → build/
+pnpm run typecheck  # tsc --noEmit
 pnpm run plugin-zip # package a distributable zip
 ```
 
 `register_block_type()` reads `build/block.json`, so the block and its assets only register after a build. If WordPress shows no block, run `pnpm run build`.
 
 ### Testing
+
+JavaScript unit tests use [Vitest](https://vitest.dev/).
+
+```bash
+pnpm run test:js        # run once
+pnpm run test:js:watch  # watch mode
+```
 
 PHP unit tests use [Pest](https://pestphp.com/). `GpxStats` is dependency-free, so the suite runs standalone (no WordPress bootstrap):
 
@@ -53,13 +61,15 @@ includes/
   class-gpxstats.php      Pure distance/elevation algorithm (ported, dependency-free)
 src/
   block.json               Block metadata
-  index.js / edit.js       Editor
+  index.tsx / edit.tsx     Editor
   render.php               Server render → Renderer
-  view.js                  Front-end entry (lazy init)
+  view.ts                  Front-end entry (lazy init)
   view/
-    map-core.js            GPX parse, MapLibre style/markers
-    elevation.js           Canvas elevation profile
-    map-instance.js        Assembles one map
+    types.ts               Shared domain types
+    map-core.ts            GPX parse, MapLibre markers
+    elevation.ts           Canvas elevation profile
+    stats.ts               Route stats
+    map-instance.ts        Assembles one map
   style.scss / editor.scss Styles
 ```
 
