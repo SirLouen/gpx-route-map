@@ -192,12 +192,12 @@ interface WaypointIcon {
 }
 
 const WPT_ICONS: Record< string, WaypointIcon > = {
-	summit: { icon: '⛰', color: '#57534e' },
-	viewpoint: { icon: '👁', color: '#15803d' },
+	summit: { icon: '⛰️', color: '#57534e' },
+	viewpoint: { icon: '👁️', color: '#15803d' },
 	water: { icon: '💦', color: '#0369a1' },
 	fountain: { icon: '💦', color: '#0369a1' },
-	food: { icon: '🍽', color: '#e65100' },
-	restaurant: { icon: '🍽', color: '#e65100' },
+	food: { icon: '🍽️', color: '#e65100' },
+	restaurant: { icon: '🍽️', color: '#e65100' },
 	cafe: { icon: '☕️', color: '#b45309' },
 	bar: { icon: '🍺', color: '#9f1239' },
 	lodging: { icon: '🏠', color: '#1565c0' },
@@ -205,8 +205,8 @@ const WPT_ICONS: Record< string, WaypointIcon > = {
 	hotel: { icon: '🏨', color: '#1565c0' },
 	camp: { icon: '⛺️', color: '#15803d' },
 	church: { icon: '⛪️', color: '#4d7c0f' },
-	monument: { icon: '🏛', color: '#4d7c0f' },
-	museum: { icon: '🏛', color: '#b45309' },
+	monument: { icon: '🏛️', color: '#4d7c0f' },
+	museum: { icon: '🏛️', color: '#b45309' },
 	pharmacy: { icon: '💊', color: '#b91c1c' },
 	shop: { icon: '🛒', color: '#0f766e' },
 	parking: { icon: '🅿️', color: '#4338ca' },
