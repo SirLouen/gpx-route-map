@@ -1,0 +1,106 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    php:
+        name: PHP (phpcs · PHPStan · Pest)
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.3'
+                  coverage: none
+                  tools: composer
+
+            - name: Install project dependencies
+              run: composer install --no-interaction --prefer-dist
+
+            - name: Install PHPCS + WordPress standards (global, no repo changes)
+              run: |
+                  composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+                  composer global require --no-interaction "wp-coding-standards/wpcs:^3" "dealerdirect/phpcodesniffer-composer-installer:^1"
+                  echo "$(composer global config bin-dir --absolute)" >> "$GITHUB_PATH"
+
+            - name: Coding standards (phpcs.xml.dist)
+              run: phpcs
+
+            - name: Static analysis (PHPStan, max)
+              run: composer analyse -- --no-progress
+
+            - name: Unit tests (Pest)
+              run: composer test
+
+    js:
+        name: JS (typecheck · lint · build · vitest)
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 9
+
+            - name: Set up Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Typecheck
+              run: pnpm run typecheck
+
+            - name: Lint JS
+              run: pnpm run lint:js
+
+            - name: Build
+              run: pnpm run build
+
+            - name: JS unit tests
+              run: pnpm run test:js
+
+    plugin-check:
+        name: Plugin Check (WordPress.org)
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 9
+
+            - name: Set up Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Build distributable
+              run: |
+                  pnpm install --frozen-lockfile
+                  pnpm run build
+                  pnpm run plugin-zip
+                  mkdir -p dist && unzip -q gpx-route-map.zip -d dist
+
+            - name: Run Plugin Check
+              uses: WordPress/plugin-check-action@v1
+              with:
+                  build-dir: ./dist/gpx-route-map
