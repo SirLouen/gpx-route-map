@@ -8,6 +8,9 @@
 /.gitignore
 /.distignore
 
+# WordPress.org listing assets
+/.wordpress-org
+
 # Project docs & editor/dev config
 /.spec
 /.vscode
