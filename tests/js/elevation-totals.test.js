@@ -1,18 +1,18 @@
 /**
- * computeElevationTotals mirrors the PHP GpxStats algorithm.
+ * Unit tests for computeElevationTotals (filtered elevation gain/loss).
  */
 
 import { describe, expect, it } from 'vitest';
 
 import { computeElevationTotals } from '../../src/view/elevation';
 
-// Elevations from the GpxStatsTest.php fixture document.
+// A representative elevation series with noise below and above the threshold.
 const FIXTURE_ELEVATIONS = [
 	229.535, 227.786, 218.98, 212.782, 221, 256.25, 81, 219.25, 249.75, 66.41,
 ];
 
 describe( 'computeElevationTotals', () => {
-	it( 'matches the PHP fixture totals (gain 212 / loss 375)', () => {
+	it( 'computes filtered gain 212 / loss 375 for the fixture', () => {
 		const { gain, loss } = computeElevationTotals( FIXTURE_ELEVATIONS );
 		expect( Math.round( gain ) ).toBe( 212 );
 		expect( Math.round( loss ) ).toBe( 375 );

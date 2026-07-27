@@ -42,6 +42,9 @@
 		"tileUrl": {
 			"type": "string",
 			"default": ""
+		},
+		"stats": {
+			"type": "object"
 		}
 	},
 	"editorScript": "file:./index.js",

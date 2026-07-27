@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.6
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,7 +77,7 @@ No. It has no plugin dependencies and works with core WordPress.
 
 = Where do the maps and elevation come from? =
 
-Map rendering uses MapLibre GL JS (BSD-3-Clause) with OpenStreetMap raster tiles. The track and elevation are parsed from your GPX file in the browser; stats are also computed server-side for local files so they appear without JavaScript.
+Map rendering uses MapLibre GL JS (BSD-3-Clause) with OpenStreetMap raster tiles. The track, elevation profile and the distance/elevation stats are all computed from your GPX file in the browser. When you add the block, those stats are saved with it so the summary still shows without JavaScript.
 
 = Can I use my own map tiles? =
 
@@ -102,10 +102,17 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 
 == Changelog ==
 
+= 1.1.0 =
+* Route statistics (distance, elevation gain/loss, max elevation and waypoint count) are now computed in your browser when the block is added and saved with it — a single source of truth that removes a duplicate server-side parser. The stats bar shown without JavaScript now also includes the waypoint count.
+* The `[gpx_route_map]` shortcode now fills its stats bar with JavaScript; the block continues to show statistics without JavaScript.
+
 = 1.0.0 =
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Statistics are now computed in the browser and stored with each block. Existing GPX blocks keep working; re-save one to refresh the statistics shown without JavaScript.
 
 = 1.0.0 =
 Initial release.

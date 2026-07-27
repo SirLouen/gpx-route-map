@@ -23,8 +23,9 @@ export interface ElevationTotals {
 }
 
 /**
- * Filtered elevation gain/loss using a reversal threshold (matches the PHP
- * GpxStats implementation exactly).
+ * Filtered elevation gain/loss using a reversal threshold: an up/down wiggle
+ * smaller than THRESHOLD_M metres is ignored, so GPS noise doesn't inflate the
+ * totals.
  *
  * @param elevations Elevation values.
  */
@@ -171,7 +172,7 @@ export class ElevationProfile {
 		const range = maxEle - minEle || 1;
 
 		// Segment gaps contribute zero distance so the x-axis matches the
-		// stats bar (and the PHP GpxStats numbers).
+		// stats bar.
 		const dists = [ 0 ];
 		for ( let i = 1; i < coords.length; i++ ) {
 			dists.push(

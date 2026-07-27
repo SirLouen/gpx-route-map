@@ -73,7 +73,7 @@ class Renderer {
 			$wrapper_attributes = 'class="wp-block-gpx-route-map-map gpxrm-shortcode"';
 		}
 
-		$stats = $a['show_stats'] ? self::server_stats( $a['gpx_path'] ) : null;
+		$stats = $a['show_stats'] ? $a['stats'] : null;
 
 		$map = sprintf(
 			'<div class="gpxrm-map" style="height:%1$dpx" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" role="application" aria-label="%6$s">%7$s</div>',
@@ -102,19 +102,16 @@ class Renderer {
 	 * Normalize block attributes and shortcode atts into one shape.
 	 *
 	 * @param array<string, mixed> $atts Raw attributes.
-	 * @return array{gpx_url: string, gpx_path: string, height: int, show_stats: bool, show_elevation: bool, max_zoom: int, tile_url: string}
+	 * @return array{gpx_url: string, height: int, show_stats: bool, show_elevation: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null}
 	 */
 	private static function normalize( array $atts ): array {
-		$gpx_url  = '';
-		$gpx_path = '';
+		$gpx_url = '';
 
 		$attachment_id = ( isset( $atts['gpxId'] ) && is_numeric( $atts['gpxId'] ) ) ? (int) $atts['gpxId'] : 0;
 		if ( $attachment_id > 0 ) {
 			$url = wp_get_attachment_url( $attachment_id );
 			if ( is_string( $url ) ) {
-				$gpx_url  = $url;
-				$path     = get_attached_file( $attachment_id );
-				$gpx_path = is_string( $path ) ? $path : '';
+				$gpx_url = $url;
 			}
 		}
 
@@ -128,12 +125,12 @@ class Renderer {
 
 		return array(
 			'gpx_url'        => $gpx_url,
-			'gpx_path'       => $gpx_path,
 			'height'         => self::clamp( $height, 200, 1200 ),
 			'show_stats'     => self::to_bool( $atts['showStats'] ?? true ),
 			'show_elevation' => self::to_bool( $atts['showElevation'] ?? true ),
 			'max_zoom'       => self::clamp( $max_zoom, 1, 22 ),
 			'tile_url'       => $tile_url,
+			'stats'          => self::normalize_stats( $atts['stats'] ?? null ),
 		);
 	}
 
@@ -159,28 +156,27 @@ class Renderer {
 	}
 
 	/**
-	 * Compute distance/elevation stats server-side for a local GPX file.
+	 * Validate the editor-computed stats stored on the block.
 	 *
-	 * @param string $gpx_path Absolute path to a local GPX file, or ''.
-	 * @return array{distance: float, gain: float, loss: float, maxElevation: float, points: int}|null
+	 * @param mixed $raw Raw `stats` attribute value.
+	 * @return array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null
 	 */
-	private static function server_stats( string $gpx_path ): ?array {
-		if ( '' === $gpx_path || ! is_readable( $gpx_path ) ) {
+	private static function normalize_stats( $raw ): ?array {
+		if ( ! is_array( $raw ) || ! isset( $raw['distance'] ) || ! is_numeric( $raw['distance'] ) ) {
 			return null;
 		}
 
-		$size = filesize( $gpx_path );
-		if ( false === $size || $size > 5 * MB_IN_BYTES ) {
-			return null;
-		}
+		$to_float = static function ( $value ): float {
+			return is_numeric( $value ) ? (float) $value : 0.0;
+		};
 
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a local upload.
-		$contents = file_get_contents( $gpx_path );
-		if ( false === $contents ) {
-			return null;
-		}
-
-		return GpxStats::from_xml( $contents );
+		return array(
+			'distance'  => $to_float( $raw['distance'] ),
+			'gain'      => $to_float( $raw['gain'] ?? 0 ),
+			'loss'      => $to_float( $raw['loss'] ?? 0 ),
+			'max'       => $to_float( $raw['max'] ?? 0 ),
+			'waypoints' => (int) $to_float( $raw['waypoints'] ?? 0 ),
+		);
 	}
 
 	/**
@@ -197,9 +193,10 @@ class Renderer {
 	}
 
 	/**
-	 * Stats bar markup. Values are filled by JS; local files get a head start.
+	 * Stats bar markup. Values are computed once in the editor and stored on the
+	 * block; the front-end JS refreshes them live after it parses the GPX.
 	 *
-	 * @param array{distance: float, gain: float, loss: float, maxElevation: float, points: int}|null $stats Server stats or null.
+	 * @param array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null $stats Stored stats or null.
 	 * @return string
 	 */
 	private static function stats_html( ?array $stats ): string {
@@ -207,8 +204,8 @@ class Renderer {
 			'distance'  => array( __( 'Distance', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( $stats['distance'], 2 ) . ' km' ),
 			'gain'      => array( __( 'Elevation gain', 'gpx-route-map' ), null === $stats ? '—' : '+' . number_format_i18n( round( $stats['gain'] ) ) . ' m' ),
 			'loss'      => array( __( 'Elevation loss', 'gpx-route-map' ), null === $stats ? '—' : '−' . number_format_i18n( round( $stats['loss'] ) ) . ' m' ),
-			'max'       => array( __( 'Max elevation', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( round( $stats['maxElevation'] ) ) . ' m' ),
-			'waypoints' => array( __( 'Waypoints', 'gpx-route-map' ), '—' ),
+			'max'       => array( __( 'Max elevation', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( round( $stats['max'] ) ) . ' m' ),
+			'waypoints' => array( __( 'Waypoints', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( $stats['waypoints'] ) ),
 		);
 
 		$items = '';

@@ -1,6 +1,6 @@
 {
   "name": "gpx-route-map",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Render a GPX track as an interactive OpenStreetMap map with waypoints and an elevation profile.",
   "author": "Manuel Camargo",
   "license": "GPL-2.0-or-later",

@@ -5,7 +5,8 @@
 import type { KeyboardEvent } from 'react';
 
 import { __, sprintf } from '@wordpress/i18n';
-import { useState } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
 import type { BlockEditProps } from '@wordpress/blocks';
 import {
 	useBlockProps,
@@ -26,6 +27,18 @@ import {
 	ExternalLink,
 } from '@wordpress/components';
 
+import { parseGPX } from './view/map-core';
+import { routeStats } from './view/stats';
+
+/** Summary stats computed in the browser and stored on the block. */
+export type GpxStats = {
+	distance: number;
+	gain: number;
+	loss: number;
+	max: number;
+	waypoints: number;
+};
+
 /**
  * Attributes as declared in block.json. A type alias (not an interface) so it
  * satisfies the Record<string, unknown> constraint of BlockEditProps.
@@ -38,6 +51,7 @@ export type GpxBlockAttributes = {
 	showElevation: boolean;
 	maxZoom: number;
 	tileUrl: string;
+	stats?: GpxStats;
 };
 
 /** The subset of the media object the picker hands to onSelect. */
@@ -51,6 +65,25 @@ interface SelectedMedia {
  * uploaded before activation or imported, are stored as generic XML
  */
 const GPX_TYPES = [ 'application/gpx+xml', 'application/xml', 'text/xml' ];
+
+/**
+ * Whether two computed stat sets are identical, so the attribute is only
+ * written when the numbers actually change (avoids marking a clean post dirty
+ * when a saved block is reopened).
+ *
+ * @param a Existing stats.
+ * @param b Freshly computed stats.
+ */
+function sameStats( a: GpxStats | undefined, b: GpxStats ): boolean {
+	return (
+		!! a &&
+		a.distance === b.distance &&
+		a.gain === b.gain &&
+		a.loss === b.loss &&
+		a.max === b.max &&
+		a.waypoints === b.waypoints
+	);
+}
 
 /**
  * Block edit component.
@@ -79,6 +112,63 @@ export default function Edit( {
 	// media file, so the attribute only updates on blur or Enter.
 	const [ urlDraft, setUrlDraft ] = useState< string | null >( null );
 	const committedUrl = gpxId ? '' : gpxUrl;
+
+	const mediaUrl = useSelect(
+		( select ): string | undefined => {
+			if ( ! gpxId ) {
+				return undefined;
+			}
+			const core = select( 'core' ) as {
+				getMedia: ( id: number ) => { source_url?: string } | undefined;
+			};
+			return core.getMedia( gpxId )?.source_url;
+		},
+		[ gpxId ]
+	);
+	const bakeUrl = gpxUrl || mediaUrl || '';
+
+	useEffect( () => {
+		if ( ! bakeUrl ) {
+			if ( attributes.stats ) {
+				setAttributes( { stats: undefined } );
+			}
+			return;
+		}
+		let cancelled = false;
+		( async () => {
+			try {
+				const response = await fetch( bakeUrl );
+				if ( ! response.ok ) {
+					throw new Error( 'HTTP ' + response.status );
+				}
+				const parsed = parseGPX( await response.text() );
+				if ( parsed.invalid || parsed.coords.length < 2 ) {
+					throw new Error( 'unparseable' );
+				}
+				const s = routeStats(
+					parsed.coords,
+					new Set( parsed.segmentStarts )
+				);
+				const next: GpxStats = {
+					distance: s.distance,
+					gain: s.gain,
+					loss: s.loss,
+					max: s.maxEle,
+					waypoints: parsed.waypoints.length,
+				};
+				if ( ! cancelled && ! sameStats( attributes.stats, next ) ) {
+					setAttributes( { stats: next } );
+				}
+			} catch {
+				if ( ! cancelled && attributes.stats ) {
+					setAttributes( { stats: undefined } );
+				}
+			}
+		} )();
+		return () => {
+			cancelled = true;
+		};
+	}, [ bakeUrl ] );
 
 	const commitUrl = () => {
 		if ( null === urlDraft ) {
