@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.6
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,7 +33,7 @@ The public OSM tile server is rate-limited and is not intended for high-traffic 
 
 = Source code =
 
-The JavaScript files in `build/` are minified. The human-readable source lives in the plugin's `src/` directory, which is included in this plugin, and is also available with full build instructions at the public repository: [https://github.com/SirLouen/gpx-route-map](https://github.com/SirLouen/gpx-route-map). The plugin is built with Vite (`pnpm install && pnpm run build`).
+The front-end JavaScript in `build/` is minified (the block editor script is not, so that its strings stay translatable). The human-readable source lives in the plugin's `src/` directory, which is included in this plugin, and is also available with full build instructions at the public repository: [https://github.com/SirLouen/gpx-route-map](https://github.com/SirLouen/gpx-route-map). The plugin is built with Vite (`pnpm install && pnpm run build`).
 
 == Installation ==
 
@@ -102,6 +102,10 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 
 == Changelog ==
 
+= 1.2.0 =
+* Full Spanish (es_ES) translation.
+* The plugin is now fully translatable: every string in the block editor, the stats bar and the front-end messages can be translated, and a `.pot` template is bundled for translators.
+
 = 1.1.0 =
 * Route statistics (distance, elevation gain/loss, max elevation and waypoint count) are now computed in your browser when the block is added and saved with it — a single source of truth that removes a duplicate server-side parser. The stats bar shown without JavaScript now also includes the waypoint count.
 * The `[gpx_route_map]` shortcode now fills its stats bar with JavaScript; the block continues to show statistics without JavaScript.
@@ -110,6 +114,9 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Adds a full Spanish translation and makes every remaining string translatable.
 
 = 1.1.0 =
 Statistics are now computed in the browser and stored with each block. Existing GPX blocks keep working; re-save one to refresh the statistics shown without JavaScript.

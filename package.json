@@ -1,6 +1,6 @@
 {
   "name": "gpx-route-map",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Render a GPX track as an interactive OpenStreetMap map with waypoints and an elevation profile.",
   "author": "Manuel Camargo",
   "license": "GPL-2.0-or-later",
@@ -15,6 +15,7 @@
     "bin/**",
     "build/**",
     "includes/**",
+    "languages/**",
     "src/**"
   ],
   "scripts": {
@@ -33,6 +34,11 @@
     "env:clean": "wp-env clean all",
     "env:destroy": "wp-env destroy",
     "env:cli": "wp-env run cli wp",
+    "i18n:pot": "wp-env run cli wp i18n make-pot wp-content/plugins/gpx-route-map wp-content/plugins/gpx-route-map/languages/gpx-route-map.pot --domain=gpx-route-map --exclude=node_modules,vendor,tests,tools,dev,.git,.github,.spec,.wordpress-org,build/maplibre-gl-*.js,build/view.js",
+    "i18n:update": "wp-env run cli wp i18n update-po wp-content/plugins/gpx-route-map/languages/gpx-route-map.pot wp-content/plugins/gpx-route-map/languages",
+    "i18n:mo": "wp-env run cli wp i18n make-mo wp-content/plugins/gpx-route-map/languages wp-content/plugins/gpx-route-map/languages",
+    "i18n:json": "wp-env run cli wp i18n make-json wp-content/plugins/gpx-route-map/languages --no-purge --pretty-print",
+    "i18n": "pnpm run build && pnpm run i18n:pot && pnpm run i18n:mo && pnpm run i18n:json",
     "check:pcp": "wp-env run cli wp plugin check gpx-route-map --exclude-directories=node_modules,vendor,tests,.git,.github,.spec,.wordpress-org,.phpunit.cache,.vscode,tools --ignore-codes=hidden_files,application_detected,compressed_files"
   },
   "prettier": "@wordpress/prettier-config",

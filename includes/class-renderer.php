@@ -76,12 +76,13 @@ class Renderer {
 		$stats = $a['show_stats'] ? $a['stats'] : null;
 
 		$map = sprintf(
-			'<div class="gpxrm-map" style="height:%1$dpx" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" role="application" aria-label="%6$s">%7$s</div>',
+			'<div class="gpxrm-map" style="height:%1$dpx" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" role="application" aria-label="%7$s">%8$s</div>',
 			$a['height'],
 			esc_url( $a['gpx_url'] ),
 			esc_attr( '' !== $a['tile_url'] ? $a['tile_url'] : self::default_tile_url() ),
 			esc_attr( self::default_attribution() ),
 			$a['max_zoom'],
+			esc_attr( self::view_messages_json() ),
 			esc_attr__( 'Interactive route map', 'gpx-route-map' ),
 			self::placeholder_html()
 		);
@@ -189,6 +190,22 @@ class Renderer {
 			'<div class="gpxrm-placeholder" aria-live="polite"><span class="gpxrm-spinner" role="status"><span class="screen-reader-text">%1$s</span></span><span class="gpxrm-hint" aria-hidden="true">%2$s</span></div>',
 			esc_html__( 'Loading map…', 'gpx-route-map' ),
 			esc_html__( 'Scroll or tap to load the interactive map', 'gpx-route-map' )
+		);
+	}
+
+	/**
+	 * JSON of the front-end view's user-facing strings, localized server-side.
+	 *
+	 * @return string
+	 */
+	private static function view_messages_json(): string {
+		return (string) wp_json_encode(
+			array(
+				'load'     => __( 'Could not load GPX file.', 'gpx-route-map' ),
+				'cors'     => __( 'Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead.', 'gpx-route-map' ),
+				'invalid'  => __( 'Invalid GPX file.', 'gpx-route-map' ),
+				'nopoints' => __( 'No track or route points found in GPX file.', 'gpx-route-map' ),
+			)
 		);
 	}
 

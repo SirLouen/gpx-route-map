@@ -59,6 +59,7 @@ async function buildEditor() {
 			outDir: OUT,
 			emptyOutDir: false,
 			sourcemap: false,
+			minify: false,
 			lib: {
 				entry: path.join( SRC, 'index.tsx' ),
 				formats: [ 'iife' ],

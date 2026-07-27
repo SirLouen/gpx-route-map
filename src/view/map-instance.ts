@@ -53,7 +53,44 @@ function fillStats(
  * @param msg   Message.
  */
 function showError( mapEl: HTMLElement, msg: string ): void {
-	mapEl.innerHTML = `<div class="gpxrm-error">${ msg }</div>`;
+	const div = document.createElement( 'div' );
+	div.className = 'gpxrm-error';
+	div.textContent = msg;
+	mapEl.replaceChildren( div );
+}
+
+/** User-facing view messages, localized server-side (see viewMessages). */
+interface ViewMessages {
+	load: string;
+	cors: string;
+	invalid: string;
+	nopoints: string;
+}
+
+const FALLBACK_MESSAGES: ViewMessages = {
+	load: 'Could not load GPX file.',
+	cors: 'Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead.',
+	invalid: 'Invalid GPX file.',
+	nopoints: 'No track or route points found in GPX file.',
+};
+
+/**
+ * The view runs as a script module, which cannot use
+ * wp_set_script_translations, so the server passes already-translated messages
+ * as a JSON `data-gpxrm-i18n` attribute. Falls back to English if absent.
+ *
+ * @param mapEl Map element.
+ */
+function viewMessages( mapEl: HTMLElement ): ViewMessages {
+	try {
+		const raw = mapEl.dataset.gpxrmI18n;
+		if ( raw ) {
+			return { ...FALLBACK_MESSAGES, ...JSON.parse( raw ) };
+		}
+	} catch {
+		// Ignore malformed JSON and use the English fallback.
+	}
+	return FALLBACK_MESSAGES;
 }
 
 /**
@@ -71,6 +108,7 @@ export async function initInstance(
 	if ( ! gpxUrl ) {
 		return;
 	}
+	const msg = viewMessages( mapEl );
 
 	let text;
 	try {
@@ -89,22 +127,17 @@ export async function initInstance(
 		} catch ( urlErr ) {
 			crossOrigin = false;
 		}
-		showError(
-			mapEl,
-			crossOrigin
-				? 'Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead.'
-				: 'Could not load GPX file.'
-		);
+		showError( mapEl, crossOrigin ? msg.cors : msg.load );
 		return;
 	}
 
 	const { coords, waypoints, segmentStarts, invalid } = parseGPX( text );
 	if ( invalid ) {
-		showError( mapEl, 'Invalid GPX file.' );
+		showError( mapEl, msg.invalid );
 		return;
 	}
 	if ( ! coords.length ) {
-		showError( mapEl, 'No track or route points found in GPX file.' );
+		showError( mapEl, msg.nopoints );
 		return;
 	}
 	const segStarts = new Set( segmentStarts );

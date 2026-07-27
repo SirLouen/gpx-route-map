@@ -1,0 +1,243 @@
+# Spanish (Spain) translation for the GPX Route Map plugin.
+# Copyright (C) 2026 SirLouen
+# This file is distributed under the same license as the GPX Route Map plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: GPX Route Map 1.2.0\n"
+"Report-Msgid-Bugs-To: https://github.com/SirLouen/gpx-route-map/issues\n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Domain: gpx-route-map\n"
+
+#. Plugin Name of the plugin
+#: gpx-route-map.php
+#: build/index.js:397
+#: build/index.js:419
+msgid "GPX Route Map"
+msgstr "GPX Route Map"
+
+#. Plugin URI of the plugin
+#: gpx-route-map.php
+msgid "https://github.com/SirLouen/gpx-route-map"
+msgstr ""
+
+#. Description of the plugin
+#: gpx-route-map.php
+msgid "Attach a GPX track to any post or page and render it as an interactive OpenStreetMap map with waypoints, distance and an elevation profile."
+msgstr "Adjunta una pista GPX a cualquier entrada o página y muéstrala como un mapa interactivo de OpenStreetMap con waypoints, distancia y un perfil de desnivel."
+
+#. Author of the plugin
+#: gpx-route-map.php
+msgid "SirLouen <sir.louen@gmail.com>"
+msgstr ""
+
+#. Author URI of the plugin
+#: gpx-route-map.php
+msgid "https://github.com/SirLouen"
+msgstr ""
+
+#: includes/class-renderer.php:58
+msgid "GPX Route Map: no GPX file selected."
+msgstr "GPX Route Map: no se ha seleccionado ningún archivo GPX."
+
+#: includes/class-renderer.php:65
+msgid "GPX Route Map: plugin assets are not built. Run \"pnpm install && pnpm run build\" in the plugin directory."
+msgstr "GPX Route Map: los recursos del plugin no están compilados. Ejecuta «pnpm install && pnpm run build» en el directorio del plugin."
+
+#: includes/class-renderer.php:86
+msgid "Interactive route map"
+msgstr "Mapa interactivo de la ruta"
+
+#: includes/class-renderer.php:191
+msgid "Loading map…"
+msgstr "Cargando el mapa…"
+
+#: includes/class-renderer.php:192
+msgid "Scroll or tap to load the interactive map"
+msgstr "Desplázate o toca para cargar el mapa interactivo"
+
+#: includes/class-renderer.php:204
+msgid "Could not load GPX file."
+msgstr "No se ha podido cargar el archivo GPX."
+
+#: includes/class-renderer.php:205
+msgid "Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead."
+msgstr "No se ha podido cargar el archivo GPX: su servidor no permite peticiones de origen cruzado (CORS). Sube el archivo a este sitio en su lugar."
+
+#: includes/class-renderer.php:206
+msgid "Invalid GPX file."
+msgstr "Archivo GPX no válido."
+
+#: includes/class-renderer.php:207
+msgid "No track or route points found in GPX file."
+msgstr "No se han encontrado puntos de pista ni de ruta en el archivo GPX."
+
+#: includes/class-renderer.php:221
+msgid "Distance"
+msgstr "Distancia"
+
+#: includes/class-renderer.php:222
+msgid "Elevation gain"
+msgstr "Desnivel positivo"
+
+#: includes/class-renderer.php:223
+msgid "Elevation loss"
+msgstr "Desnivel negativo"
+
+#: includes/class-renderer.php:224
+msgid "Max elevation"
+msgstr "Altitud máxima"
+
+#: includes/class-renderer.php:225
+msgid "Waypoints"
+msgstr "Waypoints"
+
+#: includes/class-renderer.php:249
+#: build/index.js:434
+msgid "Elevation profile"
+msgstr "Perfil de desnivel"
+
+#: includes/class-renderer.php:250
+msgid "Elevation profile along the route"
+msgstr "Perfil de desnivel a lo largo de la ruta"
+
+#: build/index.js:309
+msgid "Paste a direct link to a .gpx file. The file must be hosted on this site, or on a host that allows cross-origin (CORS) requests — most external sites do not."
+msgstr "Pega un enlace directo a un archivo .gpx. El archivo debe estar alojado en este sitio o en un servidor que permita peticiones de origen cruzado (CORS); la mayoría de los sitios externos no lo permiten."
+
+#: build/index.js:310
+#, js-format
+msgid "Currently using the selected media file \"%s\". Entering a URL here replaces it (applied on Enter or when leaving the field)."
+msgstr "Actualmente se usa el archivo de medios seleccionado «%s». Si introduces una URL aquí, la sustituirás (se aplica al pulsar Intro o al salir del campo)."
+
+#: build/index.js:316
+msgid "Source"
+msgstr "Origen"
+
+#: build/index.js:324
+msgid "Replace GPX file"
+msgstr "Reemplazar el archivo GPX"
+
+#: build/index.js:324
+#: build/index.js:406
+msgid "Select GPX file"
+msgstr "Seleccionar un archivo GPX"
+
+#: build/index.js:328
+msgid "or GPX file URL"
+msgstr "o URL del archivo GPX"
+
+#: build/index.js:340
+msgid "Display"
+msgstr "Visualización"
+
+#: build/index.js:344
+msgid "Map height (px)"
+msgstr "Altura del mapa (px)"
+
+#: build/index.js:353
+msgid "Show stats bar"
+msgstr "Mostrar la barra de estadísticas"
+
+#: build/index.js:359
+msgid "Show elevation profile"
+msgstr "Mostrar el perfil de desnivel"
+
+#: build/index.js:365
+msgid "Max zoom"
+msgstr "Zoom máximo"
+
+#: build/index.js:374
+msgid "Map tiles"
+msgstr "Teselas del mapa"
+
+#: build/index.js:378
+msgid "Custom tile URL"
+msgstr "URL de teselas personalizada"
+
+#: build/index.js:379
+msgid "Raster tile template with {z}/{x}/{y}. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites."
+msgstr "Plantilla de teselas ráster con {z}/{x}/{y}. Déjalo en blanco para usar OpenStreetMap. Las teselas públicas de OSM tienen un límite de uso; usa tu propio proveedor en sitios con mucho tráfico."
+
+#: build/index.js:392
+msgid "Replace GPX"
+msgstr "Reemplazar GPX"
+
+#: build/index.js:398
+msgid "Select a GPX track to render it as an interactive map with an elevation profile."
+msgstr "Selecciona una pista GPX para mostrarla como un mapa interactivo con un perfil de desnivel."
+
+#: build/index.js:427
+msgid "The interactive map renders on the front end."
+msgstr "El mapa interactivo se muestra en la parte pública del sitio."
+
+#: build/index.js:432
+msgid "Stats"
+msgstr "Estadísticas"
+
+#: build/index.js:440
+msgid "Open GPX file"
+msgstr "Abrir el archivo GPX"
+
+#: build/block.json
+#: src/block.json
+msgctxt "block title"
+msgid "GPX Route Map"
+msgstr "GPX Route Map"
+
+#: build/block.json
+#: src/block.json
+msgctxt "block description"
+msgid "Render a GPX track as an interactive OpenStreetMap map with waypoints, distance and an elevation profile."
+msgstr "Muestra una pista GPX como un mapa interactivo de OpenStreetMap con waypoints, distancia y un perfil de desnivel."
+
+#: build/block.json
+#: src/block.json
+msgctxt "block keyword"
+msgid "gpx"
+msgstr "gpx"
+
+#: build/block.json
+#: src/block.json
+msgctxt "block keyword"
+msgid "map"
+msgstr "mapa"
+
+#: build/block.json
+#: src/block.json
+msgctxt "block keyword"
+msgid "route"
+msgstr "ruta"
+
+#: build/block.json
+#: src/block.json
+msgctxt "block keyword"
+msgid "elevation"
+msgstr "desnivel"
+
+#: build/block.json
+#: src/block.json
+msgctxt "block keyword"
+msgid "openstreetmap"
+msgstr "openstreetmap"
+
+#: build/block.json
+#: src/block.json
+msgctxt "block keyword"
+msgid "trail"
+msgstr "sendero"
+
+#: build/block.json
+#: src/block.json
+msgctxt "block keyword"
+msgid "hiking"
+msgstr "senderismo"
+
+#: build/block.json
+#: src/block.json
+msgctxt "block keyword"
+msgid "cycling"
+msgstr "ciclismo"

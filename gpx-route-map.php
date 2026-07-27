@@ -3,7 +3,7 @@
  * Plugin Name:       GPX Route Map
  * Plugin URI:        https://github.com/SirLouen/gpx-route-map
  * Description:       Attach a GPX track to any post or page and render it as an interactive OpenStreetMap map with waypoints, distance and an elevation profile.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 6.6
  * Requires PHP:      7.4
  * Author:            SirLouen <sir.louen@gmail.com>
@@ -11,6 +11,7 @@
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       gpx-route-map
+ * Domain Path:       /languages
  *
  * @package GpxRouteMap
  */

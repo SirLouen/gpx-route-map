@@ -24,10 +24,24 @@ class Plugin {
 	 * @return void
 	 */
 	public function register(): void {
+		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( $this, 'register_block' ) );
 		add_action( 'init', array( $this, 'register_shortcode' ) );
 		add_filter( 'upload_mimes', array( $this, 'allow_gpx_upload' ) );
 		add_filter( 'wp_check_filetype_and_ext', array( $this, 'fix_gpx_filetype_check' ), 10, 4 );
+	}
+
+	/**
+	 * Load the plugin's bundled translations from /languages.
+	 *
+	 * @return void
+	 */
+	public function load_textdomain(): void {
+		load_plugin_textdomain(
+			'gpx-route-map',
+			false,
+			dirname( plugin_basename( GPXRM_PLUGIN_DIR . 'gpx-route-map.php' ) ) . '/languages'
+		);
 	}
 
 	/**
@@ -99,7 +113,13 @@ class Plugin {
 			return;
 		}
 
-		register_block_type( $build );
+		$block_type = register_block_type( $build );
+
+		if ( $block_type instanceof \WP_Block_Type ) {
+			foreach ( $block_type->editor_script_handles as $handle ) {
+				wp_set_script_translations( $handle, 'gpx-route-map', GPXRM_PLUGIN_DIR . 'languages' );
+			}
+		}
 	}
 
 	/**
