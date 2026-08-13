@@ -119,9 +119,14 @@ export default function Edit( {
 				return undefined;
 			}
 			const core = select( 'core' ) as {
-				getMedia: ( id: number ) => { source_url?: string } | undefined;
+				getEntityRecord: (
+					kind: string,
+					name: string,
+					id: number
+				) => { source_url?: string } | undefined;
 			};
-			return core.getMedia( gpxId )?.source_url;
+			return core.getEntityRecord( 'postType', 'attachment', gpxId )
+				?.source_url;
 		},
 		[ gpxId ]
 	);
@@ -237,6 +242,7 @@ export default function Edit( {
 					</MediaUploadCheck>
 					<TextControl
 						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 						label={ __( 'or GPX file URL', 'gpx-route-map' ) }
 						help={
 							mediaNotice ? mediaNotice + ' ' + urlHelp : urlHelp
@@ -258,6 +264,7 @@ export default function Edit( {
 				<PanelBody title={ __( 'Display', 'gpx-route-map' ) }>
 					<RangeControl
 						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 						label={ __( 'Map height (px)', 'gpx-route-map' ) }
 						value={ height }
 						onChange={ ( value ) =>
@@ -288,6 +295,7 @@ export default function Edit( {
 					/>
 					<RangeControl
 						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 						label={ __( 'Max zoom', 'gpx-route-map' ) }
 						value={ maxZoom }
 						onChange={ ( value ) =>
@@ -304,6 +312,7 @@ export default function Edit( {
 				>
 					<TextControl
 						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 						label={ __( 'Custom tile URL', 'gpx-route-map' ) }
 						help={ __(
 							'Raster tile template with {z}/{x}/{y}. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites.',

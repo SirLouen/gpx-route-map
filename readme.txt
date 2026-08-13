@@ -2,9 +2,9 @@
 Contributors: sirlouen
 Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.6
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -102,6 +102,11 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 
 == Changelog ==
 
+= 1.2.1 =
+* Tested with WordPress 7.1.
+* Block editor controls now use the 40px sizing that becomes the default in WordPress 7.1, so the settings panel keeps its intended layout.
+* Replaced an editor data call that was deprecated in WordPress 6.9. No visible change.
+
 = 1.2.0 =
 * Full Spanish (es_ES) translation.
 * The plugin is now fully translatable: every string in the block editor, the stats bar and the front-end messages can be translated, and a `.pot` template is bundled for translators.
@@ -114,6 +119,9 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 1.2.1 =
+Compatibility release for WordPress 7.1.
 
 = 1.2.0 =
 Adds a full Spanish translation and makes every remaining string translatable.
