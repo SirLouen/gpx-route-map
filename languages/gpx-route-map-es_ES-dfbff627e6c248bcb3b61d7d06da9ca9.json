@@ -72,6 +72,21 @@
             ],
             "Open GPX file": [
                 "Abrir el archivo GPX"
+            ],
+            "Metric (km \/ m)": [
+                "M\u00e9trico (km \/ m)"
+            ],
+            "Imperial (mi \/ ft)": [
+                "Imperial (mi \/ ft)"
+            ],
+            "Units": [
+                "Unidades"
+            ],
+            "Distance and elevation units for this map.": [
+                "Unidades de distancia y desnivel de este mapa."
+            ],
+            "Site default": [
+                "Predeterminadas del sitio"
             ]
         }
     }
