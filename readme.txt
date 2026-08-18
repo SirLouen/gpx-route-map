@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.1
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,7 @@ GPX Route Map turns a GPX file into an interactive map on the front end of your 
 * The track drawn as a route line with start and end markers.
 * Support for both GPX tracks (`<trk>`) and GPX routes (`<rte>`), e.g. Garmin Connect course exports.
 * Waypoint markers with popups for any `<wpt>` points in the file.
-* A stats bar: distance, elevation gain, elevation loss and max elevation.
+* A stats bar: distance, elevation gain, elevation loss and max elevation, in metric or imperial units.
 * A hand-drawn elevation profile you can scrub with mouse or touch, the position syncs onto the map.
 
 The map loads lazily (only when it scrolls into view) so it never slows down your page, and multiple maps can live on the same page.
@@ -61,6 +61,7 @@ Shortcode attributes:
 * `elevation` - Show the interactive elevation profile. `true` or `false`. Default: true.
 * `maxzoom` - Maximum zoom level, from 1 to 22. Default: 17.
 * `tile` - Custom raster tile URL template using `{z}/{x}/{y}`. Default: OpenStreetMap.
+* `units` - `metric` (km / m) or `imperial` (mi / ft). Default: the site setting.
 
 Provide either `id` or `gpx`. The block exposes the same options in its sidebar (Source, Display and Map tiles panels).
 
@@ -68,6 +69,7 @@ Filters (for developers):
 
 * `gpxrm_tile_url` - change the default raster tile URL template.
 * `gpxrm_tile_attribution` - change the attribution HTML.
+* `gpxrm_units` - change the site-wide unit system (`metric` or `imperial`).
 
 == Frequently Asked Questions ==
 
@@ -78,6 +80,10 @@ No. It has no plugin dependencies and works with core WordPress.
 = Where do the maps and elevation come from? =
 
 Map rendering uses MapLibre GL JS (BSD-3-Clause) with OpenStreetMap raster tiles. The track, elevation profile and the distance/elevation stats are all computed from your GPX file in the browser. When you add the block, those stats are saved with it so the summary still shows without JavaScript.
+
+= Can I show miles and feet instead of kilometres and metres? =
+
+Yes. Go to Settings > General and set "GPX map units" to Imperial, and every map on the site switches to miles and feet. A single map can use different units from the rest: pick them in the block's Display panel, or add `units="imperial"` to the shortcode. Switching is instant and can be undone at any time, because the plugin always stores distances and elevations in metric and only converts them for display.
 
 = Can I use my own map tiles? =
 
@@ -102,6 +108,11 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 
 == Changelog ==
 
+= 1.3.0 =
+* New: choose between metric (km / m) and imperial (mi / ft) units. Set it for the whole site under Settings > General, override it on a single map from the block's Display panel, or pass `units="imperial"` to the shortcode.
+* The unit choice applies to the stats bar and to the elevation profile, including its axes and the readout you get while scrubbing.
+* Distances and elevations are still stored in metric, so switching units is instant and changes nothing in your saved content.
+
 = 1.2.1 =
 * Tested with WordPress 7.1.
 * Block editor controls now use the 40px sizing that becomes the default in WordPress 7.1, so the settings panel keeps its intended layout.
@@ -119,6 +130,9 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 1.3.0 =
+Adds a metric/imperial unit setting. Existing maps keep showing metric until you change it.
 
 = 1.2.1 =
 Compatibility release for WordPress 7.1.

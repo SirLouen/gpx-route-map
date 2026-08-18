@@ -25,6 +25,7 @@ import {
 	ToolbarGroup,
 	ToolbarButton,
 	ExternalLink,
+	SelectControl,
 } from '@wordpress/components';
 
 import { parseGPX } from './view/map-core';
@@ -51,6 +52,7 @@ export type GpxBlockAttributes = {
 	showElevation: boolean;
 	maxZoom: number;
 	tileUrl: string;
+	units: string;
 	stats?: GpxStats;
 };
 
@@ -104,6 +106,7 @@ export default function Edit( {
 		showElevation,
 		maxZoom,
 		tileUrl,
+		units,
 	} = attributes;
 	const blockProps = useBlockProps();
 	const hasGpx = !! gpxUrl;
@@ -291,6 +294,36 @@ export default function Edit( {
 						checked={ showElevation }
 						onChange={ ( value ) =>
 							setAttributes( { showElevation: value } )
+						}
+					/>
+					<SelectControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+						label={ __( 'Units', 'gpx-route-map' ) }
+						help={ __(
+							'Distance and elevation units for this map.',
+							'gpx-route-map'
+						) }
+						value={ units }
+						options={ [
+							{
+								label: __( 'Site default', 'gpx-route-map' ),
+								value: '',
+							},
+							{
+								label: __( 'Metric (km / m)', 'gpx-route-map' ),
+								value: 'metric',
+							},
+							{
+								label: __(
+									'Imperial (mi / ft)',
+									'gpx-route-map'
+								),
+								value: 'imperial',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { units: value } )
 						}
 					/>
 					<RangeControl

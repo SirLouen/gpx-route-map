@@ -40,5 +40,6 @@
 /tools
 
 # Artifacts
+/dist
 *.zip
 *.log

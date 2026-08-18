@@ -44,6 +44,58 @@ class Renderer {
 	}
 
 	/**
+	 * The site-wide unit system, filterable.
+	 *
+	 * @return string 'metric' or 'imperial'.
+	 */
+	public static function default_units(): string {
+		$stored = get_option( 'gpxrm_units', 'metric' );
+		$value  = ( is_string( $stored ) && 'imperial' === $stored ) ? 'imperial' : 'metric';
+
+		/**
+		 * Filters the site-wide unit system for GPX maps.
+		 *
+		 * @param string $value 'metric' or 'imperial'.
+		 */
+		$value = apply_filters( 'gpxrm_units', $value );
+
+		return 'imperial' === $value ? 'imperial' : 'metric';
+	}
+
+	/**
+	 * Conversion factors and unit labels for a unit system.
+	 *
+	 * Statistics are always stored in kilometres and metres; these factors turn
+	 * them into whatever the site displays. This is the single definition of the
+	 * conversion, shared with the front-end script through a data attribute so
+	 * the browser never carries its own copy.
+	 *
+	 * @param string $units 'metric' or 'imperial'.
+	 * @return array{distFactor: float, distLabel: string, eleFactor: float, eleLabel: string}
+	 */
+	public static function units_config( string $units ): array {
+		if ( 'imperial' === $units ) {
+			return array(
+				'distFactor' => 0.621371,
+				/* translators: Abbreviation for miles, shown after a distance. */
+				'distLabel'  => _x( 'mi', 'unit', 'gpx-route-map' ),
+				'eleFactor'  => 3.28084,
+				/* translators: Abbreviation for feet, shown after an elevation. */
+				'eleLabel'   => _x( 'ft', 'unit', 'gpx-route-map' ),
+			);
+		}
+
+		return array(
+			'distFactor' => 1.0,
+			/* translators: Abbreviation for kilometres, shown after a distance. */
+			'distLabel'  => _x( 'km', 'unit', 'gpx-route-map' ),
+			'eleFactor'  => 1.0,
+			/* translators: Abbreviation for metres, shown after an elevation. */
+			'eleLabel'   => _x( 'm', 'unit', 'gpx-route-map' ),
+		);
+	}
+
+	/**
 	 * Render the map for a set of block/shortcode attributes.
 	 *
 	 * @param array<string, mixed> $atts               Raw attributes.
@@ -74,20 +126,22 @@ class Renderer {
 		}
 
 		$stats = $a['show_stats'] ? $a['stats'] : null;
+		$units = self::units_config( $a['units'] );
 
 		$map = sprintf(
-			'<div class="gpxrm-map" style="height:%1$dpx" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" role="application" aria-label="%7$s">%8$s</div>',
+			'<div class="gpxrm-map" style="height:%1$dpx" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" data-gpxrm-units="%7$s" role="application" aria-label="%8$s">%9$s</div>',
 			$a['height'],
 			esc_url( $a['gpx_url'] ),
 			esc_attr( '' !== $a['tile_url'] ? $a['tile_url'] : self::default_tile_url() ),
 			esc_attr( self::default_attribution() ),
 			$a['max_zoom'],
 			esc_attr( self::view_messages_json() ),
+			esc_attr( (string) wp_json_encode( $units ) ),
 			esc_attr__( 'Interactive route map', 'gpx-route-map' ),
 			self::placeholder_html()
 		);
 
-		$stats_html     = $a['show_stats'] ? self::stats_html( $stats ) : '';
+		$stats_html     = $a['show_stats'] ? self::stats_html( $stats, $units ) : '';
 		$elevation_html = $a['show_elevation'] ? self::elevation_html() : '';
 
 		return sprintf(
@@ -103,7 +157,7 @@ class Renderer {
 	 * Normalize block attributes and shortcode atts into one shape.
 	 *
 	 * @param array<string, mixed> $atts Raw attributes.
-	 * @return array{gpx_url: string, height: int, show_stats: bool, show_elevation: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null}
+	 * @return array{gpx_url: string, height: int, show_stats: bool, show_elevation: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null, units: string}
 	 */
 	private static function normalize( array $atts ): array {
 		$gpx_url = '';
@@ -132,6 +186,7 @@ class Renderer {
 			'max_zoom'       => self::clamp( $max_zoom, 1, 22 ),
 			'tile_url'       => $tile_url,
 			'stats'          => self::normalize_stats( $atts['stats'] ?? null ),
+			'units'          => self::normalize_units( $atts['units'] ?? '' ),
 		);
 	}
 
@@ -181,6 +236,21 @@ class Renderer {
 	}
 
 	/**
+	 * Resolve the unit system for one map: an explicit per-map choice wins,
+	 * otherwise the site setting applies.
+	 *
+	 * @param mixed $raw Raw `units` attribute ('metric', 'imperial' or '').
+	 * @return string 'metric' or 'imperial'.
+	 */
+	private static function normalize_units( $raw ): string {
+		$value = is_string( $raw ) ? strtolower( trim( $raw ) ) : '';
+		if ( 'metric' === $value || 'imperial' === $value ) {
+			return $value;
+		}
+		return self::default_units();
+	}
+
+	/**
 	 * Loading placeholder shown until the map script initializes.
 	 *
 	 * @return string
@@ -214,14 +284,22 @@ class Renderer {
 	 * block; the front-end JS refreshes them live after it parses the GPX.
 	 *
 	 * @param array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null $stats Stored stats or null.
+	 * @param array{distFactor: float, distLabel: string, eleFactor: float, eleLabel: string}   $units Unit conversion.
 	 * @return string
 	 */
-	private static function stats_html( ?array $stats ): string {
+	private static function stats_html( ?array $stats, array $units ): string {
+		$distance  = static function ( float $km ) use ( $units ): string {
+			return number_format_i18n( $km * $units['distFactor'], 2 ) . ' ' . $units['distLabel'];
+		};
+		$elevation = static function ( float $metres ) use ( $units ): string {
+			return number_format_i18n( round( $metres * $units['eleFactor'] ) ) . ' ' . $units['eleLabel'];
+		};
+
 		$rows = array(
-			'distance'  => array( __( 'Distance', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( $stats['distance'], 2 ) . ' km' ),
-			'gain'      => array( __( 'Elevation gain', 'gpx-route-map' ), null === $stats ? '—' : '+' . number_format_i18n( round( $stats['gain'] ) ) . ' m' ),
-			'loss'      => array( __( 'Elevation loss', 'gpx-route-map' ), null === $stats ? '—' : '−' . number_format_i18n( round( $stats['loss'] ) ) . ' m' ),
-			'max'       => array( __( 'Max elevation', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( round( $stats['max'] ) ) . ' m' ),
+			'distance'  => array( __( 'Distance', 'gpx-route-map' ), null === $stats ? '—' : $distance( $stats['distance'] ) ),
+			'gain'      => array( __( 'Elevation gain', 'gpx-route-map' ), null === $stats ? '—' : '+' . $elevation( $stats['gain'] ) ),
+			'loss'      => array( __( 'Elevation loss', 'gpx-route-map' ), null === $stats ? '—' : '−' . $elevation( $stats['loss'] ) ),
+			'max'       => array( __( 'Max elevation', 'gpx-route-map' ), null === $stats ? '—' : $elevation( $stats['max'] ) ),
 			'waypoints' => array( __( 'Waypoints', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( $stats['waypoints'] ) ),
 		);
 

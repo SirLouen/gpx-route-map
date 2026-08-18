@@ -20,18 +20,22 @@ import type { Coord, MapLibreGl } from './types';
 import { ElevationProfile } from './elevation';
 import { routeStats, nearestIndex } from './stats';
 import type { RouteStats } from './stats';
+import { readUnits, formatDistance, formatElevation, METRIC } from './units';
+import type { UnitConfig } from './units';
 
 /**
  * Write the stats bar values inside a container.
  *
  * @param root      Instance root.
- * @param stats     Route stats.
+ * @param stats     Route stats, in kilometres and metres.
  * @param waypoints Waypoint count.
+ * @param units     Display units.
  */
 function fillStats(
 	root: Element,
 	stats: RouteStats,
-	waypoints: number
+	waypoints: number,
+	units: UnitConfig = METRIC
 ): void {
 	const set = ( key: string, value: string ): void => {
 		const el = root.querySelector( `[data-gpxrm-stat="${ key }"]` );
@@ -39,10 +43,10 @@ function fillStats(
 			el.textContent = value;
 		}
 	};
-	set( 'distance', `${ stats.distance.toFixed( 2 ) } km` );
-	set( 'gain', `+${ Math.round( stats.gain ).toLocaleString() } m` );
-	set( 'loss', `−${ Math.round( stats.loss ).toLocaleString() } m` );
-	set( 'max', `${ Math.round( stats.maxEle ).toLocaleString() } m` );
+	set( 'distance', formatDistance( stats.distance, units ) );
+	set( 'gain', `+${ formatElevation( stats.gain, units ) }` );
+	set( 'loss', `−${ formatElevation( stats.loss, units ) }` );
+	set( 'max', formatElevation( stats.maxEle, units ) );
 	set( 'waypoints', `${ waypoints }` );
 }
 
@@ -156,8 +160,9 @@ export async function initInstance(
 		maxZoom,
 	} );
 
+	const units = readUnits( mapEl );
 	const stats = routeStats( coords, segStarts );
-	fillStats( root, stats, waypoints.length );
+	fillStats( root, stats, waypoints.length, units );
 
 	let profile: ElevationProfile | null = null;
 	const canvas: HTMLCanvasElement | null = root.querySelector(
@@ -212,7 +217,8 @@ export async function initInstance(
 				},
 				onLeave: clearPositionDot,
 			},
-			segStarts
+			segStarts,
+			units
 		);
 	}
 

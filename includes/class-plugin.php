@@ -27,6 +27,7 @@ class Plugin {
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( $this, 'register_block' ) );
 		add_action( 'init', array( $this, 'register_shortcode' ) );
+		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'upload_mimes', array( $this, 'allow_gpx_upload' ) );
 		add_filter( 'wp_check_filetype_and_ext', array( $this, 'fix_gpx_filetype_check' ), 10, 4 );
 	}
@@ -42,6 +43,71 @@ class Plugin {
 			false,
 			dirname( plugin_basename( GPXRM_PLUGIN_DIR . 'gpx-route-map.php' ) ) . '/languages'
 		);
+	}
+
+	/**
+	 * Register the unit setting on Settings -> General.
+	 *
+	 * A single setting does not warrant its own admin page, so it joins the
+	 * existing General screen.
+	 *
+	 * @return void
+	 */
+	public function register_settings(): void {
+		register_setting(
+			'general',
+			'gpxrm_units',
+			array(
+				'type'              => 'string',
+				'default'           => 'metric',
+				'sanitize_callback' => array( $this, 'sanitize_units' ),
+				'show_in_rest'      => true,
+			)
+		);
+
+		add_settings_field(
+			'gpxrm_units',
+			__( 'GPX map units', 'gpx-route-map' ),
+			array( $this, 'render_units_field' ),
+			'general',
+			'default',
+			array( 'label_for' => 'gpxrm_units' )
+		);
+	}
+
+	/**
+	 * Keep the stored unit system to a known value.
+	 *
+	 * @param mixed $value Submitted value.
+	 * @return string
+	 */
+	public function sanitize_units( $value ): string {
+		return ( is_string( $value ) && 'imperial' === $value ) ? 'imperial' : 'metric';
+	}
+
+	/**
+	 * Output the unit setting control.
+	 *
+	 * @return void
+	 */
+	public function render_units_field(): void {
+		$current = Renderer::default_units();
+		$choices = array(
+			'metric'   => __( 'Metric (km / m)', 'gpx-route-map' ),
+			'imperial' => __( 'Imperial (mi / ft)', 'gpx-route-map' ),
+		);
+
+		echo '<select name="gpxrm_units" id="gpxrm_units">';
+		foreach ( $choices as $value => $label ) {
+			printf(
+				'<option value="%1$s"%2$s>%3$s</option>',
+				esc_attr( $value ),
+				selected( $current, $value, false ),
+				esc_html( $label )
+			);
+		}
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Units used for distance and elevation on GPX maps. Individual maps can override this.', 'gpx-route-map' ) . '</p>';
 	}
 
 	/**
@@ -142,6 +208,7 @@ class Plugin {
 	 *   elevation Show the elevation profile (default true).
 	 *   maxzoom   Maximum zoom level (default 17).
 	 *   tile      Override raster tile URL template.
+	 *   units     "metric" or "imperial" (defaults to the site setting).
 	 *
 	 * @param array<int|string, string>|string $atts Shortcode attributes.
 	 * @return string
@@ -156,6 +223,7 @@ class Plugin {
 				'elevation' => 'true',
 				'maxzoom'   => 17,
 				'tile'      => '',
+				'units'     => '',
 			),
 			is_array( $atts ) ? $atts : array(),
 			'gpx_route_map'
@@ -167,6 +235,7 @@ class Plugin {
 			'showElevation' => $atts['elevation'],
 			'maxZoom'       => (int) $atts['maxzoom'],
 			'tileUrl'       => (string) $atts['tile'],
+			'units'         => (string) $atts['units'],
 		);
 
 		if ( is_numeric( $atts['id'] ) ) {

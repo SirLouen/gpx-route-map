@@ -4,6 +4,8 @@
 
 import { haversine } from './map-core';
 import type { Coord } from './types';
+import { METRIC } from './units';
+import type { UnitConfig } from './units';
 
 const THRESHOLD_M = 9.05;
 
@@ -128,18 +130,22 @@ export class ElevationProfile {
 	dragging: boolean;
 	state: ProfileState | null;
 	listenersBound: boolean;
+	units: UnitConfig;
 
 	/**
 	 * @param canvas        Target canvas.
 	 * @param coords        [lon, lat, ele] triples.
 	 * @param callbacks     Scrub hooks.
 	 * @param segmentStarts Indices where a new segment begins.
+	 * @param units         Display units. Geometry stays metric; only the
+	 *                      axis and tooltip labels are converted.
 	 */
 	constructor(
 		canvas: HTMLCanvasElement,
 		coords: Coord[],
 		callbacks: ProfileCallbacks = {},
-		segmentStarts: Set< number > | null = null
+		segmentStarts: Set< number > | null = null,
+		units: UnitConfig = METRIC
 	) {
 		this.canvas = canvas;
 		this.coords = coords;
@@ -149,6 +155,7 @@ export class ElevationProfile {
 		this.dragging = false;
 		this.state = null;
 		this.listenersBound = false;
+		this.units = units;
 	}
 
 	/**
@@ -380,13 +387,21 @@ export class ElevationProfile {
 			ctx.fillStyle = THEME.gridLabel;
 			ctx.font = '10px system-ui, sans-serif';
 			ctx.textAlign = 'right';
-			ctx.fillText( `${ Math.round( ev ) }`, padL - 4, yy + 3 );
+			ctx.fillText(
+				`${ Math.round( ev * this.units.eleFactor ) }`,
+				padL - 4,
+				yy + 3
+			);
 		}
 		ctx.textAlign = 'center';
 		for ( let i = 0; i <= 5; i++ ) {
 			const dv = ( totalDist * i ) / 5;
 			ctx.fillStyle = THEME.gridLabel;
-			ctx.fillText( `${ dv.toFixed( 1 ) }`, x( dv ), H - 4 );
+			ctx.fillText(
+				`${ ( dv * this.units.distFactor ).toFixed( 1 ) }`,
+				x( dv ),
+				H - 4
+			);
 		}
 
 		ctx.beginPath();
@@ -415,9 +430,9 @@ export class ElevationProfile {
 		ctx.fillStyle = THEME.gridLabel;
 		ctx.font = '9px system-ui, sans-serif';
 		ctx.textAlign = 'left';
-		ctx.fillText( 'm', padL - 4, padT - 1 );
+		ctx.fillText( this.units.eleLabel, padL - 4, padT - 1 );
 		ctx.textAlign = 'center';
-		ctx.fillText( 'km', W / 2, H );
+		ctx.fillText( this.units.distLabel, W / 2, H );
 	}
 
 	/**
@@ -470,9 +485,13 @@ export class ElevationProfile {
 		ctx.lineWidth = 2.5;
 		ctx.stroke();
 
-		const label = `${ Math.round( elevations[ idx ] ) } m  ·  ${ dists[
-			idx
-		].toFixed( 2 ) } km`;
+		const label =
+			`${ Math.round( elevations[ idx ] * this.units.eleFactor ) } ${
+				this.units.eleLabel
+			}` +
+			`  ·  ${ ( dists[ idx ] * this.units.distFactor ).toFixed( 2 ) } ${
+				this.units.distLabel
+			}`;
 		ctx.font = 'bold 11px system-ui, sans-serif';
 		const tw = ctx.measureText( label ).width;
 		const tx = Math.min(
