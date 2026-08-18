@@ -5,7 +5,6 @@ on:
         branches: [main]
         paths:
             - .wordpress-org/**
-            - readme.txt
     workflow_dispatch:
 
 concurrency:
@@ -23,23 +22,10 @@ jobs:
             - name: Check out
               uses: actions/checkout@v4
 
-            - name: Set up pnpm
-              uses: pnpm/action-setup@v4
-
-            - name: Set up Node
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 22
-                  cache: pnpm
-
-            - name: Install dependencies & build
-              run: |
-                  pnpm install --frozen-lockfile
-                  pnpm run build
-
             - name: Update WordPress.org assets
               uses: 10up/action-wordpress-plugin-asset-update@stable
               env:
                   SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
                   SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
                   SLUG: gpx-route-map
+                  IGNORE_OTHER_FILES: true
