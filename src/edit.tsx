@@ -49,6 +49,7 @@ export type GpxBlockAttributes = {
 	height: number;
 	showStats: string;
 	showElevation: string;
+	showDownload: string;
 	maxZoom: number;
 	tileUrl: string;
 	units: string;
@@ -128,6 +129,7 @@ export default function Edit( {
 		height,
 		showStats,
 		showElevation,
+		showDownload,
 		maxZoom,
 		tileUrl,
 		units,
@@ -324,6 +326,20 @@ export default function Edit( {
 						options={ VISIBILITY_OPTIONS }
 						onChange={ ( value ) =>
 							setAttributes( { showElevation: value } )
+						}
+					/>
+					<SelectControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+						label={ __( 'Download button', 'gpx-route-map' ) }
+						help={ __(
+							'Adds a button on the map for visitors to download the GPX file.',
+							'gpx-route-map'
+						) }
+						value={ visibilityChoice( showDownload ) }
+						options={ VISIBILITY_OPTIONS }
+						onChange={ ( value ) =>
+							setAttributes( { showDownload: value } )
 						}
 					/>
 					<SelectControl

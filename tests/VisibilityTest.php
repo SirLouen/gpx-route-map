@@ -110,3 +110,65 @@ test(
 		expect( gpxrm_resolve_stats( null ) )->toBeFalse();
 	}
 );
+
+/**
+ * Resolve a download-button attribute the way Renderer::normalize() does.
+ *
+ * @param mixed $raw Attribute value.
+ * @return bool
+ */
+function gpxrm_resolve_download( $raw ): bool {
+	$method = new ReflectionMethod( Renderer::class, 'normalize_visibility' );
+	$method->setAccessible( true );
+
+	return $method->invoke( null, $raw, Renderer::default_show_download() );
+}
+
+/**
+ * Call the private filename helper.
+ *
+ * @param string $url GPX URL.
+ * @return string
+ */
+function gpxrm_download_filename( string $url ): string {
+	$method = new ReflectionMethod( Renderer::class, 'download_filename' );
+	$method->setAccessible( true );
+
+	return $method->invoke( null, $url );
+}
+
+test(
+	'the download button is off by default, unlike the other panels',
+	function () {
+		expect( Renderer::default_show_download() )->toBeFalse();
+		// Updating must not add a button to maps that never had one.
+		expect( gpxrm_resolve_download( '' ) )->toBeFalse();
+	}
+);
+
+test(
+	'the download button can be switched on site-wide or per map',
+	function () {
+		expect( gpxrm_resolve_download( 'show' ) )->toBeTrue();
+
+		$GLOBALS['gpxrm_test_options']['gpxrm_show_download'] = 'show';
+		expect( Renderer::default_show_download() )->toBeTrue();
+		expect( gpxrm_resolve_download( '' ) )->toBeTrue();
+		expect( gpxrm_resolve_download( 'hide' ) )->toBeFalse();
+	}
+);
+
+test(
+	'the suggested filename comes from the GPX URL',
+	function ( $url, $expected ) {
+		expect( gpxrm_download_filename( $url ) )->toBe( $expected );
+	}
+)->with(
+	array(
+		'upload'        => array( 'https://example.com/wp-content/uploads/2026/09/alpine-loop.gpx', 'alpine-loop.gpx' ),
+		'query string'  => array( 'https://example.com/route.gpx?ver=2', 'route.gpx' ),
+		'uppercase ext' => array( 'https://example.com/TRACK.GPX', 'TRACK.GPX' ),
+		'no extension'  => array( 'https://example.com/download?id=7', 'route.gpx' ),
+		'directory'     => array( 'https://example.com/tracks/', 'route.gpx' ),
+	)
+);

@@ -326,6 +326,67 @@ export function addWaypointMarkers(
 }
 
 /**
+ * A map control that links to the GPX file.
+ *
+ * Built as a MapLibre control so it sits in the same stack as the zoom and
+ * fullscreen buttons and inherits their chrome. It is an anchor rather than a
+ * button so it behaves like a link: middle-click, right-click and keyboard
+ * activation all work. The `download` attribute is honoured for same-origin
+ * files; for a cross-origin GPX the browser opens it instead, which is still
+ * the useful outcome.
+ */
+export class DownloadControl {
+	private url: string;
+	private filename: string;
+	private label: string;
+	private container: HTMLElement | null = null;
+
+	/**
+	 * @param url      GPX file URL.
+	 * @param filename Suggested filename.
+	 * @param label    Accessible label and tooltip.
+	 */
+	constructor( url: string, filename: string, label: string ) {
+		this.url = url;
+		this.filename = filename;
+		this.label = label;
+	}
+
+	/**
+	 * Build the control element.
+	 */
+	onAdd(): HTMLElement {
+		const container = document.createElement( 'div' );
+		container.className =
+			'maplibregl-ctrl maplibregl-ctrl-group gpxrm-download-ctrl';
+
+		const link = document.createElement( 'a' );
+		link.className = 'gpxrm-download-btn';
+		link.href = this.url;
+		link.setAttribute( 'download', this.filename );
+		link.title = this.label;
+		link.setAttribute( 'aria-label', this.label );
+		link.innerHTML =
+			'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">' +
+			'<path fill="currentColor" d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1Z"/>' +
+			'<path fill="currentColor" d="M5 18a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/>' +
+			'</svg>';
+
+		container.appendChild( link );
+		this.container = container;
+		return container;
+	}
+
+	/**
+	 * Detach the control.
+	 */
+	onRemove(): void {
+		this.container?.parentNode?.removeChild( this.container );
+		this.container = null;
+	}
+}
+
+/**
  * Great-circle distance between two points, in kilometres.
  *
  * @param lat1 Latitude 1.

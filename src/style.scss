@@ -59,12 +59,14 @@
 }
 
 @keyframes gpxrm-spin {
+
 	to {
 		transform: rotate(360deg);
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
+
 	.gpxrm-spinner {
 		animation-duration: 2s;
 	}
@@ -131,6 +133,50 @@
 	font-weight: 600;
 }
 
+/* Download control.
+   MapLibre styles its own controls via `.maplibregl-ctrl button`, and this one
+   is an anchor so it can be a real link, so the button chrome is repeated here
+   to sit flush with the zoom and fullscreen controls. */
+.gpxrm-download-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 29px;
+	height: 29px;
+	padding: 0;
+	border: 0;
+	border-radius: inherit;
+	background: transparent;
+	color: #333;
+	cursor: pointer;
+	box-shadow: none;
+	text-decoration: none;
+	transition: background-color 0.15s ease;
+
+	&:hover,
+	&:focus-visible {
+		background-color: rgba(0, 0, 0, 0.05);
+		color: var(--gpxrm-track);
+		text-decoration: none;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--gpxrm-track);
+		outline-offset: -2px;
+	}
+
+	svg {
+		display: block;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.gpxrm-download-btn {
+		transition: none;
+	}
+}
+
 /* Stats bar */
 .gpxrm-stats {
 	display: grid;
@@ -191,6 +237,7 @@
 
 /* Dark theme adaptation */
 @media (prefers-color-scheme: dark) {
+
 	.gpxrm {
 		--gpxrm-surface: #1f2422;
 		--gpxrm-border: rgba(255, 255, 255, 0.12);

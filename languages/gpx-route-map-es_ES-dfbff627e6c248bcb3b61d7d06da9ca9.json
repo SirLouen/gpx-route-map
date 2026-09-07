@@ -90,6 +90,12 @@
             ],
             "Hidden": [
                 "Ocultar"
+            ],
+            "Download button": [
+                "Bot\u00f3n de descarga"
+            ],
+            "Adds a button on the map for visitors to download the GPX file.": [
+                "A\u00f1ade un bot\u00f3n en el mapa para que los visitantes descarguen el archivo GPX."
             ]
         }
     }
