@@ -18,7 +18,6 @@ import {
 import {
 	PanelBody,
 	RangeControl,
-	ToggleControl,
 	TextControl,
 	Button,
 	Placeholder,
@@ -48,13 +47,38 @@ export type GpxBlockAttributes = {
 	gpxId?: number;
 	gpxUrl: string;
 	height: number;
-	showStats: boolean;
-	showElevation: boolean;
+	showStats: string;
+	showElevation: string;
 	maxZoom: number;
 	tileUrl: string;
 	units: string;
 	stats?: GpxStats;
 };
+
+/** Choices for the panels that can defer to the site setting. */
+const VISIBILITY_OPTIONS = [
+	{ label: __( 'Site default', 'gpx-route-map' ), value: '' },
+	{ label: __( 'Shown', 'gpx-route-map' ), value: 'show' },
+	{ label: __( 'Hidden', 'gpx-route-map' ), value: 'hide' },
+];
+
+/**
+ * Normalize a panel visibility attribute for the select.
+ *
+ * These were booleans before the site setting existed, so blocks saved by an
+ * older version still hand us true/false here.
+ *
+ * @param value Stored attribute value.
+ */
+function visibilityChoice( value: string | boolean ): string {
+	if ( true === value ) {
+		return 'show';
+	}
+	if ( false === value ) {
+		return 'hide';
+	}
+	return 'show' === value || 'hide' === value ? value : '';
+}
 
 /** The subset of the media object the picker hands to onSelect. */
 interface SelectedMedia {
@@ -110,6 +134,11 @@ export default function Edit( {
 	} = attributes;
 	const blockProps = useBlockProps();
 	const hasGpx = !! gpxUrl;
+
+	// The summary below only labels what this block is set to. A panel left on
+	// "Site default" is listed, since showing is the shipped default.
+	const statsShown = 'hide' !== visibilityChoice( showStats );
+	const elevationShown = 'hide' !== visibilityChoice( showElevation );
 
 	// Draft state for the URL field: typing must not discard a selected
 	// media file, so the attribute only updates on blur or Enter.
@@ -277,21 +306,22 @@ export default function Edit( {
 						max={ 1200 }
 						step={ 20 }
 					/>
-					<ToggleControl
+					<SelectControl
 						__nextHasNoMarginBottom
-						label={ __( 'Show stats bar', 'gpx-route-map' ) }
-						checked={ showStats }
+						__next40pxDefaultSize
+						label={ __( 'Stats bar', 'gpx-route-map' ) }
+						value={ visibilityChoice( showStats ) }
+						options={ VISIBILITY_OPTIONS }
 						onChange={ ( value ) =>
 							setAttributes( { showStats: value } )
 						}
 					/>
-					<ToggleControl
+					<SelectControl
 						__nextHasNoMarginBottom
-						label={ __(
-							'Show elevation profile',
-							'gpx-route-map'
-						) }
-						checked={ showElevation }
+						__next40pxDefaultSize
+						label={ __( 'Elevation profile', 'gpx-route-map' ) }
+						value={ visibilityChoice( showElevation ) }
+						options={ VISIBILITY_OPTIONS }
 						onChange={ ( value ) =>
 							setAttributes( { showElevation: value } )
 						}
@@ -418,9 +448,9 @@ export default function Edit( {
 						) }
 					</span>
 					<span className="gpxrm-editor-meta">
-						{ showStats && __( 'Stats', 'gpx-route-map' ) }
-						{ showStats && showElevation && ' · ' }
-						{ showElevation &&
+						{ statsShown && __( 'Stats', 'gpx-route-map' ) }
+						{ statsShown && elevationShown && ' · ' }
+						{ elevationShown &&
 							__( 'Elevation profile', 'gpx-route-map' ) }
 					</span>
 					<ExternalLink href={ gpxUrl } className="gpxrm-editor-link">

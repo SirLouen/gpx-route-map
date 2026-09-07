@@ -63,6 +63,77 @@ class Renderer {
 	}
 
 	/**
+	 * Read a stored 'show'/'hide' option.
+	 *
+	 * @param string $option Option name.
+	 * @return bool
+	 */
+	private static function stored_visibility( string $option ): bool {
+		$stored = get_option( $option, 'show' );
+		return ! ( is_string( $stored ) && 'hide' === $stored );
+	}
+
+	/**
+	 * Whether the stats bar shows unless a map says otherwise.
+	 *
+	 * @return bool
+	 */
+	public static function default_show_stats(): bool {
+		/**
+		 * Filters whether the stats bar is shown by default.
+		 *
+		 * @param bool $show True to show the stats bar.
+		 */
+		return apply_filters( 'gpxrm_show_stats', self::stored_visibility( 'gpxrm_show_stats' ) );
+	}
+
+	/**
+	 * Whether the elevation profile shows unless a map says otherwise.
+	 *
+	 * @return bool
+	 */
+	public static function default_show_elevation(): bool {
+		/**
+		 * Filters whether the elevation profile is shown by default.
+		 *
+		 * @param bool $show True to show the elevation profile.
+		 */
+		return apply_filters( 'gpxrm_show_elevation', self::stored_visibility( 'gpxrm_show_elevation' ) );
+	}
+
+	/**
+	 * Resolve a show/hide attribute that may defer to the site setting.
+	 *
+	 * Accepts the current tri-state strings ('', 'show', 'hide'), the booleans
+	 * saved by blocks from before the site setting existed, and the
+	 * 'true'/'false' strings the shortcode has always used.
+	 *
+	 * @param mixed $raw          Raw attribute value.
+	 * @param bool  $site_default Value to use when the attribute defers.
+	 * @return bool
+	 */
+	private static function normalize_visibility( $raw, bool $site_default ): bool {
+		if ( is_bool( $raw ) ) {
+			return $raw;
+		}
+
+		if ( is_string( $raw ) ) {
+			$value = strtolower( trim( $raw ) );
+			if ( '' === $value || 'default' === $value ) {
+				return $site_default;
+			}
+			if ( in_array( $value, array( 'hide', 'hidden', 'false', '0', 'no', 'off' ), true ) ) {
+				return false;
+			}
+			if ( in_array( $value, array( 'show', 'shown', 'true', '1', 'yes', 'on' ), true ) ) {
+				return true;
+			}
+		}
+
+		return $site_default;
+	}
+
+	/**
 	 * Conversion factors and unit labels for a unit system.
 	 *
 	 * Statistics are always stored in kilometres and metres; these factors turn
@@ -181,8 +252,8 @@ class Renderer {
 		return array(
 			'gpx_url'        => $gpx_url,
 			'height'         => self::clamp( $height, 200, 1200 ),
-			'show_stats'     => self::to_bool( $atts['showStats'] ?? true ),
-			'show_elevation' => self::to_bool( $atts['showElevation'] ?? true ),
+			'show_stats'     => self::normalize_visibility( $atts['showStats'] ?? '', self::default_show_stats() ),
+			'show_elevation' => self::normalize_visibility( $atts['showElevation'] ?? '', self::default_show_elevation() ),
 			'max_zoom'       => self::clamp( $max_zoom, 1, 22 ),
 			'tile_url'       => $tile_url,
 			'stats'          => self::normalize_stats( $atts['stats'] ?? null ),
@@ -352,22 +423,6 @@ class Renderer {
 			wp_enqueue_script_module( generate_block_asset_handle( self::BLOCK_NAME, 'viewScriptModule' ) );
 		}
 		wp_enqueue_style( generate_block_asset_handle( self::BLOCK_NAME, 'style' ) );
-	}
-
-	/**
-	 * Coerce a mixed value to boolean, honoring shortcode "false"/"0"/"no".
-	 *
-	 * @param mixed $value Raw value.
-	 * @return bool
-	 */
-	private static function to_bool( $value ): bool {
-		if ( is_bool( $value ) ) {
-			return $value;
-		}
-		if ( is_string( $value ) ) {
-			return ! in_array( strtolower( trim( $value ) ), array( 'false', '0', 'no', 'off', '' ), true );
-		}
-		return (bool) $value;
 	}
 
 	/**

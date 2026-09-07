@@ -15,8 +15,9 @@ msgstr ""
 
 #. Plugin Name of the plugin
 #: gpx-route-map.php
-#: build/index.js:427
-#: build/index.js:449
+#: includes/class-plugin.php:59
+#: build/index.js:461
+#: build/index.js:483
 msgid "GPX Route Map"
 msgstr "GPX Route Map"
 
@@ -40,146 +41,140 @@ msgstr ""
 msgid "https://github.com/SirLouen"
 msgstr ""
 
-#: includes/class-renderer.php:110
+#: includes/class-renderer.php:181
 msgid "GPX Route Map: no GPX file selected."
 msgstr "GPX Route Map: no se ha seleccionado ningún archivo GPX."
 
-#: includes/class-renderer.php:117
+#: includes/class-renderer.php:188
 msgid "GPX Route Map: plugin assets are not built. Run \"pnpm install && pnpm run build\" in the plugin directory."
 msgstr "GPX Route Map: los recursos del plugin no están compilados. Ejecuta «pnpm install && pnpm run build» en el directorio del plugin."
 
-#: includes/class-renderer.php:140
+#: includes/class-renderer.php:211
 msgid "Interactive route map"
 msgstr "Mapa interactivo de la ruta"
 
-#: includes/class-renderer.php:261
+#: includes/class-renderer.php:332
 msgid "Loading map…"
 msgstr "Cargando el mapa…"
 
-#: includes/class-renderer.php:262
+#: includes/class-renderer.php:333
 msgid "Scroll or tap to load the interactive map"
 msgstr "Desplázate o toca para cargar el mapa interactivo"
 
-#: includes/class-renderer.php:274
+#: includes/class-renderer.php:345
 msgid "Could not load GPX file."
 msgstr "No se ha podido cargar el archivo GPX."
 
-#: includes/class-renderer.php:275
+#: includes/class-renderer.php:346
 msgid "Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead."
 msgstr "No se ha podido cargar el archivo GPX: su servidor no permite peticiones de origen cruzado (CORS). Sube el archivo a este sitio en su lugar."
 
-#: includes/class-renderer.php:276
+#: includes/class-renderer.php:347
 msgid "Invalid GPX file."
 msgstr "Archivo GPX no válido."
 
-#: includes/class-renderer.php:277
+#: includes/class-renderer.php:348
 msgid "No track or route points found in GPX file."
 msgstr "No se han encontrado puntos de pista ni de ruta en el archivo GPX."
 
-#: includes/class-renderer.php:299
+#: includes/class-renderer.php:370
 msgid "Distance"
 msgstr "Distancia"
 
-#: includes/class-renderer.php:300
+#: includes/class-renderer.php:371
 msgid "Elevation gain"
 msgstr "Desnivel positivo"
 
-#: includes/class-renderer.php:301
+#: includes/class-renderer.php:372
 msgid "Elevation loss"
 msgstr "Desnivel negativo"
 
-#: includes/class-renderer.php:302
+#: includes/class-renderer.php:373
 msgid "Max elevation"
 msgstr "Altitud máxima"
 
-#: includes/class-renderer.php:303
+#: includes/class-renderer.php:374
 msgid "Waypoints"
 msgstr "Waypoints"
 
-#: includes/class-renderer.php:327
-#: build/index.js:464
+#: includes/class-plugin.php:86
+#: includes/class-renderer.php:398
+#: build/index.js:398
+#: build/index.js:498
 msgid "Elevation profile"
 msgstr "Perfil de desnivel"
 
-#: includes/class-renderer.php:328
+#: includes/class-renderer.php:399
 msgid "Elevation profile along the route"
 msgstr "Perfil de desnivel a lo largo de la ruta"
 
-#: build/index.js:313
+#: build/index.js:343
 msgid "Paste a direct link to a .gpx file. The file must be hosted on this site, or on a host that allows cross-origin (CORS) requests — most external sites do not."
 msgstr "Pega un enlace directo a un archivo .gpx. El archivo debe estar alojado en este sitio o en un servidor que permita peticiones de origen cruzado (CORS); la mayoría de los sitios externos no lo permiten."
 
-#: build/index.js:314
+#: build/index.js:344
 #, js-format
 msgid "Currently using the selected media file \"%s\". Entering a URL here replaces it (applied on Enter or when leaving the field)."
 msgstr "Actualmente se usa el archivo de medios seleccionado «%s». Si introduces una URL aquí, la sustituirás (se aplica al pulsar Intro o al salir del campo)."
 
-#: build/index.js:320
+#: build/index.js:350
 msgid "Source"
 msgstr "Origen"
 
-#: build/index.js:328
+#: build/index.js:358
 msgid "Replace GPX file"
 msgstr "Reemplazar el archivo GPX"
 
-#: build/index.js:328
-#: build/index.js:436
+#: build/index.js:358
+#: build/index.js:470
 msgid "Select GPX file"
 msgstr "Seleccionar un archivo GPX"
 
-#: build/index.js:333
+#: build/index.js:363
 msgid "or GPX file URL"
 msgstr "o URL del archivo GPX"
 
-#: build/index.js:345
+#: build/index.js:375
 msgid "Display"
 msgstr "Visualización"
 
-#: build/index.js:350
+#: build/index.js:380
 msgid "Map height (px)"
 msgstr "Altura del mapa (px)"
 
-#: build/index.js:359
-msgid "Show stats bar"
-msgstr "Mostrar la barra de estadísticas"
-
-#: build/index.js:365
-msgid "Show elevation profile"
-msgstr "Mostrar el perfil de desnivel"
-
-#: build/index.js:394
+#: build/index.js:428
 msgid "Max zoom"
 msgstr "Zoom máximo"
 
-#: build/index.js:403
+#: build/index.js:437
 msgid "Map tiles"
 msgstr "Teselas del mapa"
 
-#: build/index.js:408
+#: build/index.js:442
 msgid "Custom tile URL"
 msgstr "URL de teselas personalizada"
 
-#: build/index.js:409
+#: build/index.js:443
 msgid "Raster tile template with {z}/{x}/{y}. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites."
 msgstr "Plantilla de teselas ráster con {z}/{x}/{y}. Déjalo en blanco para usar OpenStreetMap. Las teselas públicas de OSM tienen un límite de uso; usa tu propio proveedor en sitios con mucho tráfico."
 
-#: build/index.js:422
+#: build/index.js:456
 msgid "Replace GPX"
 msgstr "Reemplazar GPX"
 
-#: build/index.js:428
+#: build/index.js:462
 msgid "Select a GPX track to render it as an interactive map with an elevation profile."
 msgstr "Selecciona una pista GPX para mostrarla como un mapa interactivo con un perfil de desnivel."
 
-#: build/index.js:457
+#: build/index.js:491
 msgid "The interactive map renders on the front end."
 msgstr "El mapa interactivo se muestra en la parte pública del sitio."
 
-#: build/index.js:462
+#: build/index.js:496
 msgid "Stats"
 msgstr "Estadísticas"
 
-#: build/index.js:470
+#: build/index.js:504
 msgid "Open GPX file"
 msgstr "Abrir el archivo GPX"
 
@@ -243,56 +238,73 @@ msgctxt "block keyword"
 msgid "cycling"
 msgstr "ciclismo"
 
-#: includes/class-plugin.php:70
-msgid "GPX map units"
-msgstr "Unidades de los mapas GPX"
-
-#: includes/class-plugin.php:96
-#: build/index.js:381
+#: includes/class-plugin.php:181
+#: build/index.js:415
 msgid "Metric (km / m)"
 msgstr "Métrico (km / m)"
 
-#: includes/class-plugin.php:97
-#: build/index.js:385
+#: includes/class-plugin.php:182
+#: build/index.js:419
 msgid "Imperial (mi / ft)"
 msgstr "Imperial (mi / ft)"
 
-#: includes/class-plugin.php:110
+#: includes/class-plugin.php:195
 msgid "Units used for distance and elevation on GPX maps. Individual maps can override this."
 msgstr "Unidades de distancia y desnivel en los mapas GPX. Cada mapa puede usar unas distintas."
 
 #. translators: Abbreviation for miles, shown after a distance.
-#: includes/class-renderer.php:81
+#: includes/class-renderer.php:152
 msgctxt "unit"
 msgid "mi"
 msgstr "mi"
 
 #. translators: Abbreviation for feet, shown after an elevation.
-#: includes/class-renderer.php:84
+#: includes/class-renderer.php:155
 msgctxt "unit"
 msgid "ft"
 msgstr "ft"
 
 #. translators: Abbreviation for kilometres, shown after a distance.
-#: includes/class-renderer.php:91
+#: includes/class-renderer.php:162
 msgctxt "unit"
 msgid "km"
 msgstr "km"
 
 #. translators: Abbreviation for metres, shown after an elevation.
-#: includes/class-renderer.php:94
+#: includes/class-renderer.php:165
 msgctxt "unit"
 msgid "m"
 msgstr "m"
 
-#: build/index.js:372
+#: includes/class-plugin.php:77
+#: build/index.js:406
 msgid "Units"
 msgstr "Unidades"
 
-#: build/index.js:373
+#: build/index.js:407
 msgid "Distance and elevation units for this map."
 msgstr "Unidades de distancia y desnivel de este mapa."
 
-#: build/index.js:377
+#: build/index.js:228
+#: build/index.js:411
 msgid "Site default"
-msgstr "Predeterminadas del sitio"
+msgstr "Ajuste del sitio"
+
+#: includes/class-plugin.php:85
+#: build/index.js:390
+msgid "Stats bar"
+msgstr "Barra de estadísticas"
+
+#: includes/class-plugin.php:121
+msgid "Defaults for every GPX map on this site. Individual maps can override them."
+msgstr "Valores predeterminados para todos los mapas GPX de este sitio. Cada mapa puede cambiarlos."
+
+#: includes/class-plugin.php:147
+#: build/index.js:232
+msgid "Shown"
+msgstr "Mostrar"
+
+#: includes/class-plugin.php:148
+#: build/index.js:236
+msgid "Hidden"
+msgstr "Ocultar"

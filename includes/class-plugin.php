@@ -54,6 +54,13 @@ class Plugin {
 	 * @return void
 	 */
 	public function register_settings(): void {
+		add_settings_section(
+			'gpxrm_settings',
+			__( 'GPX Route Map', 'gpx-route-map' ),
+			array( $this, 'render_settings_intro' ),
+			'general'
+		);
+
 		register_setting(
 			'general',
 			'gpxrm_units',
@@ -67,12 +74,90 @@ class Plugin {
 
 		add_settings_field(
 			'gpxrm_units',
-			__( 'GPX map units', 'gpx-route-map' ),
+			__( 'Units', 'gpx-route-map' ),
 			array( $this, 'render_units_field' ),
 			'general',
-			'default',
+			'gpxrm_settings',
 			array( 'label_for' => 'gpxrm_units' )
 		);
+
+		$panels = array(
+			'gpxrm_show_stats'     => __( 'Stats bar', 'gpx-route-map' ),
+			'gpxrm_show_elevation' => __( 'Elevation profile', 'gpx-route-map' ),
+		);
+
+		foreach ( $panels as $option => $label ) {
+			register_setting(
+				'general',
+				$option,
+				array(
+					'type'              => 'string',
+					'default'           => 'show',
+					'sanitize_callback' => array( $this, 'sanitize_visibility' ),
+					'show_in_rest'      => true,
+				)
+			);
+
+			add_settings_field(
+				$option,
+				$label,
+				array( $this, 'render_visibility_field' ),
+				'general',
+				'gpxrm_settings',
+				array(
+					'label_for' => $option,
+					'option'    => $option,
+				)
+			);
+		}
+	}
+
+	/**
+	 * Short explanation shown under the settings section heading.
+	 *
+	 * @return void
+	 */
+	public function render_settings_intro(): void {
+		echo '<p>' . esc_html__( 'Defaults for every GPX map on this site. Individual maps can override them.', 'gpx-route-map' ) . '</p>';
+	}
+
+	/**
+	 * Keep a stored panel visibility to a known value.
+	 *
+	 * @param mixed $value Submitted value.
+	 * @return string
+	 */
+	public function sanitize_visibility( $value ): string {
+		return ( is_string( $value ) && 'hide' === $value ) ? 'hide' : 'show';
+	}
+
+	/**
+	 * Output a show/hide control for one panel.
+	 *
+	 * @param array<string, string> $args Field args, including the option name.
+	 * @return void
+	 */
+	public function render_visibility_field( array $args ): void {
+		$option  = $args['option'] ?? '';
+		$current = ( 'gpxrm_show_elevation' === $option )
+			? Renderer::default_show_elevation()
+			: Renderer::default_show_stats();
+
+		$choices = array(
+			'show' => __( 'Shown', 'gpx-route-map' ),
+			'hide' => __( 'Hidden', 'gpx-route-map' ),
+		);
+
+		printf( '<select name="%1$s" id="%1$s">', esc_attr( $option ) );
+		foreach ( $choices as $value => $label ) {
+			printf(
+				'<option value="%1$s"%2$s>%3$s</option>',
+				esc_attr( $value ),
+				selected( $current ? 'show' : 'hide', $value, false ),
+				esc_html( $label )
+			);
+		}
+		echo '</select>';
 	}
 
 	/**
@@ -204,8 +289,8 @@ class Plugin {
 	 *   gpx       Attachment ID or absolute URL of the .gpx file.
 	 *   id        Attachment ID (alias for a numeric gpx).
 	 *   height    Map height in pixels (default 480).
-	 *   stats     Show the stats bar (default true).
-	 *   elevation Show the elevation profile (default true).
+	 *   stats     Show the stats bar: "true"/"false" (defaults to the site setting).
+	 *   elevation Show the elevation profile: "true"/"false" (defaults to the site setting).
 	 *   maxzoom   Maximum zoom level (default 17).
 	 *   tile      Override raster tile URL template.
 	 *   units     "metric" or "imperial" (defaults to the site setting).
@@ -219,8 +304,8 @@ class Plugin {
 				'gpx'       => '',
 				'id'        => '',
 				'height'    => 480,
-				'stats'     => 'true',
-				'elevation' => 'true',
+				'stats'     => '',
+				'elevation' => '',
 				'maxzoom'   => 17,
 				'tile'      => '',
 				'units'     => '',

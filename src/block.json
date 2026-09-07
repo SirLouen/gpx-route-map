@@ -28,12 +28,12 @@
 			"default": 480
 		},
 		"showStats": {
-			"type": "boolean",
-			"default": true
+			"type": "string",
+			"default": ""
 		},
 		"showElevation": {
-			"type": "boolean",
-			"default": true
+			"type": "string",
+			"default": ""
 		},
 		"maxZoom": {
 			"type": "number",

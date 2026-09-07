@@ -40,12 +40,6 @@
             "Map height (px)": [
                 "Altura del mapa (px)"
             ],
-            "Show stats bar": [
-                "Mostrar la barra de estad\u00edsticas"
-            ],
-            "Show elevation profile": [
-                "Mostrar el perfil de desnivel"
-            ],
             "Max zoom": [
                 "Zoom m\u00e1ximo"
             ],
@@ -86,7 +80,16 @@
                 "Unidades de distancia y desnivel de este mapa."
             ],
             "Site default": [
-                "Predeterminadas del sitio"
+                "Ajuste del sitio"
+            ],
+            "Stats bar": [
+                "Barra de estad\u00edsticas"
+            ],
+            "Shown": [
+                "Mostrar"
+            ],
+            "Hidden": [
+                "Ocultar"
             ]
         }
     }

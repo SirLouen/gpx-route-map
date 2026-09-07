@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,8 +57,8 @@ Shortcode attributes:
 * `id` - Attachment ID of a .gpx file uploaded to the Media Library.
 * `gpx` - Attachment ID, or an absolute URL to a .gpx file (alternative to `id`).
 * `height` - Map height in pixels, from 200 to 1200. Default: 480.
-* `stats` - Show the stats bar (distance, elevation, waypoints). `true` or `false`. Default: true.
-* `elevation` - Show the interactive elevation profile. `true` or `false`. Default: true.
+* `stats` - Show the stats bar (distance, elevation, waypoints). `true` or `false`. Default: the site setting.
+* `elevation` - Show the interactive elevation profile. `true` or `false`. Default: the site setting.
 * `maxzoom` - Maximum zoom level, from 1 to 22. Default: 17.
 * `tile` - Custom raster tile URL template using `{z}/{x}/{y}`. Default: OpenStreetMap.
 * `units` - `metric` (km / m) or `imperial` (mi / ft). Default: the site setting.
@@ -70,6 +70,8 @@ Filters (for developers):
 * `gpxrm_tile_url` - change the default raster tile URL template.
 * `gpxrm_tile_attribution` - change the attribution HTML.
 * `gpxrm_units` - change the site-wide unit system (`metric` or `imperial`).
+* `gpxrm_show_stats` - change whether the stats bar shows by default (boolean).
+* `gpxrm_show_elevation` - change whether the elevation profile shows by default (boolean).
 
 == Frequently Asked Questions ==
 
@@ -84,6 +86,10 @@ Map rendering uses MapLibre GL JS (BSD-3-Clause) with OpenStreetMap raster tiles
 = Can I show miles and feet instead of kilometres and metres? =
 
 Yes. Go to Settings > General and set "GPX map units" to Imperial, and every map on the site switches to miles and feet. A single map can use different units from the rest: pick them in the block's Display panel, or add `units="imperial"` to the shortcode. Switching is instant and can be undone at any time, because the plugin always stores distances and elevations in metric and only converts them for display.
+
+= Can I hide the stats bar or the elevation profile? =
+
+Yes, either one, for the whole site or for a single map. Go to Settings > General and set "Stats bar" or "Elevation profile" to Hidden to change every map at once. To change just one map, use the block's Display panel, or add `stats="false"` or `elevation="false"` to the shortcode. A map set to "Site default" follows the setting, so you can change your mind later in one place.
 
 = Can I use my own map tiles? =
 
@@ -108,6 +114,11 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 
 == Changelog ==
 
+= 1.4.0 =
+* New: choose whether the stats bar and the elevation profile are shown. Set it for the whole site under Settings > General, or override it on a single map from the block's Display panel.
+* The `stats` and `elevation` shortcode attributes now follow the site setting when you leave them out, and still accept `true` or `false` to force either way.
+* Existing maps are unaffected: anything you had already switched off stays off.
+
 = 1.3.0 =
 * New: choose between metric (km / m) and imperial (mi / ft) units. Set it for the whole site under Settings > General, override it on a single map from the block's Display panel, or pass `units="imperial"` to the shortcode.
 * The unit choice applies to the stats bar and to the elevation profile, including its axes and the readout you get while scrubbing.
@@ -130,6 +141,9 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 1.4.0 =
+Adds a site-wide setting for showing or hiding the stats bar and the elevation profile.
 
 = 1.3.0 =
 Adds a metric/imperial unit setting. Existing maps keep showing metric until you change it.
