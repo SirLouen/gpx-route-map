@@ -35,6 +35,10 @@
 			"type": "string",
 			"default": ""
 		},
+		"showDownload": {
+			"type": "string",
+			"default": ""
+		},
 		"maxZoom": {
 			"type": "number",
 			"default": 17

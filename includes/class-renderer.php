@@ -65,12 +65,16 @@ class Renderer {
 	/**
 	 * Read a stored 'show'/'hide' option.
 	 *
-	 * @param string $option Option name.
+	 * @param string $option   Option name.
+	 * @param string $fallback Value to assume when the option is unset.
 	 * @return bool
 	 */
-	private static function stored_visibility( string $option ): bool {
-		$stored = get_option( $option, 'show' );
-		return ! ( is_string( $stored ) && 'hide' === $stored );
+	private static function stored_visibility( string $option, string $fallback = 'show' ): bool {
+		$stored = get_option( $option, $fallback );
+		if ( ! is_string( $stored ) ) {
+			$stored = $fallback;
+		}
+		return 'hide' !== $stored;
 	}
 
 	/**
@@ -99,6 +103,23 @@ class Renderer {
 		 * @param bool $show True to show the elevation profile.
 		 */
 		return apply_filters( 'gpxrm_show_elevation', self::stored_visibility( 'gpxrm_show_elevation' ) );
+	}
+
+	/**
+	 * Whether the download button shows unless a map says otherwise.
+	 *
+	 * Unlike the other panels this is off by default, so updating the plugin
+	 * does not add a button to maps that never had one.
+	 *
+	 * @return bool
+	 */
+	public static function default_show_download(): bool {
+		/**
+		 * Filters whether the GPX download button is shown by default.
+		 *
+		 * @param bool $show True to show the download button.
+		 */
+		return apply_filters( 'gpxrm_show_download', self::stored_visibility( 'gpxrm_show_download', 'hide' ) );
 	}
 
 	/**
@@ -199,8 +220,12 @@ class Renderer {
 		$stats = $a['show_stats'] ? $a['stats'] : null;
 		$units = self::units_config( $a['units'] );
 
+		$download = $a['show_download']
+			? sprintf( ' data-gpxrm-download="%s"', esc_attr( self::download_filename( $a['gpx_url'] ) ) )
+			: '';
+
 		$map = sprintf(
-			'<div class="gpxrm-map" style="height:%1$dpx" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" data-gpxrm-units="%7$s" role="application" aria-label="%8$s">%9$s</div>',
+			'<div class="gpxrm-map" style="height:%1$dpx" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" data-gpxrm-units="%7$s"%8$s role="application" aria-label="%9$s">%10$s</div>',
 			$a['height'],
 			esc_url( $a['gpx_url'] ),
 			esc_attr( '' !== $a['tile_url'] ? $a['tile_url'] : self::default_tile_url() ),
@@ -208,6 +233,7 @@ class Renderer {
 			$a['max_zoom'],
 			esc_attr( self::view_messages_json() ),
 			esc_attr( (string) wp_json_encode( $units ) ),
+			$download,
 			esc_attr__( 'Interactive route map', 'gpx-route-map' ),
 			self::placeholder_html()
 		);
@@ -228,7 +254,7 @@ class Renderer {
 	 * Normalize block attributes and shortcode atts into one shape.
 	 *
 	 * @param array<string, mixed> $atts Raw attributes.
-	 * @return array{gpx_url: string, height: int, show_stats: bool, show_elevation: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null, units: string}
+	 * @return array{gpx_url: string, height: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null, units: string}
 	 */
 	private static function normalize( array $atts ): array {
 		$gpx_url = '';
@@ -254,6 +280,7 @@ class Renderer {
 			'height'         => self::clamp( $height, 200, 1200 ),
 			'show_stats'     => self::normalize_visibility( $atts['showStats'] ?? '', self::default_show_stats() ),
 			'show_elevation' => self::normalize_visibility( $atts['showElevation'] ?? '', self::default_show_elevation() ),
+			'show_download'  => self::normalize_visibility( $atts['showDownload'] ?? '', self::default_show_download() ),
 			'max_zoom'       => self::clamp( $max_zoom, 1, 22 ),
 			'tile_url'       => $tile_url,
 			'stats'          => self::normalize_stats( $atts['stats'] ?? null ),
@@ -346,8 +373,22 @@ class Renderer {
 				'cors'     => __( 'Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead.', 'gpx-route-map' ),
 				'invalid'  => __( 'Invalid GPX file.', 'gpx-route-map' ),
 				'nopoints' => __( 'No track or route points found in GPX file.', 'gpx-route-map' ),
+				'download' => __( 'Download GPX file', 'gpx-route-map' ),
 			)
 		);
+	}
+
+	/**
+	 * A sensible filename for the downloaded GPX file.
+	 *
+	 * @param string $gpx_url GPX URL.
+	 * @return string
+	 */
+	private static function download_filename( string $gpx_url ): string {
+		$path = (string) wp_parse_url( $gpx_url, PHP_URL_PATH );
+		$name = basename( $path );
+
+		return ( '' !== $name && preg_match( '/\.gpx$/i', $name ) ) ? $name : 'route.gpx';
 	}
 
 	/**

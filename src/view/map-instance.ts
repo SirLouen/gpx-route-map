@@ -12,6 +12,7 @@ import {
 	TRACK_CASING,
 	DEFAULT_TILE_URL,
 	DEFAULT_ATTRIBUTION,
+	DownloadControl,
 } from './map-core';
 import type { FeatureCollection } from 'geojson';
 import type { GeoJSONSource } from 'maplibre-gl';
@@ -69,6 +70,7 @@ interface ViewMessages {
 	cors: string;
 	invalid: string;
 	nopoints: string;
+	download: string;
 }
 
 const FALLBACK_MESSAGES: ViewMessages = {
@@ -76,6 +78,7 @@ const FALLBACK_MESSAGES: ViewMessages = {
 	cors: 'Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead.',
 	invalid: 'Invalid GPX file.',
 	nopoints: 'No track or route points found in GPX file.',
+	download: 'Download GPX file',
 };
 
 /**
@@ -159,6 +162,15 @@ export async function initInstance(
 		bounds,
 		maxZoom,
 	} );
+
+	// The server only sets this attribute when the download button is enabled.
+	const downloadName = mapEl.dataset.gpxrmDownload;
+	if ( downloadName ) {
+		map.addControl(
+			new DownloadControl( gpxUrl, downloadName, msg.download ),
+			'top-right'
+		);
+	}
 
 	const units = readUnits( mapEl );
 	const stats = routeStats( coords, segStarts );

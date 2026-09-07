@@ -45,6 +45,19 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	/**
+	 * Stand in for WordPress's wrapper around parse_url().
+	 *
+	 * @param string $url       URL to parse.
+	 * @param int    $component Component to return.
+	 * @return mixed
+	 */
+	function wp_parse_url( string $url, int $component = -1 ) {
+		return parse_url( $url, $component ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url
+	}
+}
+
 if ( ! function_exists( 'get_option' ) ) {
 	/**
 	 * Read from a test-controlled option store.

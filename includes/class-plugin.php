@@ -82,17 +82,21 @@ class Plugin {
 		);
 
 		$panels = array(
-			'gpxrm_show_stats'     => __( 'Stats bar', 'gpx-route-map' ),
-			'gpxrm_show_elevation' => __( 'Elevation profile', 'gpx-route-map' ),
+			'gpxrm_show_stats'     => array( __( 'Stats bar', 'gpx-route-map' ), 'show' ),
+			'gpxrm_show_elevation' => array( __( 'Elevation profile', 'gpx-route-map' ), 'show' ),
+			// Off by default so updating never adds a button to existing maps.
+			'gpxrm_show_download'  => array( __( 'Download button', 'gpx-route-map' ), 'hide' ),
 		);
 
-		foreach ( $panels as $option => $label ) {
+		foreach ( $panels as $option => $field ) {
+			list( $label, $default ) = $field;
+
 			register_setting(
 				'general',
 				$option,
 				array(
 					'type'              => 'string',
-					'default'           => 'show',
+					'default'           => $default,
 					'sanitize_callback' => array( $this, 'sanitize_visibility' ),
 					'show_in_rest'      => true,
 				)
@@ -138,10 +142,18 @@ class Plugin {
 	 * @return void
 	 */
 	public function render_visibility_field( array $args ): void {
-		$option  = $args['option'] ?? '';
-		$current = ( 'gpxrm_show_elevation' === $option )
-			? Renderer::default_show_elevation()
-			: Renderer::default_show_stats();
+		$option = $args['option'] ?? '';
+		switch ( $option ) {
+			case 'gpxrm_show_elevation':
+				$current = Renderer::default_show_elevation();
+				break;
+			case 'gpxrm_show_download':
+				$current = Renderer::default_show_download();
+				break;
+			default:
+				$current = Renderer::default_show_stats();
+				break;
+		}
 
 		$choices = array(
 			'show' => __( 'Shown', 'gpx-route-map' ),
@@ -291,6 +303,7 @@ class Plugin {
 	 *   height    Map height in pixels (default 480).
 	 *   stats     Show the stats bar: "true"/"false" (defaults to the site setting).
 	 *   elevation Show the elevation profile: "true"/"false" (defaults to the site setting).
+	 *   download  Show the GPX download button: "true"/"false" (defaults to the site setting).
 	 *   maxzoom   Maximum zoom level (default 17).
 	 *   tile      Override raster tile URL template.
 	 *   units     "metric" or "imperial" (defaults to the site setting).
@@ -306,6 +319,7 @@ class Plugin {
 				'height'    => 480,
 				'stats'     => '',
 				'elevation' => '',
+				'download'  => '',
 				'maxzoom'   => 17,
 				'tile'      => '',
 				'units'     => '',
@@ -318,6 +332,7 @@ class Plugin {
 			'height'        => (int) $atts['height'],
 			'showStats'     => $atts['stats'],
 			'showElevation' => $atts['elevation'],
+			'showDownload'  => $atts['download'],
 			'maxZoom'       => (int) $atts['maxzoom'],
 			'tileUrl'       => (string) $atts['tile'],
 			'units'         => (string) $atts['units'],

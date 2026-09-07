@@ -59,6 +59,7 @@ Shortcode attributes:
 * `height` - Map height in pixels, from 200 to 1200. Default: 480.
 * `stats` - Show the stats bar (distance, elevation, waypoints). `true` or `false`. Default: the site setting.
 * `elevation` - Show the interactive elevation profile. `true` or `false`. Default: the site setting.
+* `download` - Show the GPX download button on the map. `true` or `false`. Default: the site setting (off).
 * `maxzoom` - Maximum zoom level, from 1 to 22. Default: 17.
 * `tile` - Custom raster tile URL template using `{z}/{x}/{y}`. Default: OpenStreetMap.
 * `units` - `metric` (km / m) or `imperial` (mi / ft). Default: the site setting.
@@ -72,6 +73,7 @@ Filters (for developers):
 * `gpxrm_units` - change the site-wide unit system (`metric` or `imperial`).
 * `gpxrm_show_stats` - change whether the stats bar shows by default (boolean).
 * `gpxrm_show_elevation` - change whether the elevation profile shows by default (boolean).
+* `gpxrm_show_download` - change whether the download button shows by default (boolean).
 
 == Frequently Asked Questions ==
 
@@ -90,6 +92,10 @@ Yes. Go to Settings > General and set "GPX map units" to Imperial, and every map
 = Can I hide the stats bar or the elevation profile? =
 
 Yes, either one, for the whole site or for a single map. Go to Settings > General and set "Stats bar" or "Elevation profile" to Hidden to change every map at once. To change just one map, use the block's Display panel, or add `stats="false"` or `elevation="false"` to the shortcode. A map set to "Site default" follows the setting, so you can change your mind later in one place.
+
+= Can visitors download the GPX file? =
+
+Yes, if you switch the download button on. It is off by default. Go to Settings > General and set "Download button" to Shown, or turn it on for a single map from the block's Display panel or with `download="true"` on the shortcode. The button appears on the map next to the zoom and fullscreen controls. Files in your Media Library download with their own filename; a GPX hosted on another site opens instead of downloading, because browsers only honour the download hint for files served from the same site.
 
 = Can I use my own map tiles? =
 
@@ -117,7 +123,8 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 = 1.4.0 =
 * New: choose whether the stats bar and the elevation profile are shown. Set it for the whole site under Settings > General, or override it on a single map from the block's Display panel.
 * The `stats` and `elevation` shortcode attributes now follow the site setting when you leave them out, and still accept `true` or `false` to force either way.
-* Existing maps are unaffected: anything you had already switched off stays off.
+* New: an optional download button on the map, in the same control stack as zoom and fullscreen, that lets visitors save the GPX file. It is off until you switch it on, under Settings > General or on a single map.
+* Existing maps are unaffected: anything you had already switched off stays off, and no download button appears unless you ask for one.
 
 = 1.3.0 =
 * New: choose between metric (km / m) and imperial (mi / ft) units. Set it for the whole site under Settings > General, override it on a single map from the block's Display panel, or pass `units="imperial"` to the shortcode.
