@@ -28,6 +28,7 @@ class Plugin {
 		add_action( 'init', array( $this, 'register_block' ) );
 		add_action( 'init', array( $this, 'register_shortcode' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_footer-options-general.php', array( $this, 'print_settings_script' ) );
 		add_filter( 'upload_mimes', array( $this, 'allow_gpx_upload' ) );
 		add_filter( 'wp_check_filetype_and_ext', array( $this, 'fix_gpx_filetype_check' ), 10, 4 );
 	}
@@ -114,6 +115,113 @@ class Plugin {
 				)
 			);
 		}
+
+		register_setting(
+			'general',
+			'gpxrm_stat_fields',
+			array(
+				'type'              => 'string',
+				'default'           => implode( ',', Renderer::STAT_FIELDS ),
+				'sanitize_callback' => array( $this, 'sanitize_stat_fields' ),
+				'show_in_rest'      => true,
+			)
+		);
+
+		add_settings_field(
+			'gpxrm_stat_fields',
+			__( 'Stats shown', 'gpx-route-map' ),
+			array( $this, 'render_stat_fields_field' ),
+			'general',
+			'gpxrm_settings',
+			// Lets the row be hidden while the bar itself is switched off.
+			array( 'class' => 'gpxrm-stat-fields-row' )
+		);
+	}
+
+	/**
+	 * Hide the stat list while the stats bar is switched off, since choosing
+	 * what goes in a bar that is not rendered has no meaning.
+	 *
+	 * @return void
+	 */
+	public function print_settings_script(): void {
+		?>
+		<script>
+			( function () {
+				var toggle = document.getElementById( 'gpxrm_show_stats' );
+				var row = document.querySelector( '.gpxrm-stat-fields-row' );
+				if ( ! toggle || ! row ) {
+					return;
+				}
+				function sync() {
+					row.hidden = 'hide' === toggle.value;
+				}
+				toggle.addEventListener( 'change', sync );
+				sync();
+			}() );
+		</script>
+		<?php
+	}
+
+	/**
+	 * Labels for each stat, used by the settings checkboxes.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function stat_field_labels(): array {
+		return array(
+			'distance'  => __( 'Distance', 'gpx-route-map' ),
+			'gain'      => __( 'Elevation gain', 'gpx-route-map' ),
+			'loss'      => __( 'Elevation loss', 'gpx-route-map' ),
+			'max'       => __( 'Max elevation', 'gpx-route-map' ),
+			'waypoints' => __( 'Waypoints', 'gpx-route-map' ),
+		);
+	}
+
+	/**
+	 * Store the checked stats as a comma separated list of known keys.
+	 *
+	 * @param mixed $value Submitted value.
+	 * @return string
+	 */
+	public function sanitize_stat_fields( $value ): string {
+		$submitted = is_array( $value ) ? $value : explode( ',', is_string( $value ) ? $value : '' );
+		$wanted    = array();
+
+		foreach ( $submitted as $key ) {
+			if ( is_string( $key ) ) {
+				$wanted[] = strtolower( trim( $key ) );
+			}
+		}
+
+		return implode( ',', array_intersect( Renderer::STAT_FIELDS, $wanted ) );
+	}
+
+	/**
+	 * Output a checkbox per stat.
+	 *
+	 * @return void
+	 */
+	public function render_stat_fields_field(): void {
+		$current = Renderer::default_stat_fields();
+
+		echo '<fieldset>';
+		printf(
+			'<legend class="screen-reader-text">%s</legend>',
+			esc_html__( 'Stats shown', 'gpx-route-map' )
+		);
+
+		foreach ( self::stat_field_labels() as $key => $label ) {
+			printf(
+				'<label for="gpxrm_stat_%1$s" style="display:block;margin-bottom:4px"><input type="checkbox" id="gpxrm_stat_%1$s" name="gpxrm_stat_fields[]" value="%1$s"%2$s> %3$s</label>',
+				esc_attr( $key ),
+				checked( in_array( $key, $current, true ), true, false ),
+				esc_html( $label )
+			);
+		}
+
+		echo '</fieldset>';
+		echo '<p class="description">' . esc_html__( 'Which figures the stats bar lists. To remove the bar altogether, set Stats bar to Hidden.', 'gpx-route-map' ) . '</p>';
 	}
 
 	/**
@@ -304,6 +412,7 @@ class Plugin {
 	 *   stats     Show the stats bar: "true"/"false" (defaults to the site setting).
 	 *   elevation Show the elevation profile: "true"/"false" (defaults to the site setting).
 	 *   download  Show the GPX download button: "true"/"false" (defaults to the site setting).
+	 *   fields    Which stats to list, e.g. "distance,gain"; "none" hides them all.
 	 *   maxzoom   Maximum zoom level (default 17).
 	 *   tile      Override raster tile URL template.
 	 *   units     "metric" or "imperial" (defaults to the site setting).
@@ -320,6 +429,7 @@ class Plugin {
 				'stats'     => '',
 				'elevation' => '',
 				'download'  => '',
+				'fields'    => '',
 				'maxzoom'   => 17,
 				'tile'      => '',
 				'units'     => '',
@@ -333,6 +443,7 @@ class Plugin {
 			'showStats'     => $atts['stats'],
 			'showElevation' => $atts['elevation'],
 			'showDownload'  => $atts['download'],
+			'statFields'    => $atts['fields'],
 			'maxZoom'       => (int) $atts['maxzoom'],
 			'tileUrl'       => (string) $atts['tile'],
 			'units'         => (string) $atts['units'],

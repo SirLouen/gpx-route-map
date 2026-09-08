@@ -39,6 +39,10 @@
 			"type": "string",
 			"default": ""
 		},
+		"statFields": {
+			"type": "string",
+			"default": ""
+		},
 		"maxZoom": {
 			"type": "number",
 			"default": 17

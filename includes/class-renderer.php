@@ -21,6 +21,11 @@ class Renderer {
 	const BLOCK_NAME = 'gpx-route-map/map';
 
 	/**
+	 * Every stat the bar can show, in the order they are displayed.
+	 */
+	const STAT_FIELDS = array( 'distance', 'gain', 'loss', 'max', 'waypoints' );
+
+	/**
 	 * Default raster tile template. Filterable so site owners can point the
 	 * plugin at their own tile server (see the OpenStreetMap tile usage policy).
 	 *
@@ -120,6 +125,76 @@ class Renderer {
 		 * @param bool $show True to show the download button.
 		 */
 		return apply_filters( 'gpxrm_show_download', self::stored_visibility( 'gpxrm_show_download', 'hide' ) );
+	}
+
+	/**
+	 * Keep only known stat keys, in their canonical display order.
+	 *
+	 * @param array<int, mixed> $keys Candidate keys.
+	 * @return array<int, string>
+	 */
+	private static function filter_stat_fields( array $keys ): array {
+		$wanted = array();
+		foreach ( $keys as $key ) {
+			if ( is_string( $key ) ) {
+				$wanted[] = strtolower( trim( $key ) );
+			}
+		}
+
+		return array_values( array_intersect( self::STAT_FIELDS, $wanted ) );
+	}
+
+	/**
+	 * The stats shown unless a map says otherwise.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function default_stat_fields(): array {
+		$stored = get_option( 'gpxrm_stat_fields', implode( ',', self::STAT_FIELDS ) );
+		$fields = is_string( $stored )
+			? self::filter_stat_fields( explode( ',', $stored ) )
+			: self::STAT_FIELDS;
+
+		/**
+		 * Filters which stats the bar shows by default.
+		 *
+		 * @param array<int, string> $fields Stat keys, from Renderer::STAT_FIELDS.
+		 */
+		$filtered = apply_filters( 'gpxrm_stat_fields', $fields );
+
+		// Re-filtered so a hook cannot introduce an unknown key or reorder them.
+		$filtered = self::filter_stat_fields( $filtered );
+
+		// This list only says which stats appear, never whether the bar does;
+		// hiding it is the separate "Stats bar" setting's job. An empty list
+		// would be a second way to hide it, so it falls back to all.
+		return array() === $filtered ? self::STAT_FIELDS : $filtered;
+	}
+
+	/**
+	 * Resolve which stats one map shows.
+	 *
+	 * An empty attribute defers to the site setting. The result is never empty:
+	 * whether the bar appears at all is the "Stats bar" setting's job, so a list
+	 * that names nothing recognisable falls back rather than hiding it.
+	 *
+	 * @param mixed              $raw          Raw attribute, a comma separated list.
+	 * @param array<int, string> $site_default Fields to use when the attribute defers.
+	 * @return array<int, string>
+	 */
+	private static function normalize_stat_fields( $raw, array $site_default ): array {
+		if ( ! is_string( $raw ) ) {
+			return $site_default;
+		}
+
+		$value = strtolower( trim( $raw ) );
+		if ( '' === $value || 'default' === $value ) {
+			return $site_default;
+		}
+
+		$fields = self::filter_stat_fields( explode( ',', $value ) );
+
+		return array() === $fields ? $site_default : $fields;
 	}
 
 	/**
@@ -238,7 +313,7 @@ class Renderer {
 			self::placeholder_html()
 		);
 
-		$stats_html     = $a['show_stats'] ? self::stats_html( $stats, $units ) : '';
+		$stats_html     = $a['show_stats'] ? self::stats_html( $stats, $units, $a['stat_fields'] ) : '';
 		$elevation_html = $a['show_elevation'] ? self::elevation_html() : '';
 
 		return sprintf(
@@ -254,7 +329,7 @@ class Renderer {
 	 * Normalize block attributes and shortcode atts into one shape.
 	 *
 	 * @param array<string, mixed> $atts Raw attributes.
-	 * @return array{gpx_url: string, height: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null, units: string}
+	 * @return array{gpx_url: string, height: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null, units: string, stat_fields: array<int, string>}
 	 */
 	private static function normalize( array $atts ): array {
 		$gpx_url = '';
@@ -281,6 +356,7 @@ class Renderer {
 			'show_stats'     => self::normalize_visibility( $atts['showStats'] ?? '', self::default_show_stats() ),
 			'show_elevation' => self::normalize_visibility( $atts['showElevation'] ?? '', self::default_show_elevation() ),
 			'show_download'  => self::normalize_visibility( $atts['showDownload'] ?? '', self::default_show_download() ),
+			'stat_fields'    => self::normalize_stat_fields( $atts['statFields'] ?? '', self::default_stat_fields() ),
 			'max_zoom'       => self::clamp( $max_zoom, 1, 22 ),
 			'tile_url'       => $tile_url,
 			'stats'          => self::normalize_stats( $atts['stats'] ?? null ),
@@ -395,11 +471,12 @@ class Renderer {
 	 * Stats bar markup. Values are computed once in the editor and stored on the
 	 * block; the front-end JS refreshes them live after it parses the GPX.
 	 *
-	 * @param array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null $stats Stored stats or null.
-	 * @param array{distFactor: float, distLabel: string, eleFactor: float, eleLabel: string}   $units Unit conversion.
+	 * @param array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null $stats  Stored stats or null.
+	 * @param array{distFactor: float, distLabel: string, eleFactor: float, eleLabel: string}   $units  Unit conversion.
+	 * @param array<int, string>                                                                $fields Stats to include.
 	 * @return string
 	 */
-	private static function stats_html( ?array $stats, array $units ): string {
+	private static function stats_html( ?array $stats, array $units, array $fields ): string {
 		$distance  = static function ( float $km ) use ( $units ): string {
 			return number_format_i18n( $km * $units['distFactor'], 2 ) . ' ' . $units['distLabel'];
 		};
@@ -417,6 +494,9 @@ class Renderer {
 
 		$items = '';
 		foreach ( $rows as $key => $row ) {
+			if ( ! in_array( $key, $fields, true ) ) {
+				continue;
+			}
 			$items .= sprintf(
 				'<div class="gpxrm-stat"><dt class="gpxrm-stat-label">%1$s</dt><dd class="gpxrm-stat-value" data-gpxrm-stat="%2$s">%3$s</dd></div>',
 				esc_html( $row[0] ),

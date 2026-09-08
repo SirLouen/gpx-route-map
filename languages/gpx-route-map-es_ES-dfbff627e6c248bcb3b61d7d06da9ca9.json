@@ -13,6 +13,21 @@
             "GPX Route Map": [
                 "GPX Route Map"
             ],
+            "Distance": [
+                "Distancia"
+            ],
+            "Elevation gain": [
+                "Desnivel positivo"
+            ],
+            "Elevation loss": [
+                "Desnivel negativo"
+            ],
+            "Max elevation": [
+                "Altitud m\u00e1xima"
+            ],
+            "Waypoints": [
+                "Waypoints"
+            ],
             "Elevation profile": [
                 "Perfil de desnivel"
             ],
@@ -96,6 +111,15 @@
             ],
             "Adds a button on the map for visitors to download the GPX file.": [
                 "A\u00f1ade un bot\u00f3n en el mapa para que los visitantes descarguen el archivo GPX."
+            ],
+            "Stats bar items": [
+                "Elementos de la barra de estad\u00edsticas"
+            ],
+            "Use site default": [
+                "Usar el ajuste del sitio"
+            ],
+            "Follow the stats chosen under Settings \u2192 General.": [
+                "Usa las estad\u00edsticas elegidas en Ajustes \u2192 Generales."
             ]
         }
     }
