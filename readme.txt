@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,7 @@ Shortcode attributes:
 * `maxzoom` - Maximum zoom level, from 1 to 22. Default: 17.
 * `tile` - Custom raster tile URL template using `{z}/{x}/{y}`. Default: OpenStreetMap.
 * `units` - `metric` (km / m) or `imperial` (mi / ft). Default: the site setting.
+* `fields` - Which stats to list, e.g. `distance,gain`. Default: the site setting. Use `stats="false"` to remove the bar.
 
 Provide either `id` or `gpx`. The block exposes the same options in its sidebar (Source, Display and Map tiles panels).
 
@@ -74,6 +75,7 @@ Filters (for developers):
 * `gpxrm_show_stats` - change whether the stats bar shows by default (boolean).
 * `gpxrm_show_elevation` - change whether the elevation profile shows by default (boolean).
 * `gpxrm_show_download` - change whether the download button shows by default (boolean).
+* `gpxrm_stat_fields` - change which stats the bar lists by default (array of `distance`, `gain`, `loss`, `max`, `waypoints`).
 
 == Frequently Asked Questions ==
 
@@ -92,6 +94,10 @@ Yes. Go to Settings > General and set "GPX map units" to Imperial, and every map
 = Can I hide the stats bar or the elevation profile? =
 
 Yes, either one, for the whole site or for a single map. Go to Settings > General and set "Stats bar" or "Elevation profile" to Hidden to change every map at once. To change just one map, use the block's Display panel, or add `stats="false"` or `elevation="false"` to the shortcode. A map set to "Site default" follows the setting, so you can change your mind later in one place.
+
+= Can I show only some of the figures in the stats bar? =
+
+Yes. Under Settings > General, "Stats shown" has a checkbox for each of Distance, Elevation gain, Elevation loss, Max elevation and Waypoints, so you can keep just the ones you care about. A single map can differ: open the block's "Stats bar items" panel, turn off "Use site default" and tick what you want, or pass `fields="distance,gain"` to the shortcode. At least one figure always stays ticked; to remove the bar altogether use the separate "Stats bar" setting.
 
 = Can visitors download the GPX file? =
 
@@ -119,6 +125,10 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 2. Selecting a GPX file in the block editor.
 
 == Changelog ==
+
+= 1.5.0 =
+* New: choose which figures the stats bar lists. Settings > General has a checkbox for Distance, Elevation gain, Elevation loss, Max elevation and Waypoints, and a single map can differ from the rest through the block's "Stats bar items" panel or the `fields` shortcode attribute.
+* The two settings stay distinct: "Stats bar" decides whether the bar appears, "Stats shown" decides what it lists. Choosing the contents is hidden while the bar is switched off.
 
 = 1.4.0 =
 * New: choose whether the stats bar and the elevation profile are shown. Set it for the whole site under Settings > General, or override it on a single map from the block's Display panel.
@@ -148,6 +158,9 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 1.5.0 =
+Adds a setting for choosing which figures the stats bar lists.
 
 = 1.4.0 =
 Adds a site-wide setting for showing or hiding the stats bar and the elevation profile.

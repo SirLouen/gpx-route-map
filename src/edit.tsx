@@ -25,6 +25,8 @@ import {
 	ToolbarButton,
 	ExternalLink,
 	SelectControl,
+	ToggleControl,
+	CheckboxControl,
 } from '@wordpress/components';
 
 import { parseGPX } from './view/map-core';
@@ -50,11 +52,54 @@ export type GpxBlockAttributes = {
 	showStats: string;
 	showElevation: string;
 	showDownload: string;
+	statFields: string;
 	maxZoom: number;
 	tileUrl: string;
 	units: string;
 	stats?: GpxStats;
 };
+
+/**
+ * The stats the bar can list, in display order. Mirrors Renderer::STAT_FIELDS.
+ */
+const STAT_FIELDS: Array< { key: string; label: string } > = [
+	{ key: 'distance', label: __( 'Distance', 'gpx-route-map' ) },
+	{ key: 'gain', label: __( 'Elevation gain', 'gpx-route-map' ) },
+	{ key: 'loss', label: __( 'Elevation loss', 'gpx-route-map' ) },
+	{ key: 'max', label: __( 'Max elevation', 'gpx-route-map' ) },
+	{ key: 'waypoints', label: __( 'Waypoints', 'gpx-route-map' ) },
+];
+
+/**
+ * Parse the stored stat list.
+ *
+ * `''` means "follow the site setting", which the caller checks before asking
+ * for the list, so an empty result here only means nothing recognisable.
+ *
+ * @param value Stored attribute value.
+ */
+function parseStatFields( value: string ): string[] {
+	return value
+		.split( ',' )
+		.map( ( k ) => k.trim() )
+		.filter( ( k ) => STAT_FIELDS.some( ( f ) => f.key === k ) );
+}
+
+/**
+ * Serialise a stat selection back to the attribute.
+ *
+ * @param keys Selected stat keys.
+ */
+function serialiseStatFields( keys: string[] ): string {
+	const ordered = STAT_FIELDS.filter( ( f ) => keys.includes( f.key ) ).map(
+		( f ) => f.key
+	);
+	// Never empty: whether the bar appears is the Stats bar setting's job, so
+	// the last remaining figure cannot be unticked.
+	return ordered.length
+		? ordered.join( ',' )
+		: STAT_FIELDS.map( ( f ) => f.key ).join( ',' );
+}
 
 /** Choices for the panels that can defer to the site setting. */
 const VISIBILITY_OPTIONS = [
@@ -130,6 +175,7 @@ export default function Edit( {
 		showStats,
 		showElevation,
 		showDownload,
+		statFields,
 		maxZoom,
 		tileUrl,
 		units,
@@ -384,6 +430,72 @@ export default function Edit( {
 						max={ 22 }
 					/>
 				</PanelBody>
+
+				{ /* Choosing what goes in a bar that is switched off has no
+				     meaning, so the panel goes away with it. */ }
+				{ 'hide' !== visibilityChoice( showStats ) && (
+					<PanelBody
+						title={ __( 'Stats bar items', 'gpx-route-map' ) }
+						initialOpen={ false }
+					>
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __( 'Use site default', 'gpx-route-map' ) }
+							help={ __(
+								'Follow the stats chosen under Settings → General.',
+								'gpx-route-map'
+							) }
+							checked={ '' === statFields }
+							onChange={ ( useDefault ) =>
+								setAttributes( {
+									statFields: useDefault
+										? ''
+										: serialiseStatFields(
+												STAT_FIELDS.map(
+													( f ) => f.key
+												)
+										  ),
+								} )
+							}
+						/>
+						{ '' !== statFields &&
+							STAT_FIELDS.map( ( field ) => {
+								const selected = parseStatFields( statFields );
+								const isChecked = selected.includes(
+									field.key
+								);
+								return (
+									<CheckboxControl
+										__nextHasNoMarginBottom
+										key={ field.key }
+										label={ field.label }
+										checked={ isChecked }
+										// The last one stays ticked: emptying the
+										// list is not how the bar is hidden.
+										disabled={
+											isChecked && 1 === selected.length
+										}
+										onChange={ ( checked ) =>
+											setAttributes( {
+												statFields: serialiseStatFields(
+													checked
+														? [
+																...selected,
+																field.key,
+														  ]
+														: selected.filter(
+																( k ) =>
+																	k !==
+																	field.key
+														  )
+												),
+											} )
+										}
+									/>
+								);
+							} ) }
+					</PanelBody>
+				) }
 
 				<PanelBody
 					title={ __( 'Map tiles', 'gpx-route-map' ) }
