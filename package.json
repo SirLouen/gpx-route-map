@@ -46,8 +46,8 @@
     "maplibre-gl": "^5.19.0"
   },
   "devDependencies": {
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "@wordpress/block-editor": "^16.0.0",
     "@wordpress/blocks": "^15.24.0",
     "@wordpress/components": "^37.0.0",
