@@ -3,7 +3,8 @@ name: AI Review (local Qwen3.8)
 # Runs a self-hosted Qwen3.8-27B code reviewer on a self-hosted Windows runner.
 #
 # SECURITY: this repository is public and the job runs on a self-hosted runner, so:
-#   - fork PRs are never dispatched to the runner (see the `if` guard below)
+#   - fork PRs are refused on both entry points: the `if` guard for pull_request
+#     events, and an explicit API check for manual dispatch
 #   - the workflow NEVER checks out PR code; the reviewer works entirely from the
 #     GitHub API, so no contributor-authored code is executed on the runner
 #   - reviews run only when a maintainer applies the `ai-review` label, or on manual dispatch
@@ -74,6 +75,29 @@ jobs:
           "number=$n"        | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "publish=$publish" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "PR #$n  publish=$publish"
+
+      # The `if` guard above covers pull_request events, but manual dispatch takes an
+      # arbitrary PR number - which could name a fork PR. Verify it explicitly so both
+      # entry points honour the same same-repo policy.
+      - name: Reject fork-originated PR (manual dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO:     ${{ github.repository }}
+          PR_NUM:   ${{ steps.target.outputs.number }}
+        shell: pwsh
+        run: |
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
+          try {
+            $pr = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/pulls/$env:PR_NUM" -Headers $headers
+          } catch {
+            throw "Could not resolve PR #$env:PR_NUM in $env:REPO"
+          }
+          $head = $pr.head.repo.full_name
+          if ( $head -ne $env:REPO ) {
+            throw "PR #$env:PR_NUM originates from '$head', not '$env:REPO'. Refusing to review a fork PR."
+          }
+          Write-Host "PR #$env:PR_NUM is same-repo ($head)"
 
       - name: Check model server
         shell: pwsh
