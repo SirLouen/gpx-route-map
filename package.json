@@ -43,7 +43,7 @@
   },
   "prettier": "@wordpress/prettier-config",
   "dependencies": {
-    "maplibre-gl": "^5.19.0"
+    "maplibre-gl": "^6.7.0"
   },
   "devDependencies": {
     "@types/react": "^19",
