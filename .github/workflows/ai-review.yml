@@ -1,0 +1,80 @@
+name: AI Review (local Qwen3.8)
+
+# Runs the local Qwen3.8-27B reviewer on a self-hosted runner (Manuel's Windows box).
+# SECURITY: this repo is PUBLIC and the runner is a personal machine, so:
+#   - fork PRs are never dispatched to the runner (see the `if` guard below)
+#   - the workflow NEVER checks out PR code; PR-Agent works entirely from the GitHub API,
+#     so no attacker-authored code is executed on the runner
+#   - reviews only run when a maintainer adds the `ai-review` label, or via manual dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to review"
+        required: true
+        type: string
+      publish:
+        description: "Post the review to the PR (uncheck for a dry run)"
+        required: false
+        default: true
+        type: boolean
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# One review at a time - the local model cannot serve two, and this keeps the
+# machine usable while it runs.
+concurrency:
+  group: local-llm-review
+  cancel-in-progress: false
+
+jobs:
+  review:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      ( github.event.label.name == 'ai-review' &&
+        github.event.pull_request.head.repo.full_name == github.repository )
+    runs-on: [self-hosted, qwen]
+    timeout-minutes: 40
+
+    steps:
+      - name: Resolve target PR
+        id: target
+        shell: pwsh
+        run: |
+          if ( '${{ github.event_name }}' -eq 'workflow_dispatch' ) {
+            $n       = '${{ inputs.pr_number }}'
+            $publish = '${{ inputs.publish }}'
+          } else {
+            $n       = '${{ github.event.pull_request.number }}'
+            $publish = 'true'
+          }
+          if ( -not $n ) { throw "Could not determine a PR number" }
+          "number=$n"   | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "publish=$publish" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "PR #$n  publish=$publish"
+
+      - name: Check local model server
+        shell: pwsh
+        run: |
+          try {
+            $h = Invoke-RestMethod -Uri 'http://127.0.0.1:8080/health' -TimeoutSec 10
+            Write-Host "llama-server healthy: $($h.status)"
+          } catch {
+            throw "llama-server is not responding on 127.0.0.1:8080. Start C:\llama\start-server-polite.ps1 on the runner host."
+          }
+
+      - name: Run review
+        shell: pwsh
+        run: |
+          $url = "https://github.com/${{ github.repository }}/pull/${{ steps.target.outputs.number }}"
+          if ( '${{ steps.target.outputs.publish }}' -eq 'true' ) {
+            & C:\reviewer\review.ps1 -PrUrl $url -Publish
+          } else {
+            Write-Host "DRY RUN - nothing will be posted"
+            & C:\reviewer\review.ps1 -PrUrl $url
+          }
