@@ -20,7 +20,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Check out
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
 
             - name: Update WordPress.org assets
               uses: 10up/action-wordpress-plugin-asset-update@stable

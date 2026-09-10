@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -150,6 +150,12 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 
 == Changelog ==
 
+= 1.6.1 =
+* Fixed: the "Map failed to load" message on the front end was always in English. It is now translated like every other message the plugin shows.
+* Fixed: a hint in the block editor still pointed at Settings > General after the settings moved to their own screen in 1.6.0.
+* The Custom tile URL field now documents `{ratio}`, the placeholder for providers that serve retina tiles, and notes that the address should use https.
+
+
 = 1.6.0 =
 * The plugin's settings now have their own screen at Settings > GPX Route Map, instead of sitting at the bottom of Settings > General. Your existing choices carry over untouched.
 * New: Thunderforest map tiles. Enter an API key and pick from the Outdoors, OpenCycleMap, Landscape and Atlas styles for maps built for hiking and cycling.
@@ -188,6 +194,10 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 1.6.1 =
+Translation and wording fixes: the front-end "Map failed to load" message is now translatable, and an editor hint pointed at the old settings location.
+
 
 = 1.6.0 =
 Settings move to their own screen at Settings > GPX Route Map, and Thunderforest map tiles can now be used with an API key.

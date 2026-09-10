@@ -569,6 +569,7 @@ class Renderer {
 				'invalid'  => __( 'Invalid GPX file.', 'gpx-route-map' ),
 				'nopoints' => __( 'No track or route points found in GPX file.', 'gpx-route-map' ),
 				'download' => __( 'Download GPX file', 'gpx-route-map' ),
+				'maplibre' => __( 'Map failed to load. Click to retry.', 'gpx-route-map' ),
 			)
 		);
 	}

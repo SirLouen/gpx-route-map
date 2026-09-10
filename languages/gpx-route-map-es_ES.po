@@ -79,43 +79,43 @@ msgid "No track or route points found in GPX file."
 msgstr "No se han encontrado puntos de pista ni de ruta en el archivo GPX."
 
 #: includes/class-plugin.php:357
-#: includes/class-renderer.php:607
+#: includes/class-renderer.php:608
 #: build/index.js:239
 msgid "Distance"
 msgstr "Distancia"
 
 #: includes/class-plugin.php:358
-#: includes/class-renderer.php:608
+#: includes/class-renderer.php:609
 #: build/index.js:243
 msgid "Elevation gain"
 msgstr "Desnivel positivo"
 
 #: includes/class-plugin.php:359
-#: includes/class-renderer.php:609
+#: includes/class-renderer.php:610
 #: build/index.js:247
 msgid "Elevation loss"
 msgstr "Desnivel negativo"
 
 #: includes/class-plugin.php:360
-#: includes/class-renderer.php:610
+#: includes/class-renderer.php:611
 #: build/index.js:251
 msgid "Max elevation"
 msgstr "Altitud máxima"
 
 #: includes/class-plugin.php:361
-#: includes/class-renderer.php:611
+#: includes/class-renderer.php:612
 #: build/index.js:255
 msgid "Waypoints"
 msgstr "Waypoints"
 
 #: includes/class-plugin.php:125
-#: includes/class-renderer.php:638
+#: includes/class-renderer.php:639
 #: build/index.js:451
 #: build/index.js:581
 msgid "Elevation profile"
 msgstr "Perfil de desnivel"
 
-#: includes/class-renderer.php:639
+#: includes/class-renderer.php:640
 msgid "Elevation profile along the route"
 msgstr "Perfil de desnivel a lo largo de la ruta"
 
@@ -166,10 +166,6 @@ msgstr "Teselas del mapa"
 #: build/index.js:525
 msgid "Custom tile URL"
 msgstr "URL de teselas personalizada"
-
-#: build/index.js:526
-msgid "Raster tile template with {z}/{x}/{y}. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites."
-msgstr "Plantilla de teselas ráster con {z}/{x}/{y}. Déjalo en blanco para usar OpenStreetMap. Las teselas públicas de OSM tienen un límite de uso; usa tu propio proveedor en sitios con mucho tráfico."
 
 #: build/index.js:539
 msgid "Replace GPX"
@@ -348,10 +344,6 @@ msgstr "Elementos de la barra de estadísticas"
 msgid "Use site default"
 msgstr "Usar el ajuste del sitio"
 
-#: build/index.js:504
-msgid "Follow the stats chosen under Settings → General."
-msgstr "Usa las estadísticas elegidas en Ajustes → Generales."
-
 #: includes/class-plugin.php:408
 msgid "Which figures the stats bar lists. To remove the bar altogether, set Stats bar to Hidden."
 msgstr "Qué datos aparecen en la barra de estadísticas. Para quitar la barra por completo, pon «Barra de estadísticas» en Ocultar."
@@ -413,3 +405,15 @@ msgstr "Landscape (relieve)"
 #: includes/class-renderer.php:58
 msgid "Atlas (general)"
 msgstr "Atlas (general)"
+
+#: includes/class-renderer.php:572
+msgid "Map failed to load. Click to retry."
+msgstr "No se ha podido cargar el mapa. Haz clic para reintentar."
+
+#: build/index.js:504
+msgid "Follow the stats chosen under Settings → GPX Route Map."
+msgstr "Usa las estadísticas elegidas en Ajustes → GPX Route Map."
+
+#: build/index.js:526
+msgid "Raster tile template with {z}/{x}/{y}, over https. Add {ratio} where the provider expects a retina suffix, for example {z}/{x}/{y}{ratio}.png. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites."
+msgstr "Plantilla de teselas ráster con {z}/{x}/{y}, sobre https. Añade {ratio} donde el proveedor espere un sufijo retina, por ejemplo {z}/{x}/{y}{ratio}.png. Déjalo en blanco para usar OpenStreetMap. Las teselas públicas de OSM tienen un límite de uso; usa tu propio proveedor en sitios con mucho tráfico."
