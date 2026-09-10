@@ -57,10 +57,10 @@
     "@wordpress/prettier-config": "^4.51.0",
     "@wordpress/scripts": "^30.0.0",
     "rtlcss": "^4.3.0",
-    "sass-embedded": "^1.100.0",
+    "sass-embedded": "^1.104.0",
     "typescript": "~5.3.3",
-    "vite": "^8.1.5",
-    "vitest": "^4.1.10"
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
   },
   "pnpm": {
     "overrides": {
