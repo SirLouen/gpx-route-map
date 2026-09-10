@@ -19,12 +19,19 @@ const IMPERIAL = {
 };
 
 /**
- * Build a fake map element carrying a units payload.
+ * Build a map element carrying a units payload.
  *
- * @param {string|undefined} value Raw attribute value, or undefined to omit it.
+ * A real element rather than a stub, so `dataset` behaves as it does in a
+ * browser: keys are strings, and an absent attribute is `undefined`.
+ *
+ * @param value Raw attribute value, or undefined to omit it.
  */
-function elementWith( value ) {
-	return { dataset: undefined === value ? {} : { gpxrmUnits: value } };
+function elementWith( value?: string ): HTMLElement {
+	const el = document.createElement( 'div' );
+	if ( undefined !== value ) {
+		el.dataset.gpxrmUnits = value;
+	}
+	return el;
 }
 
 describe( 'formatDistance', () => {
