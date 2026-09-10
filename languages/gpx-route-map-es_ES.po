@@ -15,7 +15,8 @@ msgstr ""
 
 #. Plugin Name of the plugin
 #: gpx-route-map.php
-#: includes/class-plugin.php:60
+#: includes/class-plugin.php:72
+#: includes/class-plugin.php:73
 #: build/index.js:544
 #: build/index.js:566
 msgid "GPX Route Map"
@@ -41,80 +42,80 @@ msgstr ""
 msgid "https://github.com/SirLouen"
 msgstr ""
 
-#: includes/class-renderer.php:277
+#: includes/class-renderer.php:392
 msgid "GPX Route Map: no GPX file selected."
 msgstr "GPX Route Map: no se ha seleccionado ningún archivo GPX."
 
-#: includes/class-renderer.php:284
+#: includes/class-renderer.php:399
 msgid "GPX Route Map: plugin assets are not built. Run \"pnpm install && pnpm run build\" in the plugin directory."
 msgstr "GPX Route Map: los recursos del plugin no están compilados. Ejecuta «pnpm install && pnpm run build» en el directorio del plugin."
 
-#: includes/class-renderer.php:312
+#: includes/class-renderer.php:431
 msgid "Interactive route map"
 msgstr "Mapa interactivo de la ruta"
 
-#: includes/class-renderer.php:435
+#: includes/class-renderer.php:554
 msgid "Loading map…"
 msgstr "Cargando el mapa…"
 
-#: includes/class-renderer.php:436
+#: includes/class-renderer.php:555
 msgid "Scroll or tap to load the interactive map"
 msgstr "Desplázate o toca para cargar el mapa interactivo"
 
-#: includes/class-renderer.php:448
+#: includes/class-renderer.php:567
 msgid "Could not load GPX file."
 msgstr "No se ha podido cargar el archivo GPX."
 
-#: includes/class-renderer.php:449
+#: includes/class-renderer.php:568
 msgid "Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead."
 msgstr "No se ha podido cargar el archivo GPX: su servidor no permite peticiones de origen cruzado (CORS). Sube el archivo a este sitio en su lugar."
 
-#: includes/class-renderer.php:450
+#: includes/class-renderer.php:569
 msgid "Invalid GPX file."
 msgstr "Archivo GPX no válido."
 
-#: includes/class-renderer.php:451
+#: includes/class-renderer.php:570
 msgid "No track or route points found in GPX file."
 msgstr "No se han encontrado puntos de pista ni de ruta en el archivo GPX."
 
-#: includes/class-plugin.php:173
-#: includes/class-renderer.php:488
+#: includes/class-plugin.php:357
+#: includes/class-renderer.php:607
 #: build/index.js:239
 msgid "Distance"
 msgstr "Distancia"
 
-#: includes/class-plugin.php:174
-#: includes/class-renderer.php:489
+#: includes/class-plugin.php:358
+#: includes/class-renderer.php:608
 #: build/index.js:243
 msgid "Elevation gain"
 msgstr "Desnivel positivo"
 
-#: includes/class-plugin.php:175
-#: includes/class-renderer.php:490
+#: includes/class-plugin.php:359
+#: includes/class-renderer.php:609
 #: build/index.js:247
 msgid "Elevation loss"
 msgstr "Desnivel negativo"
 
-#: includes/class-plugin.php:176
-#: includes/class-renderer.php:491
+#: includes/class-plugin.php:360
+#: includes/class-renderer.php:610
 #: build/index.js:251
 msgid "Max elevation"
 msgstr "Altitud máxima"
 
-#: includes/class-plugin.php:177
-#: includes/class-renderer.php:492
+#: includes/class-plugin.php:361
+#: includes/class-renderer.php:611
 #: build/index.js:255
 msgid "Waypoints"
 msgstr "Waypoints"
 
-#: includes/class-plugin.php:87
-#: includes/class-renderer.php:519
+#: includes/class-plugin.php:125
+#: includes/class-renderer.php:638
 #: build/index.js:451
 #: build/index.js:581
 msgid "Elevation profile"
 msgstr "Perfil de desnivel"
 
-#: includes/class-renderer.php:520
+#: includes/class-renderer.php:639
 msgid "Elevation profile along the route"
 msgstr "Perfil de desnivel a lo largo de la ruta"
 
@@ -144,6 +145,7 @@ msgstr "Seleccionar un archivo GPX"
 msgid "or GPX file URL"
 msgstr "o URL del archivo GPX"
 
+#: includes/class-plugin.php:118
 #: build/index.js:428
 msgid "Display"
 msgstr "Visualización"
@@ -156,6 +158,7 @@ msgstr "Altura del mapa (px)"
 msgid "Max zoom"
 msgstr "Zoom máximo"
 
+#: includes/class-plugin.php:237
 #: build/index.js:520
 msgid "Map tiles"
 msgstr "Teselas del mapa"
@@ -248,45 +251,45 @@ msgctxt "block keyword"
 msgid "cycling"
 msgstr "ciclismo"
 
-#: includes/class-plugin.php:301
+#: includes/class-plugin.php:604
 #: build/index.js:477
 msgid "Metric (km / m)"
 msgstr "Métrico (km / m)"
 
-#: includes/class-plugin.php:302
+#: includes/class-plugin.php:605
 #: build/index.js:481
 msgid "Imperial (mi / ft)"
 msgstr "Imperial (mi / ft)"
 
-#: includes/class-plugin.php:315
+#: includes/class-plugin.php:618
 msgid "Units used for distance and elevation on GPX maps. Individual maps can override this."
 msgstr "Unidades de distancia y desnivel en los mapas GPX. Cada mapa puede usar unas distintas."
 
 #. translators: Abbreviation for miles, shown after a distance.
-#: includes/class-renderer.php:248
+#: includes/class-renderer.php:363
 msgctxt "unit"
 msgid "mi"
 msgstr "mi"
 
 #. translators: Abbreviation for feet, shown after an elevation.
-#: includes/class-renderer.php:251
+#: includes/class-renderer.php:366
 msgctxt "unit"
 msgid "ft"
 msgstr "ft"
 
 #. translators: Abbreviation for kilometres, shown after a distance.
-#: includes/class-renderer.php:258
+#: includes/class-renderer.php:373
 msgctxt "unit"
 msgid "km"
 msgstr "km"
 
 #. translators: Abbreviation for metres, shown after an elevation.
-#: includes/class-renderer.php:261
+#: includes/class-renderer.php:376
 msgctxt "unit"
 msgid "m"
 msgstr "m"
 
-#: includes/class-plugin.php:78
+#: includes/class-plugin.php:173
 #: build/index.js:468
 msgid "Units"
 msgstr "Unidades"
@@ -300,31 +303,31 @@ msgstr "Unidades de distancia y desnivel de este mapa."
 msgid "Site default"
 msgstr "Ajuste del sitio"
 
-#: includes/class-plugin.php:86
+#: includes/class-plugin.php:124
 #: build/index.js:443
 msgid "Stats bar"
 msgstr "Barra de estadísticas"
 
-#: includes/class-plugin.php:233
+#: includes/class-plugin.php:98
 msgid "Defaults for every GPX map on this site. Individual maps can override them."
 msgstr "Valores predeterminados para todos los mapas GPX de este sitio. Cada mapa puede cambiarlos."
 
-#: includes/class-plugin.php:267
+#: includes/class-plugin.php:570
 #: build/index.js:285
 msgid "Shown"
 msgstr "Mostrar"
 
-#: includes/class-plugin.php:268
+#: includes/class-plugin.php:571
 #: build/index.js:289
 msgid "Hidden"
 msgstr "Ocultar"
 
-#: includes/class-plugin.php:89
+#: includes/class-plugin.php:127
 #: build/index.js:459
 msgid "Download button"
 msgstr "Botón de descarga"
 
-#: includes/class-renderer.php:452
+#: includes/class-renderer.php:571
 msgid "Download GPX file"
 msgstr "Descargar el archivo GPX"
 
@@ -332,8 +335,8 @@ msgstr "Descargar el archivo GPX"
 msgid "Adds a button on the map for visitors to download the GPX file."
 msgstr "Añade un botón en el mapa para que los visitantes descarguen el archivo GPX."
 
-#: includes/class-plugin.php:132
-#: includes/class-plugin.php:211
+#: includes/class-plugin.php:194
+#: includes/class-plugin.php:395
 msgid "Stats shown"
 msgstr "Estadísticas mostradas"
 
@@ -349,6 +352,64 @@ msgstr "Usar el ajuste del sitio"
 msgid "Follow the stats chosen under Settings → General."
 msgstr "Usa las estadísticas elegidas en Ajustes → Generales."
 
-#: includes/class-plugin.php:224
+#: includes/class-plugin.php:408
 msgid "Which figures the stats bar lists. To remove the bar altogether, set Stats bar to Hidden."
 msgstr "Qué datos aparecen en la barra de estadísticas. Para quitar la barra por completo, pon «Barra de estadísticas» en Ocultar."
+
+#: includes/class-plugin.php:278
+msgid "Tile provider"
+msgstr "Proveedor de teselas"
+
+#: includes/class-plugin.php:287
+msgid "Thunderforest API key"
+msgstr "Clave de API de Thunderforest"
+
+#: includes/class-plugin.php:299
+msgid "Thunderforest style"
+msgstr "Estilo de Thunderforest"
+
+#: includes/class-plugin.php:417
+msgid "Where the map images come from. Visitors load these directly from the provider, so the provider receives their IP address and the area of the map being viewed."
+msgstr "De dónde salen las imágenes del mapa. Los visitantes las cargan directamente del proveedor, así que este recibe su dirección IP y la zona del mapa que se está viendo."
+
+#: includes/class-plugin.php:450
+msgid "That does not look like a Thunderforest API key. Keys are 32 letters and numbers, with nothing else in between."
+msgstr "Esto no parece una clave de API de Thunderforest. Las claves son 32 letras y números, sin nada más entre medias."
+
+#: includes/class-plugin.php:477
+msgid "OpenStreetMap (no account needed)"
+msgstr "OpenStreetMap (no hace falta cuenta)"
+
+#: includes/class-plugin.php:478
+msgid "Thunderforest (API key required)"
+msgstr "Thunderforest (requiere clave de API)"
+
+#: includes/class-plugin.php:491
+msgid "OpenStreetMap works with no setup. Thunderforest offers outdoor and cycling styles, and needs an account."
+msgstr "OpenStreetMap funciona sin configurar nada. Thunderforest ofrece estilos para montaña y ciclismo, y necesita una cuenta."
+
+#. translators: %s: link to the Thunderforest sign-up page.
+#: includes/class-plugin.php:511
+#, php-format
+msgid "Get a free key at %s. The free plan covers 150,000 map tiles a month, which is roughly 8,000 map views."
+msgstr "Consigue una clave gratuita en %s. El plan gratuito cubre 150.000 teselas al mes, que son unas 8.000 visitas con mapa."
+
+#: includes/class-plugin.php:515
+msgid "The key is visible in your pages, because visitors' browsers load the tiles. Thunderforest cannot restrict a key to your domain, so keep an eye on your usage."
+msgstr "La clave queda visible en tus páginas, porque son los navegadores de los visitantes los que cargan las teselas. Thunderforest no permite restringir una clave a tu dominio, así que vigila tu consumo."
+
+#: includes/class-renderer.php:55
+msgid "Outdoors (hiking)"
+msgstr "Outdoors (senderismo)"
+
+#: includes/class-renderer.php:56
+msgid "OpenCycleMap (cycling)"
+msgstr "OpenCycleMap (ciclismo)"
+
+#: includes/class-renderer.php:57
+msgid "Landscape (terrain)"
+msgstr "Landscape (relieve)"
+
+#: includes/class-renderer.php:58
+msgid "Atlas (general)"
+msgstr "Atlas (general)"
