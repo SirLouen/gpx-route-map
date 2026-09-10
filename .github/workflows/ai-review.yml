@@ -44,17 +44,26 @@ jobs:
     steps:
       - name: Resolve target PR
         id: target
+        # Context values are passed via env, never interpolated into the script body.
+        # Direct ${{ }} interpolation inside `run:` is a script-injection vector.
+        env:
+          EVENT_NAME:   ${{ github.event_name }}
+          INPUT_PR:     ${{ inputs.pr_number }}
+          INPUT_PUBLISH: ${{ inputs.publish }}
+          PR_FROM_EVENT: ${{ github.event.pull_request.number }}
         shell: pwsh
         run: |
-          if ( '${{ github.event_name }}' -eq 'workflow_dispatch' ) {
-            $n       = '${{ inputs.pr_number }}'
-            $publish = '${{ inputs.publish }}'
+          if ( $env:EVENT_NAME -eq 'workflow_dispatch' ) {
+            $n       = $env:INPUT_PR
+            $publish = $env:INPUT_PUBLISH
           } else {
-            $n       = '${{ github.event.pull_request.number }}'
+            $n       = $env:PR_FROM_EVENT
             $publish = 'true'
           }
-          if ( -not $n ) { throw "Could not determine a PR number" }
-          "number=$n"   | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          # Hard allow-list: a PR number is digits only. Rejects any injection payload.
+          if ( $n -notmatch '^[0-9]+$' ) { throw "Invalid PR number: '$n'" }
+          if ( $publish -ne 'true' ) { $publish = 'false' }
+          "number=$n"        | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "publish=$publish" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "PR #$n  publish=$publish"
 
@@ -69,10 +78,14 @@ jobs:
           }
 
       - name: Run review
+        env:
+          REPO:     ${{ github.repository }}
+          PR_NUM:   ${{ steps.target.outputs.number }}
+          DO_PUBLISH: ${{ steps.target.outputs.publish }}
         shell: pwsh
         run: |
-          $url = "https://github.com/${{ github.repository }}/pull/${{ steps.target.outputs.number }}"
-          if ( '${{ steps.target.outputs.publish }}' -eq 'true' ) {
+          $url = "https://github.com/$env:REPO/pull/$env:PR_NUM"
+          if ( $env:DO_PUBLISH -eq 'true' ) {
             & C:\reviewer\review.ps1 -PrUrl $url -Publish
           } else {
             Write-Host "DRY RUN - nothing will be posted"
