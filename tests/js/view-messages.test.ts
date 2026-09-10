@@ -12,15 +12,34 @@ import { describe, expect, it } from 'vitest';
 
 import { viewMessages } from '../../src/view/map-instance';
 
-const KEYS = [ 'load', 'cors', 'invalid', 'nopoints', 'download', 'maplibre' ];
+/** The message set the view renders, derived so it cannot drift from source. */
+type ViewMessages = ReturnType< typeof viewMessages >;
+
+// Typed as keys, so adding a message to the source without listing it here is
+// a compile error rather than a silently unverified string.
+const KEYS: ( keyof ViewMessages )[] = [
+	'load',
+	'cors',
+	'invalid',
+	'nopoints',
+	'download',
+	'maplibre',
+];
 
 /**
- * Build a fake map element carrying an i18n payload.
+ * Build a map element carrying an i18n payload.
  *
- * @param {string|undefined} value Raw attribute value, or undefined to omit it.
+ * A real element rather than a stub, so `dataset` behaves as it does in a
+ * browser.
+ *
+ * @param value Raw attribute value, or undefined to omit it.
  */
-function elementWith( value ) {
-	return { dataset: undefined === value ? {} : { gpxrmI18n: value } };
+function elementWith( value?: string ): HTMLElement {
+	const el = document.createElement( 'div' );
+	if ( undefined !== value ) {
+		el.dataset.gpxrmI18n = value;
+	}
+	return el;
 }
 
 describe( 'viewMessages', () => {

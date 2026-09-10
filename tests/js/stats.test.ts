@@ -5,8 +5,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { routeStats, nearestIndex } from '../../src/view/stats';
+import type { Coord } from '../../src/view/types';
 
-const SEGMENTED_COORDS = [
+const SEGMENTED_COORDS: Coord[] = [
 	[ -6.0, 43.0, 100 ],
 	[ -6.0, 43.001, 101 ],
 	// ~130 km gap to the second segment.

@@ -5,6 +5,22 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { ElevationProfile } from '../../src/view/elevation';
+import type { Coord } from '../../src/view/types';
+
+/** `state` once a build has succeeded; null only means "nothing drawn". */
+type BuiltState = NonNullable< ElevationProfile[ 'state' ] >;
+
+/**
+ * Narrow `state` after a build the test expects to have produced one.
+ *
+ * @param profile Profile that has just been built.
+ */
+function builtState( profile: ElevationProfile ): BuiltState {
+	if ( ! profile.state ) {
+		throw new Error( 'expected build() to produce state' );
+	}
+	return profile.state;
+}
 
 /**
  * Canvas 2D context stub.
@@ -26,28 +42,45 @@ const ctxStub = new Proxy(
 );
 
 /**
- * Build a fake canvas the profile can size, draw on and listen to.
+ * Give a real canvas a measurable size and a drawable context.
  *
- * @return {Object} Stub canvas plus a listener counter.
+ * jsdom lays every element out at 0x0 and has no 2D context, so both are
+ * stubbed - but on a genuine HTMLCanvasElement, so the profile sees real
+ * `style` and event-listener behaviour.
+ *
+ * @param width  Reported client width.
+ * @param height Reported client height.
  */
-function makeCanvas() {
+function makeCanvas( width = 400, height = 160 ) {
 	let listeners = 0;
-	return {
-		listenerCount: () => listeners,
-		canvas: {
-			style: {},
-			getBoundingClientRect: () => ( {
-				width: 400,
-				height: 160,
-				left: 0,
-			} ),
-			getContext: () => ctxStub,
-			addEventListener: () => listeners++,
-		},
+	const canvas = document.createElement( 'canvas' );
+
+	canvas.getBoundingClientRect = () =>
+		( {
+			width,
+			height,
+			left: 0,
+			top: 0,
+			right: width,
+			bottom: height,
+			x: 0,
+			y: 0,
+		} ) as DOMRect;
+	canvas.getContext = ( () =>
+		ctxStub ) as unknown as HTMLCanvasElement[ 'getContext' ];
+
+	const addEventListener = canvas.addEventListener.bind( canvas );
+	canvas.addEventListener = (
+		...args: Parameters< typeof addEventListener >
+	) => {
+		listeners++;
+		addEventListener( ...args );
 	};
+
+	return { canvas, listenerCount: () => listeners };
 }
 
-const SEGMENTED_COORDS = [
+const SEGMENTED_COORDS: Coord[] = [
 	[ -6.0, 43.0, 100 ],
 	[ -6.0, 43.001, 101 ],
 	[ -7.0, 44.0, 102 ],
@@ -80,11 +113,11 @@ describe( 'ElevationProfile', () => {
 			new Set( [ 0, 2 ] )
 		);
 		split.build();
-		const splitTotal = split.state.dists.at( -1 );
+		const splitTotal = builtState( split ).dists.at( -1 );
 
 		const joined = new ElevationProfile( canvas, SEGMENTED_COORDS );
 		joined.build();
-		const joinedTotal = joined.state.dists.at( -1 );
+		const joinedTotal = builtState( joined ).dists.at( -1 );
 
 		expect( splitTotal ).toBeGreaterThan( 0.2 );
 		expect( splitTotal ).toBeLessThan( 0.25 );
@@ -93,7 +126,7 @@ describe( 'ElevationProfile', () => {
 
 	it( 'maps client X inside the plot to an index, outside to null', () => {
 		// Evenly spaced points so nearest-index expectations are unambiguous.
-		const uniformCoords = [
+		const uniformCoords: Coord[] = [
 			[ -6.0, 43.0, 100 ],
 			[ -6.0, 43.001, 101 ],
 			[ -6.0, 43.002, 102 ],
@@ -110,17 +143,11 @@ describe( 'ElevationProfile', () => {
 	} );
 
 	it( 'skips building while the canvas has no width', () => {
-		let listeners = 0;
-		const zeroCanvas = {
-			style: {},
-			getBoundingClientRect: () => ( { width: 0, height: 0, left: 0 } ),
-			getContext: () => ctxStub,
-			addEventListener: () => listeners++,
-		};
-		const profile = new ElevationProfile( zeroCanvas, SEGMENTED_COORDS );
+		const { canvas, listenerCount } = makeCanvas( 0, 0 );
+		const profile = new ElevationProfile( canvas, SEGMENTED_COORDS );
 		profile.build();
 
 		expect( profile.state ).toBeNull();
-		expect( listeners ).toBe( 0 );
+		expect( listenerCount() ).toBe( 0 );
 	} );
 } );
