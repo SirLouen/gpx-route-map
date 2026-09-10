@@ -2,7 +2,7 @@
  * Frontend entry point.
  */
 
-import { initInstance } from './view/map-instance';
+import { initInstance, viewMessages } from './view/map-instance';
 import type { MapLibreGl } from './view/types';
 
 let maplibrePromise: Promise< MapLibreGl > | null = null;
@@ -46,8 +46,13 @@ function boot( mapEl: HTMLElement ): void {
 		.then( ( maplibregl ) => initInstance( mapEl, maplibregl ) )
 		.catch( () => {
 			delete mapEl.dataset.gpxrmBooted;
-			mapEl.innerHTML =
-				'<div class="gpxrm-error">Map failed to load. Click to retry.</div>';
+			// Built as a node with textContent rather than an innerHTML
+			// string: the message is translated server-side, and a translation
+			// must never be able to inject markup.
+			const error = document.createElement( 'div' );
+			error.className = 'gpxrm-error';
+			error.textContent = viewMessages( mapEl ).maplibre;
+			mapEl.replaceChildren( error );
 			mapEl.addEventListener( 'click', () => boot( mapEl ), {
 				once: true,
 			} );

@@ -27,13 +27,13 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false
         steps:
             - name: Check out
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
 
             - name: Set up pnpm
-              uses: pnpm/action-setup@v4
+              uses: pnpm/action-setup@v6
 
             - name: Set up Node
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v7
               with:
                   node-version: 22
                   cache: pnpm
@@ -63,6 +63,6 @@ jobs:
 
             - name: Attach built zip to the GitHub release
               if: github.event_name == 'release'
-              uses: softprops/action-gh-release@v2
+              uses: softprops/action-gh-release@v3
               with:
                   files: ${{ steps.deploy.outputs.zip-path }}

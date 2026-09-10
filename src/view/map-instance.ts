@@ -71,6 +71,7 @@ interface ViewMessages {
 	invalid: string;
 	nopoints: string;
 	download: string;
+	maplibre: string;
 }
 
 const FALLBACK_MESSAGES: ViewMessages = {
@@ -79,6 +80,7 @@ const FALLBACK_MESSAGES: ViewMessages = {
 	invalid: 'Invalid GPX file.',
 	nopoints: 'No track or route points found in GPX file.',
 	download: 'Download GPX file',
+	maplibre: 'Map failed to load. Click to retry.',
 };
 
 /**
@@ -88,7 +90,7 @@ const FALLBACK_MESSAGES: ViewMessages = {
  *
  * @param mapEl Map element.
  */
-function viewMessages( mapEl: HTMLElement ): ViewMessages {
+export function viewMessages( mapEl: HTMLElement ): ViewMessages {
 	try {
 		const raw = mapEl.dataset.gpxrmI18n;
 		if ( raw ) {

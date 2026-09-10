@@ -442,7 +442,7 @@ export default function Edit( {
 							__nextHasNoMarginBottom
 							label={ __( 'Use site default', 'gpx-route-map' ) }
 							help={ __(
-								'Follow the stats chosen under Settings → General.',
+								'Follow the stats chosen under Settings → GPX Route Map.',
 								'gpx-route-map'
 							) }
 							checked={ '' === statFields }
@@ -506,7 +506,7 @@ export default function Edit( {
 						__next40pxDefaultSize
 						label={ __( 'Custom tile URL', 'gpx-route-map' ) }
 						help={ __(
-							'Raster tile template with {z}/{x}/{y}. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites.',
+							'Raster tile template with {z}/{x}/{y}, over https. Add {ratio} where the provider expects a retina suffix, for example {z}/{x}/{y}{ratio}.png. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites.',
 							'gpx-route-map'
 						) }
 						value={ tileUrl }

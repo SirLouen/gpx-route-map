@@ -1,0 +1,72 @@
+# Dependabot keeps the build and CI toolchain current.
+#
+# Nothing here ships to WordPress.org as a dependency: maplibre-gl is bundled
+# into build/ at release time, and the composer packages are dev-only tooling.
+#
+# Monthly, because `schedule` and `open-pull-requests-limit` apply to version
+# updates only. Security updates are driven by Dependabot alerts, ignore the
+# schedule and are exempt from the PR limit, so a slow cadence never delays a
+# security fix. Every PR costs a full three-job CI run, so grouping matters.
+version: 2
+
+updates:
+    # -----------------------------------------------------------------------
+    # GitHub Actions
+    # -----------------------------------------------------------------------
+    - package-ecosystem: "github-actions"
+      directory: "/"
+      schedule:
+          interval: "weekly"
+      open-pull-requests-limit: 3
+      commit-message:
+          prefix: "ci"
+      groups:
+          actions:
+              patterns: ["*"]
+      ignore:
+          # 10up publish a floating "stable" tag and document it as the pin to
+          # use; there is no semver tag for Dependabot to move to.
+          - dependency-name: "10up/*"
+
+    # -----------------------------------------------------------------------
+    # JavaScript. There is no "pnpm" ecosystem; pnpm is covered by "npm".
+    # Dependabot reads "packageManager" from package.json and runs that pnpm.
+    #
+    # HAZARD: package.json declares pnpm.overrides.typescript. Dependabot has
+    # a known bug where the lockfile it generates loses the top-level
+    # overrides: block, which fails ci.yml's `pnpm install --frozen-lockfile`
+    # with ERR_PNPM_LOCKFILE_CONFIG_MISMATCH. If that happens on a PR:
+    #     pnpm install --lockfile-only && pnpm install --frozen-lockfile
+    # -----------------------------------------------------------------------
+    - package-ecosystem: "npm"
+      directory: "/"
+      schedule:
+          interval: "monthly"
+      open-pull-requests-limit: 4
+      commit-message:
+          prefix: "chore"
+      groups:
+          wordpress:
+              patterns: ["@wordpress/*"]
+          build-tooling:
+              patterns: ["vite", "vitest", "@vitest/*", "sass-embedded", "rtlcss"]
+          types:
+              patterns: ["@types/*"]
+      ignore:
+          # Held at ~5.3.3 by a pnpm override, because @wordpress/scripts is
+          # not ready for newer TypeScript. Let the override own this.
+          - dependency-name: "typescript"
+
+    # -----------------------------------------------------------------------
+    # PHP dev tooling: pest, phpstan and the WordPress stubs.
+    # -----------------------------------------------------------------------
+    - package-ecosystem: "composer"
+      directory: "/"
+      schedule:
+          interval: "monthly"
+      open-pull-requests-limit: 2
+      commit-message:
+          prefix: "chore"
+      groups:
+          php-tooling:
+              patterns: ["*"]
