@@ -26,15 +26,132 @@ class Renderer {
 	const STAT_FIELDS = array( 'distance', 'gain', 'loss', 'max', 'waypoints' );
 
 	/**
+	 * OpenStreetMap's standard tiles, used when no provider is configured.
+	 */
+	const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+	/**
+	 * Attribution for OpenStreetMap's own tiles.
+	 */
+	const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+	/**
+	 * Attribution Thunderforest requires. Their terms ask for credit to both
+	 * Thunderforest and OpenStreetMap as working links, and say it may not be
+	 * removed, so it is applied automatically rather than left to the site owner.
+	 */
+	const THUNDERFOREST_ATTRIBUTION = 'Maps &copy; <a href="https://www.thunderforest.com">Thunderforest</a>, Data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>';
+
+	/**
+	 * The Thunderforest styles offered, keyed by their tile API slug.
+	 *
+	 * Note the OpenCycleMap slug is "cycle"; "opencyclemap" is only the name of
+	 * its page on their site and is not a valid tile style.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function thunderforest_styles(): array {
+		return array(
+			'outdoors'  => __( 'Outdoors (hiking)', 'gpx-route-map' ),
+			'cycle'     => __( 'OpenCycleMap (cycling)', 'gpx-route-map' ),
+			'landscape' => __( 'Landscape (terrain)', 'gpx-route-map' ),
+			'atlas'     => __( 'Atlas (general)', 'gpx-route-map' ),
+		);
+	}
+
+	/**
+	 * The configured tile provider.
+	 *
+	 * @return string 'osm' or 'thunderforest'.
+	 */
+	public static function tile_provider(): string {
+		$stored = get_option( 'gpxrm_tile_provider', 'osm' );
+		return ( is_string( $stored ) && 'thunderforest' === $stored ) ? 'thunderforest' : 'osm';
+	}
+
+	/**
+	 * The stored Thunderforest API key.
+	 *
+	 * @return string
+	 */
+	public static function thunderforest_key(): string {
+		$stored = get_option( 'gpxrm_thunderforest_key', '' );
+		return is_string( $stored ) ? trim( $stored ) : '';
+	}
+
+	/**
+	 * The stored Thunderforest style slug.
+	 *
+	 * @return string
+	 */
+	public static function thunderforest_style(): string {
+		$stored = get_option( 'gpxrm_thunderforest_style', 'outdoors' );
+		$styles = self::thunderforest_styles();
+
+		return ( is_string( $stored ) && isset( $styles[ $stored ] ) ) ? $stored : 'outdoors';
+	}
+
+	/**
 	 * Default raster tile template. Filterable so site owners can point the
 	 * plugin at their own tile server (see the OpenStreetMap tile usage policy).
 	 *
 	 * @return string
 	 */
 	public static function default_tile_url(): string {
-		$default = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-		$url     = apply_filters( 'gpxrm_tile_url', $default );
+		$default = self::OSM_TILE_URL;
+
+		if ( 'thunderforest' === self::tile_provider() ) {
+			$key = self::thunderforest_key();
+			// Without a key the request would just 401, so fall back to OSM and
+			// leave the site with a working map.
+			if ( '' !== $key ) {
+				$default = sprintf(
+					// {ratio} is MapLibre's retina placeholder and expands to
+					// "@2x"; Leaflet's {r} would be sent through literally.
+					'https://api.thunderforest.com/%1$s/{z}/{x}/{y}{ratio}.png?apikey=%2$s',
+					self::thunderforest_style(),
+					rawurlencode( $key )
+				);
+			}
+		}
+
+		$url = apply_filters( 'gpxrm_tile_url', $default );
 		return is_string( $url ) ? $url : $default;
+	}
+
+	/**
+	 * Whether a tile template points at Thunderforest.
+	 *
+	 * @param string $tile_url Tile URL template.
+	 * @return bool
+	 */
+	private static function is_thunderforest_url( string $tile_url ): bool {
+		$host = (string) wp_parse_url( $tile_url, PHP_URL_HOST );
+
+		return '' !== $host && ( 'thunderforest.com' === $host || str_ends_with( $host, '.thunderforest.com' ) );
+	}
+
+	/**
+	 * Attribution HTML for the tiles actually in use.
+	 *
+	 * Derived from the URL rather than the site setting so that a map pointed at
+	 * Thunderforest by hand still carries the credit their terms require.
+	 *
+	 * @param string $tile_url Tile URL template in use.
+	 * @return string
+	 */
+	public static function attribution_for( string $tile_url ): string {
+		$default = self::is_thunderforest_url( $tile_url )
+			? self::THUNDERFOREST_ATTRIBUTION
+			: self::OSM_ATTRIBUTION;
+
+		/**
+		 * Filters the attribution HTML shown on the map.
+		 *
+		 * @param string $default  Attribution HTML.
+		 * @param string $tile_url Tile URL template in use.
+		 */
+		return apply_filters( 'gpxrm_tile_attribution', $default, $tile_url );
 	}
 
 	/**
@@ -43,9 +160,7 @@ class Renderer {
 	 * @return string
 	 */
 	public static function default_attribution(): string {
-		$default = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-		$value   = apply_filters( 'gpxrm_tile_attribution', $default );
-		return is_string( $value ) ? $value : $default;
+		return self::attribution_for( self::default_tile_url() );
 	}
 
 	/**
@@ -299,12 +414,16 @@ class Renderer {
 			? sprintf( ' data-gpxrm-download="%s"', esc_attr( self::download_filename( $a['gpx_url'] ) ) )
 			: '';
 
+		// Attribution follows whichever tiles this map actually loads, so a
+		// per-map custom provider still gets the credit it requires.
+		$tile_url = '' !== $a['tile_url'] ? $a['tile_url'] : self::default_tile_url();
+
 		$map = sprintf(
 			'<div class="gpxrm-map" style="height:%1$dpx" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" data-gpxrm-units="%7$s"%8$s role="application" aria-label="%9$s">%10$s</div>',
 			$a['height'],
 			esc_url( $a['gpx_url'] ),
-			esc_attr( '' !== $a['tile_url'] ? $a['tile_url'] : self::default_tile_url() ),
-			esc_attr( self::default_attribution() ),
+			esc_attr( $tile_url ),
+			esc_attr( self::attribution_for( $tile_url ) ),
 			$a['max_zoom'],
 			esc_attr( self::view_messages_json() ),
 			esc_attr( (string) wp_json_encode( $units ) ),

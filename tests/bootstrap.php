@@ -45,6 +45,35 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	}
 }
 
+if ( ! function_exists( '__' ) ) {
+	/**
+	 * Return the text unchanged.
+	 *
+	 * @param string $text   Text to translate.
+	 * @param string $domain Text domain.
+	 * @return string
+	 */
+	function __( string $text, string $domain = 'default' ): string {
+		unset( $domain );
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'add_settings_error' ) ) {
+	/**
+	 * Record a settings error so validation can be tested without WordPress.
+	 *
+	 * @param string $setting Option name.
+	 * @param string $code    Error code.
+	 * @param string $message Error message.
+	 * @param string $type    Message type.
+	 * @return void
+	 */
+	function add_settings_error( string $setting, string $code, string $message, string $type = 'error' ): void {
+		$GLOBALS['gpxrm_test_settings_errors'][] = compact( 'setting', 'code', 'message', 'type' );
+	}
+}
+
 if ( ! function_exists( 'wp_parse_url' ) ) {
 	/**
 	 * Stand in for WordPress's wrapper around parse_url().

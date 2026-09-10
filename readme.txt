@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,15 +25,33 @@ The map loads lazily (only when it scrolls into view) so it never slows down you
 
 You can author tracks in any GPX tool, for example the free [gpx.studio](https://gpx.studio) editor, then upload the resulting file to your Media Library.
 
-= OpenStreetMap tile usage =
-
-By default the map uses OpenStreetMap's public tile server, an external service. When a page with a map is viewed, the visitor's browser loads map tiles directly from `tile.openstreetmap.org`, which means that server receives the visitor's IP address, browser User-Agent and the coordinates of the map area viewed. See the [OpenStreetMap Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/) and the [OSMF Privacy Policy](https://osmfoundation.org/wiki/Privacy_Policy). The same data is sent to any custom tile provider you configure instead.
-
-The public OSM tile server is rate-limited and is not intended for high-traffic sites. For busy sites, set a custom tile provider in the block's Map tiles panel (or via the `gpxrm_tile_url` filter). Attribution to OpenStreetMap is always shown, as the license requires.
-
 = Source code =
 
 The front-end JavaScript in `build/` is minified (the block editor script is not, so that its strings stay translatable). The human-readable source lives in the plugin's `src/` directory, which is included in this plugin, and is also available with full build instructions at the public repository: [https://github.com/SirLouen/gpx-route-map](https://github.com/SirLouen/gpx-route-map). The plugin is built with Vite (`pnpm install && pnpm run build`).
+
+== External services ==
+
+This plugin renders maps using map images (tiles) served by a third party. Tiles are loaded directly by each visitor's browser when a page containing a map is viewed, so the tile provider receives that visitor's IP address, browser User-Agent, and the coordinates of the map area being viewed. No data is sent when a page has no map on it, and the plugin never sends your GPX files anywhere.
+
+= OpenStreetMap (default) =
+
+Out of the box the plugin uses OpenStreetMap's public tile server at `tile.openstreetmap.org`. No account or key is needed, and nothing has to be configured.
+
+Service: [OpenStreetMap](https://www.openstreetmap.org/). Terms: [Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/). Privacy: [OSMF Privacy Policy](https://osmfoundation.org/wiki/Privacy_Policy).
+
+The public OSM tile server is rate-limited and is not intended for high-traffic sites.
+
+= Thunderforest (optional) =
+
+If you choose Thunderforest under Settings > GPX Route Map and enter an API key, tiles are loaded from `api.thunderforest.com` instead, and your API key is included in each tile request. This only happens once you have selected Thunderforest and supplied a key; the plugin never contacts them otherwise.
+
+Because visitors' browsers load the tiles, the key is visible in your pages' source. Thunderforest does not offer a way to restrict a key to your domain, so treat the key as public and keep an eye on your usage.
+
+Service: [Thunderforest](https://www.thunderforest.com/). Terms: [Thunderforest Terms and Conditions](https://www.thunderforest.com/terms/). Privacy: [Thunderforest Privacy Policy](https://www.thunderforest.com/privacy/).
+
+= Any other provider =
+
+If you set a custom tile URL of your own, the same applies to whichever server that URL points at.
 
 == Installation ==
 
@@ -89,19 +107,25 @@ Map rendering uses MapLibre GL JS (BSD-3-Clause) with OpenStreetMap raster tiles
 
 = Can I show miles and feet instead of kilometres and metres? =
 
-Yes. Go to Settings > General and set "GPX map units" to Imperial, and every map on the site switches to miles and feet. A single map can use different units from the rest: pick them in the block's Display panel, or add `units="imperial"` to the shortcode. Switching is instant and can be undone at any time, because the plugin always stores distances and elevations in metric and only converts them for display.
+Yes. Go to Settings > GPX Route Map and set "Units" to Imperial, and every map on the site switches to miles and feet. A single map can use different units from the rest: pick them in the block's Display panel, or add `units="imperial"` to the shortcode. Switching is instant and can be undone at any time, because the plugin always stores distances and elevations in metric and only converts them for display.
 
 = Can I hide the stats bar or the elevation profile? =
 
-Yes, either one, for the whole site or for a single map. Go to Settings > General and set "Stats bar" or "Elevation profile" to Hidden to change every map at once. To change just one map, use the block's Display panel, or add `stats="false"` or `elevation="false"` to the shortcode. A map set to "Site default" follows the setting, so you can change your mind later in one place.
+Yes, either one, for the whole site or for a single map. Go to Settings > GPX Route Map and set "Stats bar" or "Elevation profile" to Hidden to change every map at once. To change just one map, use the block's Display panel, or add `stats="false"` or `elevation="false"` to the shortcode. A map set to "Site default" follows the setting, so you can change your mind later in one place.
 
 = Can I show only some of the figures in the stats bar? =
 
-Yes. Under Settings > General, "Stats shown" has a checkbox for each of Distance, Elevation gain, Elevation loss, Max elevation and Waypoints, so you can keep just the ones you care about. A single map can differ: open the block's "Stats bar items" panel, turn off "Use site default" and tick what you want, or pass `fields="distance,gain"` to the shortcode. At least one figure always stays ticked; to remove the bar altogether use the separate "Stats bar" setting.
+Yes. Under Settings > GPX Route Map, "Stats shown" has a checkbox for each of Distance, Elevation gain, Elevation loss, Max elevation and Waypoints, so you can keep just the ones you care about. A single map can differ: open the block's "Stats bar items" panel, turn off "Use site default" and tick what you want, or pass `fields="distance,gain"` to the shortcode. At least one figure always stays ticked; to remove the bar altogether use the separate "Stats bar" setting.
 
 = Can visitors download the GPX file? =
 
-Yes, if you switch the download button on. It is off by default. Go to Settings > General and set "Download button" to Shown, or turn it on for a single map from the block's Display panel or with `download="true"` on the shortcode. The button appears on the map next to the zoom and fullscreen controls. Files in your Media Library download with their own filename; a GPX hosted on another site opens instead of downloading, because browsers only honour the download hint for files served from the same site.
+Yes, if you switch the download button on. It is off by default. Go to Settings > GPX Route Map and set "Download button" to Shown, or turn it on for a single map from the block's Display panel or with `download="true"` on the shortcode. The button appears on the map next to the zoom and fullscreen controls. Files in your Media Library download with their own filename; a GPX hosted on another site opens instead of downloading, because browsers only honour the download hint for files served from the same site.
+
+= Can I use Thunderforest's outdoor and cycling maps? =
+
+Yes. Sign up at [thunderforest.com](https://www.thunderforest.com/pricing/), then go to Settings > GPX Route Map, set the tile provider to Thunderforest and paste your API key. Pick from the Outdoors, OpenCycleMap, Landscape and Atlas styles. Their free plan covers 150,000 tiles a month, which is roughly 8,000 map views; busier sites need a paid plan.
+
+Two things worth knowing. The key appears in your pages' source, because visitors' browsers fetch the tiles, and Thunderforest cannot lock a key to one domain, so watch your usage. And the map credits both Thunderforest and OpenStreetMap automatically, which their terms require and do not allow you to remove.
 
 = Can I use my own map tiles? =
 
@@ -125,6 +149,12 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 2. Selecting a GPX file in the block editor.
 
 == Changelog ==
+
+= 1.6.0 =
+* The plugin's settings now have their own screen at Settings > GPX Route Map, instead of sitting at the bottom of Settings > General. Your existing choices carry over untouched.
+* New: Thunderforest map tiles. Enter an API key and pick from the Outdoors, OpenCycleMap, Landscape and Atlas styles for maps built for hiking and cycling.
+* Maps now credit whichever tile service they actually use. A map pointed at Thunderforest by hand, with a custom tile URL, now carries the credit Thunderforest's terms require instead of only crediting OpenStreetMap.
+
 
 = 1.5.0 =
 * New: choose which figures the stats bar lists. Settings > General has a checkbox for Distance, Elevation gain, Elevation loss, Max elevation and Waypoints, and a single map can differ from the rest through the block's "Stats bar items" panel or the `fields` shortcode attribute.
@@ -158,6 +188,10 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 1.6.0 =
+Settings move to their own screen at Settings > GPX Route Map, and Thunderforest map tiles can now be used with an API key.
+
 
 = 1.5.0 =
 Adds a setting for choosing which figures the stats bar lists.
