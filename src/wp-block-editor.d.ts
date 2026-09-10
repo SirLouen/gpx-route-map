@@ -4,6 +4,12 @@
 declare module '@wordpress/block-editor' {
 	import type { ComponentType, ReactNode } from 'react';
 
+	/**
+	 * Merge extra props into the block wrapper's props.
+	 *
+	 * @param props Extra props to merge into the wrapper.
+	 * @return Props to spread onto the block's root element.
+	 */
 	export function useBlockProps(
 		props?: Record< string, unknown >
 	): Record< string, unknown >;

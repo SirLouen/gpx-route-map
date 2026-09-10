@@ -133,7 +133,8 @@ export async function initInstance(
 				err instanceof TypeError &&
 				new URL( gpxUrl, window.location.href ).origin !==
 					window.location.origin;
-		} catch ( urlErr ) {
+		} catch {
+			// A URL we cannot even parse is not worth blaming on CORS.
 			crossOrigin = false;
 		}
 		showError( mapEl, crossOrigin ? msg.cors : msg.load );
