@@ -98,6 +98,18 @@ async function buildView() {
 		configFile: false,
 		logLevel: 'warn',
 		base: './',
+		// MapLibre 6's worker is pulled in via `?worker&url` from view.ts. Keep
+		// it flat in build/ under the maplibre-gl-* prefix so the i18n:pot
+		// exclude glob keeps skipping it.
+		worker: {
+			format: 'es',
+			rollupOptions: {
+				output: {
+					entryFileNames: 'maplibre-gl-worker-[hash].js',
+					chunkFileNames: 'maplibre-gl-worker-[name]-[hash].js',
+				},
+			},
+		},
 		build: {
 			outDir: OUT,
 			emptyOutDir: false,

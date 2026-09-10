@@ -190,28 +190,35 @@ export async function initInstance(
 			return;
 		}
 		const c = coords[ idx ];
-		( src as GeoJSONSource ).setData( {
-			type: 'FeatureCollection',
-			features: [
-				{
-					type: 'Feature',
-					properties: {},
-					geometry: {
-						type: 'Point',
-						coordinates: [ c[ 0 ], c[ 1 ] ],
+		// MapLibre 6 returns a promise here. This fires on every scrub, so a
+		// rejection is swallowed rather than left to surface unhandled: a
+		// missed position dot is not worth a console error.
+		void ( src as GeoJSONSource )
+			.setData( {
+				type: 'FeatureCollection',
+				features: [
+					{
+						type: 'Feature',
+						properties: {},
+						geometry: {
+							type: 'Point',
+							coordinates: [ c[ 0 ], c[ 1 ] ],
+						},
 					},
-				},
-			],
-		} );
+				],
+			} )
+			?.catch( () => {} );
 	};
 
 	const clearPositionDot = (): void => {
 		const src = map.getSource( 'gpxrm-position' );
 		if ( src && 'setData' in src ) {
-			( src as GeoJSONSource ).setData( {
-				type: 'FeatureCollection',
-				features: [],
-			} );
+			void ( src as GeoJSONSource )
+				.setData( {
+					type: 'FeatureCollection',
+					features: [],
+				} )
+				?.catch( () => {} );
 		}
 	};
 
