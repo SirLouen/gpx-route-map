@@ -1,18 +1,12 @@
-name: AI Review (local Qwen3.8)
+name: AI Review
 
-# Runs a self-hosted Qwen3.8-27B code reviewer on a self-hosted Windows runner.
+# Reviews a pull request with PR-Agent on DeepSeek via SirLouen/ai-pr-review.
 #
-# SECURITY: this repository is public and the job runs on a self-hosted runner, so:
-#   - fork PRs are refused on both entry points: the `if` guard for pull_request
-#     events, and an explicit API check for manual dispatch
-#   - the workflow NEVER checks out PR code; the reviewer works entirely from the
-#     GitHub API, so no contributor-authored code is executed on the runner
-#   - reviews run only when a maintainer applies the `ai-review` label, or on manual dispatch
-#   - GitHub context is passed via `env:` and never interpolated into `run:` bodies
+# This repository is public, so reviews run only when a maintainer applies the `ai-review`
+# label (or on manual dispatch), and only for pull requests from this repository - fork pull
+# requests do not receive secrets and are refused on both entry points.
 #
-# Runner requirements: a runner with the `qwen` label, with the reviewer installed at
-# REVIEWER_DIR and an OpenAI-compatible model server listening on MODEL_ENDPOINT.
-# Paths can be overridden with repository variables of the same name.
+# The review is posted by github-actions[bot] using this workflow's own token.
 
 on:
   workflow_dispatch:
@@ -32,95 +26,57 @@ on:
 permissions:
   contents: read
   pull-requests: write
-
-# The local model serves one request at a time.
-concurrency:
-  group: local-llm-review
-  cancel-in-progress: false
-
-env:
-  REVIEWER_DIR:   ${{ vars.REVIEWER_DIR || 'C:\reviewer' }}
-  MODEL_ENDPOINT: ${{ vars.MODEL_ENDPOINT || 'http://127.0.0.1:8080' }}
-  SERVER_HINT:    ${{ vars.SERVER_HINT || 'C:\llama\start-server-polite.ps1' }}
+  issues: write
 
 jobs:
   review:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       ( github.event.label.name == 'ai-review' &&
-        github.event.pull_request.head.repo.full_name == github.repository )
-    runs-on: [self-hosted, qwen]
-    timeout-minutes: 40
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.user.login != 'dependabot[bot]' )
+    # Job-level on purpose: a skipped job (e.g. a label other than ai-review) never joins the
+    # group, so it cannot cancel a review that is already running.
+    concurrency:
+      group: ai-review-${{ github.event.pull_request.number || inputs.pr_number }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Resolve target PR
         id: target
         env:
-          EVENT_NAME:    ${{ github.event_name }}
-          INPUT_PR:      ${{ inputs.pr_number }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_PR: ${{ inputs.pr_number }}
           INPUT_PUBLISH: ${{ inputs.publish }}
           PR_FROM_EVENT: ${{ github.event.pull_request.number }}
-        shell: pwsh
         run: |
-          if ( $env:EVENT_NAME -eq 'workflow_dispatch' ) {
-            $n       = $env:INPUT_PR
-            $publish = $env:INPUT_PUBLISH
-          } else {
-            $n       = $env:PR_FROM_EVENT
-            $publish = 'true'
-          }
-          # Hard allow-list: a PR number is digits only. Rejects any injection payload.
-          if ( $n -notmatch '^[0-9]+$' ) { throw "Invalid PR number: '$n'" }
-          if ( $publish -ne 'true' ) { $publish = 'false' }
-          "number=$n"        | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          "publish=$publish" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          Write-Host "PR #$n  publish=$publish"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            n="$INPUT_PR"; publish="$INPUT_PUBLISH"
+          else
+            n="$PR_FROM_EVENT"; publish="true"
+          fi
+          if [[ ! "$n" =~ ^[0-9]+$ ]]; then echo "::error::invalid PR number: $n"; exit 1; fi
+          [[ "$publish" == "true" ]] || publish="false"
+          echo "number=$n" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
 
-      # The `if` guard above covers pull_request events, but manual dispatch takes an
-      # arbitrary PR number - which could name a fork PR. Verify it explicitly so both
-      # entry points honour the same same-repo policy.
-      - name: Reject fork-originated PR (manual dispatch)
+      - name: Reject fork pull requests (manual dispatch)
         if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
-          REPO:     ${{ github.repository }}
-          PR_NUM:   ${{ steps.target.outputs.number }}
-        shell: pwsh
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.target.outputs.number }}
         run: |
-          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
-          try {
-            $pr = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/pulls/$env:PR_NUM" -Headers $headers
-          } catch {
-            throw "Could not resolve PR #$env:PR_NUM in $env:REPO"
-          }
-          $head = $pr.head.repo.full_name
-          if ( $head -ne $env:REPO ) {
-            throw "PR #$env:PR_NUM originates from '$head', not '$env:REPO'. Refusing to review a fork PR."
-          }
-          Write-Host "PR #$env:PR_NUM is same-repo ($head)"
+          head=$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.repo.full_name')
+          if [[ "$head" != "$REPOSITORY" ]]; then
+            echo "::error::PR #${PR_NUMBER} comes from '${head}', not ${REPOSITORY}; refusing"; exit 1
+          fi
 
-      - name: Check model server
-        shell: pwsh
-        run: |
-          try {
-            $h = Invoke-RestMethod -Uri "$env:MODEL_ENDPOINT/health" -TimeoutSec 10
-            Write-Host "model server healthy: $($h.status)"
-          } catch {
-            throw "No model server at $env:MODEL_ENDPOINT. Start it on the runner host: $env:SERVER_HINT"
-          }
-
-      - name: Run review
-        env:
-          REPO:       ${{ github.repository }}
-          PR_NUM:     ${{ steps.target.outputs.number }}
-          DO_PUBLISH: ${{ steps.target.outputs.publish }}
-        shell: pwsh
-        run: |
-          $url    = "https://github.com/$env:REPO/pull/$env:PR_NUM"
-          $runner = Join-Path $env:REVIEWER_DIR 'review.ps1'
-          if ( $env:DO_PUBLISH -eq 'true' ) {
-            & $runner -PrUrl $url -Publish
-          } else {
-            Write-Host "DRY RUN - nothing will be posted"
-            & $runner -PrUrl $url
-          }
+      - uses: SirLouen/ai-pr-review@b83b322749360efe6226f2b1a08f0876c7aa5fa9 # v1.0.0
+        with:
+          pr-number: ${{ steps.target.outputs.number }}
+          publish: ${{ steps.target.outputs.publish }}
+          deepseek-api-key: ${{ secrets.DEEPSEEK_API_KEY }}
+          github-token: ${{ github.token }}
