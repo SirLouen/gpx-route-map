@@ -33,7 +33,8 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       ( github.event.label.name == 'ai-review' &&
-        github.event.pull_request.head.repo.full_name == github.repository )
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.user.login != 'dependabot[bot]' )
     # Job-level on purpose: a skipped job (e.g. a label other than ai-review) never joins the
     # group, so it cannot cancel a review that is already running.
     concurrency:
@@ -73,7 +74,7 @@ jobs:
             echo "::error::PR #${PR_NUMBER} comes from '${head}', not ${REPOSITORY}; refusing"; exit 1
           fi
 
-      - uses: SirLouen/ai-pr-review@v1
+      - uses: SirLouen/ai-pr-review@b83b322749360efe6226f2b1a08f0876c7aa5fa9 # v1.0.0
         with:
           pr-number: ${{ steps.target.outputs.number }}
           publish: ${{ steps.target.outputs.publish }}
