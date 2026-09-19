@@ -421,7 +421,7 @@ class Renderer {
 		$map = sprintf(
 			'<div class="gpxrm-map" style="height:%1$dpx" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" data-gpxrm-units="%7$s"%8$s role="application" aria-label="%9$s">%10$s</div>',
 			$a['height'],
-			esc_url( $a['gpx_url'] ),
+			$a['gpx_url'],
 			esc_attr( $tile_url ),
 			esc_attr( self::attribution_for( $tile_url ) ),
 			$a['max_zoom'],
@@ -462,7 +462,9 @@ class Renderer {
 		}
 
 		if ( '' === $gpx_url && isset( $atts['gpxUrl'] ) && is_string( $atts['gpxUrl'] ) && '' !== $atts['gpxUrl'] ) {
-			$gpx_url = esc_url_raw( $atts['gpxUrl'] );
+			// Kept as written: esc_url_raw() re-encodes the query string, which breaks
+			// pre-signed storage URLs (S3, R2) whose signature covers the exact bytes.
+			$gpx_url = trim( $atts['gpxUrl'] );
 		}
 
 		$height   = ( isset( $atts['height'] ) && is_numeric( $atts['height'] ) ) ? (int) $atts['height'] : 480;
