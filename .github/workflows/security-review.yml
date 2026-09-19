@@ -57,7 +57,7 @@ jobs:
       issues: read
       actions: read
     steps:
-      - uses: SirLouen/ai-pr-review/security/analyze@e8e3def36ef7836fa06c58f49ca9933cfdcf3171 # security-reviewer, pre-1.2.0
+      - uses: SirLouen/ai-pr-review/security/analyze@a0ace1f14e279aa48c6d1b034a6a6c3dc268b852 # security-reviewer, pre-1.2.0
         with:
           pr-number: ${{ github.event.pull_request.number }}
           head-sha: ${{ github.event.pull_request.head.sha }}
@@ -84,7 +84,7 @@ jobs:
       checks: write
       actions: read
     steps:
-      - uses: SirLouen/ai-pr-review/security/publish@e8e3def36ef7836fa06c58f49ca9933cfdcf3171 # security-reviewer, pre-1.2.0
+      - uses: SirLouen/ai-pr-review/security/publish@a0ace1f14e279aa48c6d1b034a6a6c3dc268b852 # security-reviewer, pre-1.2.0
         with:
           pr-number: ${{ github.event.pull_request.number }}
           head-sha: ${{ github.event.pull_request.head.sha }}
