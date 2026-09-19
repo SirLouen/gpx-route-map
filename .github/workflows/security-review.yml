@@ -1,0 +1,93 @@
+name: AI Security Review
+
+# Diff-scoped security review with Cloudflare's security-audit skill, on DeepSeek, via
+# SirLouen/ai-pr-review/security. Advisory: nothing it reports is confirmed and prompt
+# injection in the pull request can suppress a finding, so never make it a required check.
+#
+# This repository is public, so like ai-review.yml it is opt-in: a review runs when a
+# maintainer applies the `security-review` label. After that, pushes to a pull request from
+# this repository are re-reviewed while the label stays on; a push to a fork pull request
+# drops the label, so every new fork head needs a fresh approval.
+#
+# `pull_request_target` runs main's copy of this file, so a pull request cannot edit the
+# reviewer that reviews it. Nothing here checks out or runs pull-request code: the action
+# reads git objects from a bare repository. `analyze` holds the DeepSeek key and no write
+# scope; `publish` holds the write token and no model key.
+
+on:
+  pull_request_target:
+    types: [labeled, synchronize, reopened, ready_for_review]
+
+permissions: {}
+
+jobs:
+  unlabel-on-push:
+    if: >-
+      github.event.action == 'synchronize' &&
+      github.event.pull_request.head.repo.full_name != github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'security-review')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Drop the review label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh api -X DELETE "repos/${REPO}/issues/${PR}/labels/security-review" || true
+
+  analyze:
+    if: >-
+      github.event.pull_request.draft == false && (
+        (github.event.action == 'labeled' && github.event.label.name == 'security-review') ||
+        (github.event.action != 'labeled' &&
+         github.event.pull_request.head.repo.full_name == github.repository &&
+         contains(github.event.pull_request.labels.*.name, 'security-review')))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    concurrency:
+      group: ai-security-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      actions: read
+    steps:
+      - uses: SirLouen/ai-pr-review/security/analyze@e8817c2ee3993128a1cf297039a5a6aae87c1635 # security-reviewer, pre-1.2.0
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
+          base-sha: ${{ github.event.pull_request.base.sha }}
+          github-token: ${{ github.token }}
+          deepseek-api-key: ${{ secrets.DEEPSEEK_API_KEY }}
+          max-usd: "1.50"
+          disclosure: auto
+
+  publish:
+    needs: analyze
+    # `always()` so an incomplete analyze still gets its notice posted: a crashed run that
+    # posts nothing would look the same as a clean one.
+    if: always() && needs.analyze.result != 'skipped' && needs.analyze.result != 'cancelled'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: ai-security-review-publish-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      checks: write
+      actions: read
+    steps:
+      - uses: SirLouen/ai-pr-review/security/publish@e8817c2ee3993128a1cf297039a5a6aae87c1635 # security-reviewer, pre-1.2.0
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
+          fail-on: never
+          sarif: "false"
