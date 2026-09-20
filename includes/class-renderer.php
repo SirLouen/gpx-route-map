@@ -26,6 +26,15 @@ class Renderer {
 	const STAT_FIELDS = array( 'distance', 'gain', 'loss', 'max', 'waypoints' );
 
 	/**
+	 * Map height bounds, in pixels. Below the minimum the controls and the
+	 * elevation profile stop fitting; above the maximum a map stops being a
+	 * sensible thing to put in a post.
+	 */
+	const MIN_HEIGHT     = 200;
+	const MAX_HEIGHT     = 1200;
+	const DEFAULT_HEIGHT = 480;
+
+	/**
 	 * OpenStreetMap's standard tiles, used when no provider is configured.
 	 */
 	const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -180,6 +189,28 @@ class Renderer {
 		$value = apply_filters( 'gpxrm_units', $value );
 
 		return 'imperial' === $value ? 'imperial' : 'metric';
+	}
+
+	/**
+	 * The site-wide map height in pixels, filterable.
+	 *
+	 * Maps that do not set their own height use this, so a site can size every
+	 * map from one place instead of repeating the value on each block.
+	 *
+	 * @return int Height in pixels, between MIN_HEIGHT and MAX_HEIGHT.
+	 */
+	public static function default_height(): int {
+		$stored = get_option( 'gpxrm_height', self::DEFAULT_HEIGHT );
+		$value  = is_numeric( $stored ) ? (int) $stored : self::DEFAULT_HEIGHT;
+
+		/**
+		 * Filters the site-wide map height.
+		 *
+		 * @param int $value Height in pixels.
+		 */
+		$value = apply_filters( 'gpxrm_height', self::clamp( $value, self::MIN_HEIGHT, self::MAX_HEIGHT ) );
+
+		return self::clamp( (int) $value, self::MIN_HEIGHT, self::MAX_HEIGHT );
 	}
 
 	/**
@@ -465,13 +496,17 @@ class Renderer {
 			$gpx_url = esc_url_raw( $atts['gpxUrl'] );
 		}
 
-		$height   = ( isset( $atts['height'] ) && is_numeric( $atts['height'] ) ) ? (int) $atts['height'] : 480;
+		// A height of 0 (or none at all) means "use whatever the site says", so
+		// changing the site setting resizes every map that has not set its own.
+		$height   = ( isset( $atts['height'] ) && is_numeric( $atts['height'] ) && (int) $atts['height'] > 0 )
+			? (int) $atts['height']
+			: self::default_height();
 		$max_zoom = ( isset( $atts['maxZoom'] ) && is_numeric( $atts['maxZoom'] ) ) ? (int) $atts['maxZoom'] : 17;
 		$tile_url = self::sanitize_tile_url( $atts['tileUrl'] ?? '' );
 
 		return array(
 			'gpx_url'        => $gpx_url,
-			'height'         => self::clamp( $height, 200, 1200 ),
+			'height'         => self::clamp( $height, self::MIN_HEIGHT, self::MAX_HEIGHT ),
 			'show_stats'     => self::normalize_visibility( $atts['showStats'] ?? '', self::default_show_stats() ),
 			'show_elevation' => self::normalize_visibility( $atts['showElevation'] ?? '', self::default_show_elevation() ),
 			'show_download'  => self::normalize_visibility( $atts['showDownload'] ?? '', self::default_show_download() ),

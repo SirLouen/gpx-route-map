@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: GPX Route Map 1.6.1\n"
+"Project-Id-Version: GPX Route Map 1.7.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/gpx-route-map\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-10T12:01:30+00:00\n"
+"POT-Creation-Date: 2026-09-20T11:08:05+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: gpx-route-map\n"
@@ -18,8 +18,8 @@ msgstr ""
 #: gpx-route-map.php
 #: includes/class-plugin.php:72
 #: includes/class-plugin.php:73
-#: build/index.js:544
-#: build/index.js:566
+#: build/index.js:560
+#: build/index.js:582
 msgid "GPX Route Map"
 msgstr ""
 
@@ -48,314 +48,337 @@ msgid "Defaults for every GPX map on this site. Individual maps can override the
 msgstr ""
 
 #: includes/class-plugin.php:118
-#: build/index.js:428
+#: build/index.js:437
 msgid "Display"
 msgstr ""
 
 #: includes/class-plugin.php:124
-#: build/index.js:443
+#: build/index.js:459
 msgid "Stats bar"
 msgstr ""
 
 #: includes/class-plugin.php:125
-#: includes/class-renderer.php:639
-#: build/index.js:451
-#: build/index.js:581
+#: includes/class-renderer.php:676
+#: build/index.js:467
+#: build/index.js:597
 msgid "Elevation profile"
 msgstr ""
 
 #: includes/class-plugin.php:127
-#: build/index.js:459
+#: build/index.js:475
 msgid "Download button"
 msgstr ""
 
-#: includes/class-plugin.php:173
-#: build/index.js:468
+#: includes/class-plugin.php:184
+msgid "Map height"
+msgstr ""
+
+#: includes/class-plugin.php:193
+#: build/index.js:484
 msgid "Units"
 msgstr ""
 
-#: includes/class-plugin.php:194
-#: includes/class-plugin.php:395
+#: includes/class-plugin.php:214
+#: includes/class-plugin.php:415
 msgid "Stats shown"
 msgstr ""
 
-#: includes/class-plugin.php:237
-#: build/index.js:520
+#: includes/class-plugin.php:257
+#: build/index.js:536
 msgid "Map tiles"
 msgstr ""
 
-#: includes/class-plugin.php:278
+#: includes/class-plugin.php:298
 msgid "Tile provider"
 msgstr ""
 
-#: includes/class-plugin.php:287
+#: includes/class-plugin.php:307
 msgid "Thunderforest API key"
 msgstr ""
 
-#: includes/class-plugin.php:299
+#: includes/class-plugin.php:319
 msgid "Thunderforest style"
 msgstr ""
 
-#: includes/class-plugin.php:357
-#: includes/class-renderer.php:608
-#: build/index.js:239
+#: includes/class-plugin.php:377
+#: includes/class-renderer.php:645
+#: build/index.js:243
 msgid "Distance"
 msgstr ""
 
-#: includes/class-plugin.php:358
-#: includes/class-renderer.php:609
-#: build/index.js:243
+#: includes/class-plugin.php:378
+#: includes/class-renderer.php:646
+#: build/index.js:247
 msgid "Elevation gain"
 msgstr ""
 
-#: includes/class-plugin.php:359
-#: includes/class-renderer.php:610
-#: build/index.js:247
+#: includes/class-plugin.php:379
+#: includes/class-renderer.php:647
+#: build/index.js:251
 msgid "Elevation loss"
 msgstr ""
 
-#: includes/class-plugin.php:360
-#: includes/class-renderer.php:611
-#: build/index.js:251
+#: includes/class-plugin.php:380
+#: includes/class-renderer.php:648
+#: build/index.js:255
 msgid "Max elevation"
 msgstr ""
 
-#: includes/class-plugin.php:361
-#: includes/class-renderer.php:612
-#: build/index.js:255
+#: includes/class-plugin.php:381
+#: includes/class-renderer.php:649
+#: build/index.js:259
 msgid "Waypoints"
 msgstr ""
 
-#: includes/class-plugin.php:408
+#: includes/class-plugin.php:428
 msgid "Which figures the stats bar lists. To remove the bar altogether, set Stats bar to Hidden."
 msgstr ""
 
-#: includes/class-plugin.php:417
+#: includes/class-plugin.php:437
 msgid "Where the map images come from. Visitors load these directly from the provider, so the provider receives their IP address and the area of the map being viewed."
 msgstr ""
 
-#: includes/class-plugin.php:450
+#: includes/class-plugin.php:470
 msgid "That does not look like a Thunderforest API key. Keys are 32 letters and numbers, with nothing else in between."
 msgstr ""
 
-#: includes/class-plugin.php:477
+#: includes/class-plugin.php:497
 msgid "OpenStreetMap (no account needed)"
 msgstr ""
 
-#: includes/class-plugin.php:478
+#: includes/class-plugin.php:498
 msgid "Thunderforest (API key required)"
 msgstr ""
 
-#: includes/class-plugin.php:491
+#: includes/class-plugin.php:511
 msgid "OpenStreetMap works with no setup. Thunderforest offers outdoor and cycling styles, and needs an account."
 msgstr ""
 
 #. translators: %s: link to the Thunderforest sign-up page.
-#: includes/class-plugin.php:511
+#: includes/class-plugin.php:531
 #, php-format
 msgid "Get a free key at %s. The free plan covers 150,000 map tiles a month, which is roughly 8,000 map views."
 msgstr ""
 
-#: includes/class-plugin.php:515
+#: includes/class-plugin.php:535
 msgid "The key is visible in your pages, because visitors' browsers load the tiles. Thunderforest cannot restrict a key to your domain, so keep an eye on your usage."
 msgstr ""
 
-#: includes/class-plugin.php:570
-#: build/index.js:285
+#: includes/class-plugin.php:590
+#: build/index.js:289
 msgid "Shown"
 msgstr ""
 
-#: includes/class-plugin.php:571
-#: build/index.js:289
+#: includes/class-plugin.php:591
+#: build/index.js:293
 msgid "Hidden"
 msgstr ""
 
-#: includes/class-plugin.php:604
-#: build/index.js:477
+#: includes/class-plugin.php:627
+msgid "px"
+msgstr ""
+
+#. translators: 1: minimum height in pixels, 2: maximum height in pixels.
+#: includes/class-plugin.php:632
+#, php-format
+msgid "Height of every GPX map that does not set its own, from %1$d to %2$d pixels. Individual maps can override this."
+msgstr ""
+
+#: includes/class-plugin.php:661
+#: build/index.js:493
 msgid "Metric (km / m)"
 msgstr ""
 
-#: includes/class-plugin.php:605
-#: build/index.js:481
+#: includes/class-plugin.php:662
+#: build/index.js:497
 msgid "Imperial (mi / ft)"
 msgstr ""
 
-#: includes/class-plugin.php:618
+#: includes/class-plugin.php:675
 msgid "Units used for distance and elevation on GPX maps. Individual maps can override this."
 msgstr ""
 
-#: includes/class-renderer.php:55
+#: includes/class-renderer.php:64
 msgid "Outdoors (hiking)"
 msgstr ""
 
-#: includes/class-renderer.php:56
+#: includes/class-renderer.php:65
 msgid "OpenCycleMap (cycling)"
 msgstr ""
 
-#: includes/class-renderer.php:57
+#: includes/class-renderer.php:66
 msgid "Landscape (terrain)"
 msgstr ""
 
-#: includes/class-renderer.php:58
+#: includes/class-renderer.php:67
 msgid "Atlas (general)"
 msgstr ""
 
 #. translators: Abbreviation for miles, shown after a distance.
-#: includes/class-renderer.php:363
+#: includes/class-renderer.php:394
 msgctxt "unit"
 msgid "mi"
 msgstr ""
 
 #. translators: Abbreviation for feet, shown after an elevation.
-#: includes/class-renderer.php:366
+#: includes/class-renderer.php:397
 msgctxt "unit"
 msgid "ft"
 msgstr ""
 
 #. translators: Abbreviation for kilometres, shown after a distance.
-#: includes/class-renderer.php:373
+#: includes/class-renderer.php:404
 msgctxt "unit"
 msgid "km"
 msgstr ""
 
 #. translators: Abbreviation for metres, shown after an elevation.
-#: includes/class-renderer.php:376
+#: includes/class-renderer.php:407
 msgctxt "unit"
 msgid "m"
 msgstr ""
 
-#: includes/class-renderer.php:392
+#: includes/class-renderer.php:423
 msgid "GPX Route Map: no GPX file selected."
 msgstr ""
 
-#: includes/class-renderer.php:399
+#: includes/class-renderer.php:430
 msgid "GPX Route Map: plugin assets are not built. Run \"pnpm install && pnpm run build\" in the plugin directory."
 msgstr ""
 
-#: includes/class-renderer.php:431
+#: includes/class-renderer.php:462
 msgid "Interactive route map"
 msgstr ""
 
-#: includes/class-renderer.php:554
+#: includes/class-renderer.php:591
 msgid "Loading map…"
 msgstr ""
 
-#: includes/class-renderer.php:555
+#: includes/class-renderer.php:592
 msgid "Scroll or tap to load the interactive map"
 msgstr ""
 
-#: includes/class-renderer.php:567
+#: includes/class-renderer.php:604
 msgid "Could not load GPX file."
 msgstr ""
 
-#: includes/class-renderer.php:568
+#: includes/class-renderer.php:605
 msgid "Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead."
 msgstr ""
 
-#: includes/class-renderer.php:569
+#: includes/class-renderer.php:606
 msgid "Invalid GPX file."
 msgstr ""
 
-#: includes/class-renderer.php:570
+#: includes/class-renderer.php:607
 msgid "No track or route points found in GPX file."
 msgstr ""
 
-#: includes/class-renderer.php:571
+#: includes/class-renderer.php:608
 msgid "Download GPX file"
 msgstr ""
 
-#: includes/class-renderer.php:572
+#: includes/class-renderer.php:609
 msgid "Map failed to load. Click to retry."
 msgstr ""
 
-#: includes/class-renderer.php:640
+#: includes/class-renderer.php:677
 msgid "Elevation profile along the route"
 msgstr ""
 
-#: build/index.js:281
-#: build/index.js:473
+#: build/index.js:285
+#: build/index.js:489
 msgid "Site default"
 msgstr ""
 
-#: build/index.js:396
+#: build/index.js:405
 msgid "Paste a direct link to a .gpx file. The file must be hosted on this site, or on a host that allows cross-origin (CORS) requests — most external sites do not."
 msgstr ""
 
-#: build/index.js:397
+#: build/index.js:406
 #, js-format
 msgid "Currently using the selected media file \"%s\". Entering a URL here replaces it (applied on Enter or when leaving the field)."
 msgstr ""
 
-#: build/index.js:403
+#: build/index.js:412
 msgid "Source"
 msgstr ""
 
-#: build/index.js:411
+#: build/index.js:420
 msgid "Replace GPX file"
 msgstr ""
 
-#: build/index.js:411
-#: build/index.js:553
+#: build/index.js:420
+#: build/index.js:569
 msgid "Select GPX file"
 msgstr ""
 
-#: build/index.js:416
+#: build/index.js:425
 msgid "or GPX file URL"
 msgstr ""
 
-#: build/index.js:433
+#: build/index.js:441
+msgid "Use site default height"
+msgstr ""
+
+#: build/index.js:442
+#, js-format
+msgid "Follow the height set under Settings → GPX Route Map (%d px)."
+msgstr ""
+
+#: build/index.js:449
 msgid "Map height (px)"
 msgstr ""
 
-#: build/index.js:460
+#: build/index.js:476
 msgid "Adds a button on the map for visitors to download the GPX file."
 msgstr ""
 
-#: build/index.js:469
+#: build/index.js:485
 msgid "Distance and elevation units for this map."
 msgstr ""
 
-#: build/index.js:490
+#: build/index.js:506
 msgid "Max zoom"
 msgstr ""
 
-#: build/index.js:499
+#: build/index.js:515
 msgid "Stats bar items"
 msgstr ""
 
-#: build/index.js:503
+#: build/index.js:519
 msgid "Use site default"
 msgstr ""
 
-#: build/index.js:504
+#: build/index.js:520
 msgid "Follow the stats chosen under Settings → GPX Route Map."
 msgstr ""
 
-#: build/index.js:525
+#: build/index.js:541
 msgid "Custom tile URL"
 msgstr ""
 
-#: build/index.js:526
+#: build/index.js:542
 msgid "Raster tile template with {z}/{x}/{y}, over https. Add {ratio} where the provider expects a retina suffix, for example {z}/{x}/{y}{ratio}.png. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites."
 msgstr ""
 
-#: build/index.js:539
+#: build/index.js:555
 msgid "Replace GPX"
 msgstr ""
 
-#: build/index.js:545
+#: build/index.js:561
 msgid "Select a GPX track to render it as an interactive map with an elevation profile."
 msgstr ""
 
-#: build/index.js:574
+#: build/index.js:590
 msgid "The interactive map renders on the front end."
 msgstr ""
 
-#: build/index.js:579
+#: build/index.js:595
 msgid "Stats"
 msgstr ""
 
-#: build/index.js:587
+#: build/index.js:603
 msgid "Open GPX file"
 msgstr ""
 
