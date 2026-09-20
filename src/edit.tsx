@@ -65,6 +65,25 @@ const MAX_HEIGHT = 1200;
 const DEFAULT_HEIGHT = 480;
 
 /**
+ * The site-wide height, printed by the server before this script.
+ *
+ * Deliberately not read from /wp/v2/settings: core gates that route on
+ * manage_options, so an Editor or Author would silently get the shipped
+ * default and be shown a height the front end will not use.
+ */
+function siteDefaultHeight(): number {
+	const injected = (
+		window as unknown as {
+			gpxrmDefaults?: { height?: number };
+		}
+	 ).gpxrmDefaults?.height;
+
+	return 'number' === typeof injected && injected > 0
+		? injected
+		: DEFAULT_HEIGHT;
+}
+
+/**
  * The stats the bar can list, in display order. Mirrors Renderer::STAT_FIELDS.
  */
 const STAT_FIELDS: Array< { key: string; label: string } > = [
@@ -215,20 +234,7 @@ export default function Edit( {
 		},
 		[ gpxId ]
 	);
-	// The site-wide height, so the editor can preview an inheriting map at the
-	// size it will actually render and name the number in the control's help.
-	const siteHeight = useSelect( ( select ): number => {
-		const core = select( 'core' ) as {
-			getEntityRecord: (
-				kind: string,
-				name: string,
-				id: undefined
-			) => { gpxrm_height?: number } | undefined;
-		};
-		const settings = core.getEntityRecord( 'root', 'site', undefined );
-		return settings?.gpxrm_height ?? DEFAULT_HEIGHT;
-	}, [] );
-
+	const siteHeight = siteDefaultHeight();
 	const usesSiteHeight = ! height;
 	const effectiveHeight = usesSiteHeight ? siteHeight : height;
 

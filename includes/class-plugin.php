@@ -441,7 +441,10 @@ class Plugin {
 	 * @return void
 	 */
 	public function render_stat_fields_field(): void {
-		$current = Renderer::default_stat_fields();
+		// The stored value, not the filtered one - see render_height_field().
+		$stored = get_option( 'gpxrm_stat_fields', implode( ',', Renderer::STAT_FIELDS ) );
+		// sanitize_stat_fields() always returns a non-empty, valid list.
+		$current = explode( ',', $this->sanitize_stat_fields( $stored ) );
 
 		echo '<fieldset>';
 		printf(
@@ -608,17 +611,11 @@ class Plugin {
 	 */
 	public function render_visibility_field( array $args ): void {
 		$option = $args['option'] ?? '';
-		switch ( $option ) {
-			case 'gpxrm_show_elevation':
-				$current = Renderer::default_show_elevation();
-				break;
-			case 'gpxrm_show_download':
-				$current = Renderer::default_show_download();
-				break;
-			default:
-				$current = Renderer::default_show_stats();
-				break;
-		}
+		$panels = self::visibility_panels();
+		// The stored value, not the filtered one - see render_height_field().
+		$fallback = $panels[ $option ][1] ?? 'show';
+		$stored   = get_option( $option, $fallback );
+		$current  = 'hide' !== ( is_string( $stored ) ? $stored : $fallback );
 
 		$choices = array(
 			'show' => __( 'Shown', 'gpx-route-map' ),
@@ -653,9 +650,17 @@ class Plugin {
 	 * @return void
 	 */
 	public function render_height_field(): void {
+		/*
+		 * The stored option, not Renderer::default_height(): that applies the
+		 * gpxrm_height filter, so a filtered value would be pre-filled here and
+		 * written to the database by an unrelated "Save Changes" - outliving the
+		 * filter that produced it. Filtering stays a runtime concern.
+		 */
+		$stored = get_option( 'gpxrm_height', Renderer::DEFAULT_HEIGHT );
+
 		printf(
 			'<input type="number" name="gpxrm_height" id="gpxrm_height" value="%1$d" min="%2$d" max="%3$d" step="1" class="small-text" /> %4$s',
-			(int) Renderer::default_height(),
+			(int) $this->sanitize_height( $stored ),
 			(int) Renderer::MIN_HEIGHT,
 			(int) Renderer::MAX_HEIGHT,
 			esc_html__( 'px', 'gpx-route-map' )
@@ -690,7 +695,9 @@ class Plugin {
 	 * @return void
 	 */
 	public function render_units_field(): void {
-		$current = Renderer::default_units();
+		// The stored value, not the filtered one - see render_height_field().
+		$stored  = get_option( 'gpxrm_units', 'metric' );
+		$current = ( is_string( $stored ) && 'imperial' === $stored ) ? 'imperial' : 'metric';
 		$choices = array(
 			'metric'   => __( 'Metric (km / m)', 'gpx-route-map' ),
 			'imperial' => __( 'Imperial (mi / ft)', 'gpx-route-map' ),
@@ -783,6 +790,21 @@ class Plugin {
 		if ( $block_type instanceof \WP_Block_Type ) {
 			foreach ( $block_type->editor_script_handles as $handle ) {
 				wp_set_script_translations( $handle, 'gpx-route-map', GPXRM_PLUGIN_DIR . 'languages' );
+
+				/*
+				 * The editor needs the site-wide height to preview a map that
+				 * inherits it and to name the figure in its help text. It cannot
+				 * read it from /wp/v2/settings: core gates that route on
+				 * manage_options, so an Editor or Author would silently be shown
+				 * the shipped default instead of the real setting.
+				 */
+				wp_add_inline_script(
+					$handle,
+					'window.gpxrmDefaults = ' . wp_json_encode(
+						array( 'height' => Renderer::default_height() )
+					) . ';',
+					'before'
+				);
 			}
 		}
 	}

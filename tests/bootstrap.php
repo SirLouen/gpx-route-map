@@ -31,16 +31,35 @@ if ( ! function_exists( '_x' ) ) {
 	}
 }
 
+if ( ! function_exists( 'add_filter' ) ) {
+	/**
+	 * Register a filter callback in a test-local hook registry.
+	 *
+	 * The plugin documents seven filters; without somewhere to register one
+	 * they could not be tested at all.
+	 *
+	 * @param string   $hook_name Hook name.
+	 * @param callable $callback  Callback.
+	 * @return void
+	 */
+	function add_filter( string $hook_name, callable $callback ): void {
+		$GLOBALS['gpxrm_test_filters'][ $hook_name ][] = $callback;
+	}
+}
+
 if ( ! function_exists( 'apply_filters' ) ) {
 	/**
-	 * Return the value unchanged; no hooks exist in these tests.
+	 * Run any callbacks a test registered for this hook.
 	 *
 	 * @param string $hook_name Hook name.
 	 * @param mixed  $value     Value to filter.
+	 * @param mixed  ...$args   Extra arguments passed to the callbacks.
 	 * @return mixed
 	 */
-	function apply_filters( string $hook_name, $value ) {
-		unset( $hook_name );
+	function apply_filters( string $hook_name, $value, ...$args ) {
+		foreach ( $GLOBALS['gpxrm_test_filters'][ $hook_name ] ?? array() as $callback ) {
+			$value = $callback( $value, ...$args );
+		}
 		return $value;
 	}
 }
@@ -97,6 +116,32 @@ if ( ! function_exists( 'get_option' ) ) {
 	 */
 	function get_option( string $option, $default_value = false ) {
 		return $GLOBALS['gpxrm_test_options'][ $option ] ?? $default_value;
+	}
+}
+
+if ( ! function_exists( 'esc_html__' ) ) {
+	/**
+	 * Return the text unchanged; escaping is WordPress's job, not the logic's.
+	 *
+	 * @param string $text   Text to translate.
+	 * @param string $domain Text domain.
+	 * @return string
+	 */
+	function esc_html__( string $text, string $domain = 'default' ): string {
+		unset( $domain );
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'esc_attr' ) ) {
+	/**
+	 * Minimal stand-in for WordPress's attribute escaper.
+	 *
+	 * @param string $text Text to escape.
+	 * @return string
+	 */
+	function esc_attr( string $text ): string {
+		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
 	}
 }
 

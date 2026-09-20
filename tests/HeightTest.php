@@ -34,6 +34,7 @@ beforeEach(
 	function () {
 		$GLOBALS['gpxrm_test_options']         = array();
 		$GLOBALS['gpxrm_test_settings_errors'] = array();
+		$GLOBALS['gpxrm_test_filters']         = array();
 	}
 );
 
@@ -164,4 +165,44 @@ test(
 		'fields'    => 'fields',
 		'units'     => 'units',
 	)
+);
+
+test(
+	'the gpxrm_height filter changes what maps render at',
+	function () {
+		$GLOBALS['gpxrm_test_options']['gpxrm_height'] = 500;
+		add_filter( 'gpxrm_height', fn() => 640 );
+
+		expect( Renderer::default_height() )->toBe( 640 );
+	}
+);
+
+test(
+	'a filter cannot push the height outside the supported range',
+	function () {
+		add_filter( 'gpxrm_height', fn() => 99999 );
+
+		expect( Renderer::default_height() )->toBe( Renderer::MAX_HEIGHT );
+	}
+);
+
+test(
+	'the settings field shows the stored height, never the filtered one',
+	function () {
+		// Otherwise an unrelated "Save Changes" writes the filtered value into
+		// the database, where it outlives the filter that produced it.
+		$GLOBALS['gpxrm_test_options']['gpxrm_height'] = 500;
+		add_filter( 'gpxrm_height', fn() => 640 );
+
+		$plugin = new Plugin();
+
+		ob_start();
+		$plugin->render_height_field();
+		$html = (string) ob_get_clean();
+
+		expect( $html )->toContain( 'value="500"' );
+		expect( $html )->not->toContain( 'value="640"' );
+		// The filter is still doing its job at render time.
+		expect( Renderer::default_height() )->toBe( 640 );
+	}
 );
