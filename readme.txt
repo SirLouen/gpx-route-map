@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.1
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -74,7 +74,7 @@ Shortcode attributes:
 
 * `id` - Attachment ID of a .gpx file uploaded to the Media Library.
 * `gpx` - Attachment ID, or an absolute URL to a .gpx file (alternative to `id`).
-* `height` - Map height in pixels, from 200 to 1200. Default: 480.
+* `height` - Map height in pixels, from 200 to 1200. Default: the site setting.
 * `stats` - Show the stats bar (distance, elevation, waypoints). `true` or `false`. Default: the site setting.
 * `elevation` - Show the interactive elevation profile. `true` or `false`. Default: the site setting.
 * `download` - Show the GPX download button on the map. `true` or `false`. Default: the site setting (off).
@@ -89,6 +89,7 @@ Filters (for developers):
 
 * `gpxrm_tile_url` - change the default raster tile URL template.
 * `gpxrm_tile_attribution` - change the attribution HTML.
+* `gpxrm_height` - change the site-wide map height in pixels (integer).
 * `gpxrm_units` - change the site-wide unit system (`metric` or `imperial`).
 * `gpxrm_show_stats` - change whether the stats bar shows by default (boolean).
 * `gpxrm_show_elevation` - change whether the elevation profile shows by default (boolean).
@@ -108,6 +109,10 @@ Map rendering uses MapLibre GL JS (BSD-3-Clause) with OpenStreetMap raster tiles
 = Can I show miles and feet instead of kilometres and metres? =
 
 Yes. Go to Settings > GPX Route Map and set "Units" to Imperial, and every map on the site switches to miles and feet. A single map can use different units from the rest: pick them in the block's Display panel, or add `units="imperial"` to the shortcode. Switching is instant and can be undone at any time, because the plugin always stores distances and elevations in metric and only converts them for display.
+
+= Can I change how tall the maps are? =
+
+Yes, for the whole site or for a single map. Go to Settings > GPX Route Map and set "Map height" to size every map that does not set its own. To change just one map, turn off "Use site default height" in the block's Display panel and pick a height, or add `height="600"` to the shortcode. Heights run from 200 to 1200 pixels.
 
 = Can I hide the stats bar or the elevation profile? =
 
@@ -149,6 +154,13 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 2. Selecting a GPX file in the block editor.
 
 == Changelog ==
+
+= 1.7.0 =
+* New: set the map height once for the whole site under Settings > GPX Route Map, instead of repeating it on every map. Individual maps can still set their own.
+* The block's height control now moves in steps of 10 pixels rather than 20, so more heights can actually be chosen.
+* Maps that never had a height set follow the site setting, so existing maps are unaffected until you change it.
+* Updated the map library to MapLibre GL JS 6. Maps now need a browser with WebGL2, which covers Chrome, Edge, Firefox and Safari 15 or newer. Where it is missing, the map shows its "could not load" notice instead of failing silently.
+
 
 = 1.6.1 =
 * Fixed: the "Map failed to load" message on the front end was always in English. It is now translated like every other message the plugin shows.
@@ -194,6 +206,10 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 1.7.0 =
+Map height can now be set once for the whole site. Existing maps keep the size they already had. Uses MapLibre GL JS 6, which needs a browser with WebGL2.
+
 
 = 1.6.1 =
 Translation and wording fixes: the front-end "Map failed to load" message is now translatable, and an editor hint pointed at the old settings location.

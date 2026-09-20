@@ -25,7 +25,7 @@
 		},
 		"height": {
 			"type": "number",
-			"default": 480
+			"default": 0
 		},
 		"showStats": {
 			"type": "string",

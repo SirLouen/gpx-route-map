@@ -59,6 +59,30 @@ export type GpxBlockAttributes = {
 	stats?: GpxStats;
 };
 
+/** Height bounds, mirroring Renderer::MIN_HEIGHT / MAX_HEIGHT / DEFAULT_HEIGHT. */
+const MIN_HEIGHT = 200;
+const MAX_HEIGHT = 1200;
+const DEFAULT_HEIGHT = 480;
+
+/**
+ * The site-wide height, printed by the server before this script.
+ *
+ * Deliberately not read from /wp/v2/settings: core gates that route on
+ * manage_options, so an Editor or Author would silently get the shipped
+ * default and be shown a height the front end will not use.
+ */
+function siteDefaultHeight(): number {
+	const injected = (
+		window as unknown as {
+			gpxrmDefaults?: { height?: number };
+		}
+	 ).gpxrmDefaults?.height;
+
+	return 'number' === typeof injected && injected > 0
+		? injected
+		: DEFAULT_HEIGHT;
+}
+
 /**
  * The stats the bar can list, in display order. Mirrors Renderer::STAT_FIELDS.
  */
@@ -210,6 +234,10 @@ export default function Edit( {
 		},
 		[ gpxId ]
 	);
+	const siteHeight = siteDefaultHeight();
+	const usesSiteHeight = ! height;
+	const effectiveHeight = usesSiteHeight ? siteHeight : height;
+
 	const bakeUrl = gpxUrl || mediaUrl || '';
 
 	useEffect( () => {
@@ -342,18 +370,43 @@ export default function Edit( {
 				</PanelBody>
 
 				<PanelBody title={ __( 'Display', 'gpx-route-map' ) }>
-					<RangeControl
+					<ToggleControl
 						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-						label={ __( 'Map height (px)', 'gpx-route-map' ) }
-						value={ height }
-						onChange={ ( value ) =>
-							setAttributes( { height: value } )
+						label={ __(
+							'Use site default height',
+							'gpx-route-map'
+						) }
+						help={ sprintf(
+							/* translators: %d: height in pixels. */
+							__(
+								'Follow the height set under Settings → GPX Route Map (%d px).',
+								'gpx-route-map'
+							),
+							siteHeight
+						) }
+						checked={ usesSiteHeight }
+						onChange={ ( useDefault ) =>
+							setAttributes( {
+								height: useDefault ? 0 : siteHeight,
+							} )
 						}
-						min={ 200 }
-						max={ 1200 }
-						step={ 20 }
 					/>
+					{ ! usesSiteHeight && (
+						<RangeControl
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+							label={ __( 'Map height (px)', 'gpx-route-map' ) }
+							value={ height }
+							onChange={ ( value ) =>
+								setAttributes( {
+									height: value ?? DEFAULT_HEIGHT,
+								} )
+							}
+							min={ MIN_HEIGHT }
+							max={ MAX_HEIGHT }
+							step={ 10 }
+						/>
+					) }
 					<SelectControl
 						__nextHasNoMarginBottom
 						__next40pxDefaultSize
@@ -562,7 +615,7 @@ export default function Edit( {
 			) : (
 				<div
 					className="gpxrm-editor-card"
-					style={ { minHeight: Math.min( height, 320 ) } }
+					style={ { minHeight: Math.min( effectiveHeight, 320 ) } }
 				>
 					<span className="gpxrm-editor-icon">🗺️</span>
 					<strong className="gpxrm-editor-title">
