@@ -2,9 +2,14 @@ name: AI Review
 
 # Reviews a pull request with PR-Agent on DeepSeek via SirLouen/ai-pr-review.
 #
-# This repository is public, so reviews run only when a maintainer applies the `ai-review`
-# label (or on manual dispatch), and only for pull requests from this repository - fork pull
-# requests do not receive secrets and are refused on both entry points.
+# Runs on every pull request from this repository and again on every push to one, so the
+# review always describes the code as it stands. Drafts are skipped entirely: a draft that
+# is marked ready for review is reviewed then. The `ai-review` label still forces a run,
+# and manual dispatch still works, for a re-review with no new commit.
+#
+# Fork pull requests are skipped, not failed: `pull_request` gives a fork no secrets, so
+# there is no key to review with. Dependabot is skipped for the same reason, since its runs
+# read Dependabot secrets rather than the repository's.
 #
 # The review is posted by github-actions[bot] using this workflow's own token.
 
@@ -21,7 +26,7 @@ on:
         default: true
         type: boolean
   pull_request:
-    types: [labeled]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
 
 permissions:
   contents: read
@@ -32,9 +37,11 @@ jobs:
   review:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      ( github.event.label.name == 'ai-review' &&
+      ( github.event.pull_request.draft == false &&
         github.event.pull_request.head.repo.full_name == github.repository &&
-        github.event.pull_request.user.login != 'dependabot[bot]' )
+        github.event.pull_request.user.login != 'dependabot[bot]' &&
+        ( github.event.action != 'labeled' ||
+          github.event.label.name == 'ai-review' ) )
     # Job-level on purpose: a skipped job (e.g. a label other than ai-review) never joins the
     # group, so it cannot cancel a review that is already running.
     concurrency:
