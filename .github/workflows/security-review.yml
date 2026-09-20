@@ -4,10 +4,21 @@ name: AI Security Review
 # SirLouen/ai-pr-review/security. Advisory: nothing it reports is confirmed and prompt
 # injection in the pull request can suppress a finding, so never make it a required check.
 #
-# This repository is public, so like ai-review.yml it is opt-in: a review runs when a
-# maintainer applies the `security-review` label. After that, pushes to a pull request from
-# this repository are re-reviewed while the label stays on; a push to a fork pull request
-# drops the label, so every new fork head needs a fresh approval.
+# A pull request from this repository is reviewed ONCE. Later pushes are not reviewed again:
+# each run costs about $0.25 and several minutes, where the general review costs cents. The
+# consequence is that what merges is not necessarily what was reviewed -- apply the
+# `security-review` label to review the current head again, at any time. Drafts are never
+# reviewed; a draft marked ready for review is reviewed then.
+#
+# "Once" means once DELIVERED, not once attempted. A push during the six-minute run leaves
+# the analysis describing a head that no longer exists, and publish refuses to post leads
+# whose line numbers have moved. The `gate` job below therefore asks what the pull request
+# actually carries: while no report has been posted, the next push tries again; once one has,
+# pushes do nothing.
+#
+# Fork pull requests still need the label, per head: the `unlabel-on-push` job strips it on
+# every push to a fork, so each new fork head needs a maintainer's approval again. That gate
+# is for cost and noise, not for secrets.
 #
 # `pull_request_target` runs main's copy of this file, so a pull request cannot edit the
 # reviewer that reviews it. Nothing here checks out or runs pull-request code: the action
@@ -15,8 +26,10 @@ name: AI Security Review
 # scope; `publish` holds the write token and no model key.
 
 on:
+  # `synchronize` never reviews a pull request that already has a report; it is here so a
+  # fork's new head can be re-gated, and so an undelivered review gets another chance.
   pull_request_target:
-    types: [labeled, synchronize, reopened, ready_for_review]
+    types: [opened, ready_for_review, labeled, synchronize]
 
 permissions: {}
 
@@ -39,13 +52,63 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
         run: gh api -X DELETE "repos/${REPO}/issues/${PR}/labels/security-review" || true
 
-  analyze:
+  # Reads the pull request and decides; it calls no model and posts nothing.
+  gate:
     if: >-
       github.event.pull_request.draft == false && (
         (github.event.action == 'labeled' && github.event.label.name == 'security-review') ||
         (github.event.action != 'labeled' &&
-         github.event.pull_request.head.repo.full_name == github.repository &&
-         contains(github.event.pull_request.labels.*.name, 'security-review')))
+         github.event.pull_request.user.login != 'dependabot[bot]' &&
+         (github.event.pull_request.head.repo.full_name == github.repository ||
+          contains(github.event.pull_request.labels.*.name, 'security-review'))))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+      # A pull request's conversation comments are issue comments.
+      issues: read
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - name: Has this pull request already been reviewed?
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          ACTION: ${{ github.event.action }}
+        run: |
+          set -euo pipefail
+          # The label is the manual lever: it always reviews the current head.
+          if [[ "$ACTION" == "labeled" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Every delivered report carries the coverage line. The "superseded" and
+          # "nothing published" notices carry the same marker but never that line, so a run
+          # that ended in one of them does not count as the review this pull request is owed.
+          # One line per match, counted here rather than in jq: `--jq` runs once PER PAGE,
+          # so `| length` would print one number per page and the numeric test below would
+          # throw on any pull request past 100 comments -- and, being an `if` condition,
+          # would not trip `set -e`. `--slurp` is not an option: gh refuses it with `--jq`.
+          # A failed read exits the step (pipefail), which is visible as a red job rather
+          # than a silently skipped review.
+          delivered=$(gh api "repos/${REPO}/issues/${PR}/comments" --paginate \
+            --jq '.[]
+                  | select(.user.login == "github-actions[bot]")
+                  | select(.body | contains("<!-- ai-security-review v1"))
+                  | select(.body | contains("**Coverage:**"))
+                  | .id' | wc -l)
+          if [[ "$delivered" -gt 0 ]]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::this pull request has already been security reviewed; pushes do not review it again. Apply the security-review label to review the current head."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  analyze:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     concurrency:
