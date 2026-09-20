@@ -28,6 +28,7 @@ class Plugin {
 		add_action( 'init', array( $this, 'register_block' ) );
 		add_action( 'init', array( $this, 'register_shortcode' ) );
 		add_action( 'admin_menu', array( $this, 'register_settings_page' ) );
+		add_action( 'init', array( $this, 'register_options' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'upload_mimes', array( $this, 'allow_gpx_upload' ) );
 		add_filter( 'wp_check_filetype_and_ext', array( $this, 'fix_gpx_filetype_check' ), 10, 4 );
@@ -108,23 +109,41 @@ class Plugin {
 	}
 
 	/**
-	 * Register the settings, their sections and their fields.
+	 * The panels that are simply shown or hidden, with their labels and
+	 * shipped defaults.
 	 *
-	 * @return void
+	 * @return array<string, array{0: string, 1: string}>
 	 */
-	public function register_settings(): void {
-		add_settings_section(
-			'gpxrm_display',
-			__( 'Display', 'gpx-route-map' ),
-			'__return_false',
-			self::SETTINGS_PAGE
-		);
-
-		$panels = array(
+	public static function visibility_panels(): array {
+		return array(
 			'gpxrm_show_stats'     => array( __( 'Stats bar', 'gpx-route-map' ), 'show' ),
 			'gpxrm_show_elevation' => array( __( 'Elevation profile', 'gpx-route-map' ), 'show' ),
 			// Off by default so updating never adds a button to existing maps.
 			'gpxrm_show_download'  => array( __( 'Download button', 'gpx-route-map' ), 'hide' ),
+		);
+	}
+
+	/**
+	 * Register the options themselves.
+	 *
+	 * Separate from the settings-page layout, and hooked on `init` rather than
+	 * `admin_init`, because `show_in_rest` is only honoured for settings that
+	 * exist by the time the REST API builds /wp/v2/settings. Registered on
+	 * admin_init alone the flag is silently ignored, and the block editor
+	 * cannot read the site defaults.
+	 *
+	 * @return void
+	 */
+	public function register_options(): void {
+		register_setting(
+			self::OPTION_GROUP,
+			'gpxrm_height',
+			array(
+				'type'              => 'integer',
+				'default'           => Renderer::DEFAULT_HEIGHT,
+				'sanitize_callback' => array( $this, 'sanitize_height' ),
+				'show_in_rest'      => true,
+			)
 		);
 
 		register_setting(
@@ -138,7 +157,7 @@ class Plugin {
 			)
 		);
 
-		foreach ( $panels as $option => $field ) {
+		foreach ( self::visibility_panels() as $option => $field ) {
 			register_setting(
 				self::OPTION_GROUP,
 				$option,
@@ -162,12 +181,39 @@ class Plugin {
 			)
 		);
 
+		$this->register_tile_options();
+	}
+
+	/**
+	 * Register the settings, their sections and their fields.
+	 *
+	 * @return void
+	 */
+	public function register_settings(): void {
+		add_settings_section(
+			'gpxrm_display',
+			__( 'Display', 'gpx-route-map' ),
+			'__return_false',
+			self::SETTINGS_PAGE
+		);
+
+		$panels = self::visibility_panels();
+
 		/*
 		 * Fields render in the order they are added, so they are laid out
 		 * explicitly here rather than as a side effect of registration. "Stats
 		 * shown" sits directly under "Stats bar" because it only qualifies that
 		 * setting, and it is hidden along with it.
 		 */
+		add_settings_field(
+			'gpxrm_height',
+			__( 'Map height', 'gpx-route-map' ),
+			array( $this, 'render_height_field' ),
+			self::SETTINGS_PAGE,
+			'gpxrm_display',
+			array( 'label_for' => 'gpxrm_height' )
+		);
+
 		add_settings_field(
 			'gpxrm_units',
 			__( 'Units', 'gpx-route-map' ),
@@ -227,18 +273,12 @@ class Plugin {
 	}
 
 	/**
-	 * Register the map tile provider settings.
+	 * Register the tile provider options. See register_options() for why these
+	 * are separate from the settings-page layout.
 	 *
 	 * @return void
 	 */
-	private function register_tile_settings(): void {
-		add_settings_section(
-			'gpxrm_tiles',
-			__( 'Map tiles', 'gpx-route-map' ),
-			array( $this, 'render_tiles_intro' ),
-			self::SETTINGS_PAGE
-		);
-
+	private function register_tile_options(): void {
 		register_setting(
 			self::OPTION_GROUP,
 			'gpxrm_tile_provider',
@@ -271,6 +311,20 @@ class Plugin {
 				'sanitize_callback' => array( $this, 'sanitize_thunderforest_style' ),
 				'show_in_rest'      => false,
 			)
+		);
+	}
+
+	/**
+	 * Register the map tile provider settings.
+	 *
+	 * @return void
+	 */
+	private function register_tile_settings(): void {
+		add_settings_section(
+			'gpxrm_tiles',
+			__( 'Map tiles', 'gpx-route-map' ),
+			array( $this, 'render_tiles_intro' ),
+			self::SETTINGS_PAGE
 		);
 
 		add_settings_field(
@@ -594,6 +648,43 @@ class Plugin {
 	}
 
 	/**
+	 * Output the site-wide map height control.
+	 *
+	 * @return void
+	 */
+	public function render_height_field(): void {
+		printf(
+			'<input type="number" name="gpxrm_height" id="gpxrm_height" value="%1$d" min="%2$d" max="%3$d" step="1" class="small-text" /> %4$s',
+			(int) Renderer::default_height(),
+			(int) Renderer::MIN_HEIGHT,
+			(int) Renderer::MAX_HEIGHT,
+			esc_html__( 'px', 'gpx-route-map' )
+		);
+		echo '<p class="description">';
+		printf(
+			/* translators: 1: minimum height in pixels, 2: maximum height in pixels. */
+			esc_html__( 'Height of every GPX map that does not set its own, from %1$d to %2$d pixels. Individual maps can override this.', 'gpx-route-map' ),
+			(int) Renderer::MIN_HEIGHT,
+			(int) Renderer::MAX_HEIGHT
+		);
+		echo '</p>';
+	}
+
+	/**
+	 * Keep the stored height within the range the renderer accepts.
+	 *
+	 * @param mixed $value Raw submitted value.
+	 * @return int
+	 */
+	public function sanitize_height( $value ): int {
+		if ( ! is_numeric( $value ) ) {
+			return Renderer::DEFAULT_HEIGHT;
+		}
+
+		return max( Renderer::MIN_HEIGHT, min( Renderer::MAX_HEIGHT, (int) $value ) );
+	}
+
+	/**
 	 * Output the unit setting control.
 	 *
 	 * @return void
@@ -706,6 +797,32 @@ class Plugin {
 	}
 
 	/**
+	 * Default shortcode attributes.
+	 *
+	 * Every attribute backed by a site-wide setting defaults to its "nothing
+	 * set" sentinel - '' for the string settings, 0 for the height - so the
+	 * site setting applies when the shortcode stays silent. Putting a real
+	 * value here instead silently overrides the site setting on every map,
+	 * which is what happened to `height` before 1.7.0.
+	 *
+	 * @return array<string, string|int>
+	 */
+	public static function shortcode_defaults(): array {
+		return array(
+			'gpx'       => '',
+			'id'        => '',
+			'height'    => 0,
+			'stats'     => '',
+			'elevation' => '',
+			'download'  => '',
+			'fields'    => '',
+			'maxzoom'   => 17,
+			'tile'      => '',
+			'units'     => '',
+		);
+	}
+
+	/**
 	 * Shortcode handler.
 	 *
 	 * Supported attributes:
@@ -725,18 +842,7 @@ class Plugin {
 	 */
 	public function render_shortcode( $atts ): string {
 		$atts = shortcode_atts(
-			array(
-				'gpx'       => '',
-				'id'        => '',
-				'height'    => 480,
-				'stats'     => '',
-				'elevation' => '',
-				'download'  => '',
-				'fields'    => '',
-				'maxzoom'   => 17,
-				'tile'      => '',
-				'units'     => '',
-			),
+			self::shortcode_defaults(),
 			is_array( $atts ) ? $atts : array(),
 			'gpx_route_map'
 		);

@@ -120,6 +120,12 @@
             ],
             "Raster tile template with {z}\/{x}\/{y}, over https. Add {ratio} where the provider expects a retina suffix, for example {z}\/{x}\/{y}{ratio}.png. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited \u2014 use your own provider for busy sites.": [
                 "Plantilla de teselas r\u00e1ster con {z}\/{x}\/{y}, sobre https. A\u00f1ade {ratio} donde el proveedor espere un sufijo retina, por ejemplo {z}\/{x}\/{y}{ratio}.png. D\u00e9jalo en blanco para usar OpenStreetMap. Las teselas p\u00fablicas de OSM tienen un l\u00edmite de uso; usa tu propio proveedor en sitios con mucho tr\u00e1fico."
+            ],
+            "Use site default height": [
+                "Usar la altura del sitio"
+            ],
+            "Follow the height set under Settings \u2192 GPX Route Map (%d px).": [
+                "Usa la altura definida en Ajustes \u2192 GPX Route Map (%d px)."
             ]
         }
     }
