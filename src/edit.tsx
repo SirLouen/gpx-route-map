@@ -452,8 +452,11 @@ export default function Edit( {
 									min={ MIN_HEIGHT }
 									max={ MAX_HEIGHT }
 									step={ 10 }
+									// Reset hands the change handler undefined,
+									// which the `?? 0` above turns back into
+									// "inherit". Passing resetFallbackValue
+									// here would be identical to omitting it.
 									allowReset
-									resetFallbackValue={ undefined }
 									// Dimmed while it is only inheriting.
 									className={
 										own

@@ -764,14 +764,6 @@ class Renderer {
 	}
 
 	/**
-	 * Clamp a number to an inclusive range.
-	 *
-	 * @param int $value Value.
-	 * @param int $min   Minimum.
-	 * @param int $max   Maximum.
-	 * @return int
-	 */
-	/**
 	 * The map element's style attribute.
 	 *
 	 * A map whose bands all resolve to the same number keeps today's literal
