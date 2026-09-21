@@ -216,6 +216,24 @@
         "tablet": 200,
         "mobile": 200
       }
+    },
+    {
+      "name": "a site band still applies to a map that only set its own base",
+      "map": {
+        "base": 800,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "site": {
+        "base": 480,
+        "tablet": 400,
+        "mobile": 0
+      },
+      "want": {
+        "base": 800,
+        "tablet": 400,
+        "mobile": 400
+      }
     }
   ]
 }

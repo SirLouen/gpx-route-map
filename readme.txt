@@ -75,8 +75,8 @@ Shortcode attributes:
 * `id` - Attachment ID of a .gpx file uploaded to the Media Library.
 * `gpx` - Attachment ID, or an absolute URL to a .gpx file (alternative to `id`).
 * `height` - Map height in pixels, from 200 to 1200. Default: the site setting.
-* `height_tablet` - Map height at 782px and below. Default: the same as `height`.
-* `height_mobile` - Map height at 480px and below. Default: the same as `height_tablet`.
+* `height_tablet` - Map height at 782px and below. Default: the site's Tablet height, or `height` when the site sets none.
+* `height_mobile` - Map height at 480px and below. Default: the site's Mobile height, or `height_tablet` when the site sets none.
 * `stats` - Show the stats bar (distance, elevation, waypoints). `true` or `false`. Default: the site setting.
 * `elevation` - Show the interactive elevation profile. `true` or `false`. Default: the site setting.
 * `download` - Show the GPX download button on the map. `true` or `false`. Default: the site setting (off).
@@ -119,7 +119,7 @@ Yes, for the whole site or for a single map. Go to Settings > GPX Route Map and 
 
 = Can maps be shorter on phones? =
 
-Yes. Alongside the main height there are separate Tablet and Mobile heights, both site-wide and per map, and a shortcode accepts `height_tablet` and `height_mobile`. Tablet applies at 782px and below and Mobile at 480px and below, matching the widths WordPress itself uses. Leave one empty and it simply reuses the size above it, so setting only a Mobile height is enough for most sites. The elevation profile also gets shorter on phones so the map and the profile stay visible together.
+Yes. Alongside the main height there are separate Tablet and Mobile heights, both site-wide and per map, and a shortcode accepts `height_tablet` and `height_mobile`. Tablet applies at 782px and below and Mobile at 480px and below, matching the widths WordPress itself uses. Leave one empty and the map follows the site's size for that screen, or the size above it when the site sets none - so a site-wide Mobile height applies to every map, including one given its own taller height. The elevation profile also gets shorter on phones so the map and the profile stay visible together.
 
 = Can I hide the stats bar or the elevation profile? =
 

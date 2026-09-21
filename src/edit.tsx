@@ -414,7 +414,7 @@ export default function Edit( {
 										'heightTablet',
 										__( 'Tablet (px)', 'gpx-route-map' ),
 										__(
-											'Applies at 782px and below. Reset to reuse the height above.',
+											'Applies at 782px and below. Reset to follow the site setting, or the height above when the site has none.',
 											'gpx-route-map'
 										),
 										heightTablet,
@@ -424,7 +424,7 @@ export default function Edit( {
 										'heightMobile',
 										__( 'Mobile (px)', 'gpx-route-map' ),
 										__(
-											'Applies at 480px and below. Reset to reuse the tablet height.',
+											'Applies at 480px and below. Reset to follow the site setting, or the tablet height when the site has none.',
 											'gpx-route-map'
 										),
 										heightMobile,

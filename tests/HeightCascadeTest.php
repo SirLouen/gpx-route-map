@@ -96,7 +96,10 @@ function gpxrm_optional_height_cases(): array {
 		// in PHP 8.1, and several of these inputs are floats.
 		$in = ( is_string( $raw ) && isset( $markers[ $raw ] ) ) ? $markers[ $raw ] : $raw;
 
-		$cases[ is_string( $raw ) ? $raw : var_export( $raw, true ) ] = array( $in, $case['want'] );
+		// Qualified by type: 640 and "640" would otherwise share a dataset key
+		// and the later entry would silently replace the earlier one, so the
+		// parity table would run fewer cases here than in vitest.
+		$cases[ gettype( $raw ) . ': ' . var_export( $raw, true ) ] = array( $in, $case['want'] );
 	}
 
 	return $cases;

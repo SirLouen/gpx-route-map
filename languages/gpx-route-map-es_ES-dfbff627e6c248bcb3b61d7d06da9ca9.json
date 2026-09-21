@@ -130,14 +130,14 @@
             "Tablet (px)": [
                 "Tableta (px)"
             ],
-            "Applies at 782px and below. Reset to reuse the height above.": [
-                "Se aplica a 782px o menos. Rest\u00e1blecelo para reutilizar la altura de arriba."
-            ],
             "Mobile (px)": [
                 "M\u00f3vil (px)"
             ],
-            "Applies at 480px and below. Reset to reuse the tablet height.": [
-                "Se aplica a 480px o menos. Rest\u00e1blecelo para reutilizar la altura de tableta."
+            "Applies at 782px and below. Reset to follow the site setting, or the height above when the site has none.": [
+                "Se aplica a 782px o menos. Rest\u00e1blecelo para seguir el ajuste del sitio, o la altura de arriba si el sitio no define ninguna."
+            ],
+            "Applies at 480px and below. Reset to follow the site setting, or the tablet height when the site has none.": [
+                "Se aplica a 480px o menos. Rest\u00e1blecelo para seguir el ajuste del sitio, o la altura de tableta si el sitio no define ninguna."
             ]
         }
     }
