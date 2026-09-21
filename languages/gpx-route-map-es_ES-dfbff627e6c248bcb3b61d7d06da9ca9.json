@@ -52,9 +52,6 @@
             "Display": [
                 "Visualizaci\u00f3n"
             ],
-            "Map height (px)": [
-                "Altura del mapa (px)"
-            ],
             "Max zoom": [
                 "Zoom m\u00e1ximo"
             ],
@@ -126,6 +123,21 @@
             ],
             "Follow the height set under Settings \u2192 GPX Route Map (%d px).": [
                 "Usa la altura definida en Ajustes \u2192 GPX Route Map (%d px)."
+            ],
+            "All screens (px)": [
+                "Todas las pantallas (px)"
+            ],
+            "Tablet (px)": [
+                "Tableta (px)"
+            ],
+            "Applies at 782px and below. Reset to reuse the height above.": [
+                "Se aplica a 782px o menos. Rest\u00e1blecelo para reutilizar la altura de arriba."
+            ],
+            "Mobile (px)": [
+                "M\u00f3vil (px)"
+            ],
+            "Applies at 480px and below. Reset to reuse the tablet height.": [
+                "Se aplica a 480px o menos. Rest\u00e1blecelo para reutilizar la altura de tableta."
             ]
         }
     }
