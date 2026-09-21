@@ -26,8 +26,21 @@ const BUILD = path.join(
 
 const built = fs.existsSync( path.join( BUILD, 'view.js' ) );
 
+/**
+ * Read a file only when there is a build to read.
+ *
+ * `describe.skipIf` still executes its callback body at collection time, so a
+ * bare `readFileSync` in there throws ENOENT and takes the whole module down
+ * before the "has a build to inspect" guard can report anything useful.
+ *
+ * @param file Path to read.
+ */
+function readIfBuilt( file: string ): string {
+	return built ? fs.readFileSync( file, 'utf8' ) : '';
+}
+
 describe.skipIf( ! built )( 'built view bundle', () => {
-	const view = fs.readFileSync( path.join( BUILD, 'view.js' ), 'utf8' );
+	const view = readIfBuilt( path.join( BUILD, 'view.js' ) );
 	const referenced = [
 		...view.matchAll( /maplibre-gl-worker-[A-Za-z0-9_-]+\.js/g ),
 	].map( ( m ) => m[ 0 ] );
@@ -57,13 +70,9 @@ describe.skipIf( ! built )( 'built view bundle', () => {
 } );
 
 describe.skipIf( ! built )( 'compiled stylesheet', () => {
-	const css = fs.readFileSync(
-		path.join( BUILD, 'style-index.css' ),
-		'utf8'
-	);
-	const renderer = fs.readFileSync(
-		path.join( path.dirname( BUILD ), 'includes', 'class-renderer.php' ),
-		'utf8'
+	const css = readIfBuilt( path.join( BUILD, 'style-index.css' ) );
+	const renderer = readIfBuilt(
+		path.join( path.dirname( BUILD ), 'includes', 'class-renderer.php' )
 	);
 	const phpMin = Number(
 		/const MIN_HEIGHT\s*=\s*(\d+)/.exec( renderer )?.[ 1 ]
@@ -104,7 +113,10 @@ describe.skipIf( ! built )( 'compiled stylesheet', () => {
 	// .gpxrm-error is rendered inside .gpxrm-map, so it cannot be taller than
 	// the shortest map without overflowing its own container.
 	it( 'keeps the error box within the shortest possible map', () => {
-		for ( const value of minHeights( 'gpxrm-error' ) ) {
+		const found = minHeights( 'gpxrm-error' );
+		// Without this the loop asserts nothing if the rule is renamed away.
+		expect( found.length ).toBeGreaterThan( 0 );
+		for ( const value of found ) {
 			expect( value ).toBeLessThanOrEqual( phpMin );
 		}
 	} );
