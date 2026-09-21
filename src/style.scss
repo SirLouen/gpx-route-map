@@ -24,11 +24,33 @@
 	// Matches Renderer::MIN_HEIGHT. A larger floor here silently overrides any
 	// smaller height the renderer resolved, because min-height beats height.
 	min-height: 200px;
+	// Only maps with a per-viewport height carry these; the rest still get a
+	// literal inline height, so this fallback is what they never rely on.
+	height: var(--gpxrm-h, 480px);
 	background: #e5e7eb;
 
 	.maplibregl-map {
 		position: absolute;
 		inset: 0;
+	}
+}
+
+// Cascading bands, not disjoint ones: a tablet height also applies on phones
+// unless a phone height overrides it. The renderer resolves that cascade, so
+// each property here is already the final value for its band.
+// 782px and 480px match WordPress's own DEFAULT_VIEWPORT_BREAKPOINTS, so a map
+// changes size at the same widths as the rest of a block theme.
+@media (max-width: 782px) {
+
+	.gpxrm-map {
+		height: var(--gpxrm-h-t, var(--gpxrm-h, 480px));
+	}
+}
+
+@media (max-width: 480px) {
+
+	.gpxrm-map {
+		height: var(--gpxrm-h-m, var(--gpxrm-h, 480px));
 	}
 }
 
@@ -241,6 +263,16 @@
 	width: 100%;
 	height: 150px;
 	touch-action: none;
+}
+
+// Must come after the rule above: same specificity, so source order decides,
+// and shortening the map alone does not make the map and its profile
+// co-visible on a phone -- the profile block is ~189px on its own.
+@media (max-width: 480px) {
+
+	.gpxrm-elevation-canvas {
+		height: 110px;
+	}
 }
 
 /* Dark theme adaptation */

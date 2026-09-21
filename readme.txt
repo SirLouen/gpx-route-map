@@ -75,6 +75,8 @@ Shortcode attributes:
 * `id` - Attachment ID of a .gpx file uploaded to the Media Library.
 * `gpx` - Attachment ID, or an absolute URL to a .gpx file (alternative to `id`).
 * `height` - Map height in pixels, from 200 to 1200. Default: the site setting.
+* `height_tablet` - Map height at 782px and below. Default: the site's Tablet height, or `height` when the site sets none.
+* `height_mobile` - Map height at 480px and below. Default: the site's Mobile height, or `height_tablet` when the site sets none.
 * `stats` - Show the stats bar (distance, elevation, waypoints). `true` or `false`. Default: the site setting.
 * `elevation` - Show the interactive elevation profile. `true` or `false`. Default: the site setting.
 * `download` - Show the GPX download button on the map. `true` or `false`. Default: the site setting (off).
@@ -90,6 +92,7 @@ Filters (for developers):
 * `gpxrm_tile_url` - change the default raster tile URL template.
 * `gpxrm_tile_attribution` - change the attribution HTML.
 * `gpxrm_height` - change the site-wide map height in pixels (integer).
+* `gpxrm_heights` - change the site-wide height for every viewport band (array of `base`, `tablet`, `mobile`; 0 means "follow the next larger band").
 * `gpxrm_units` - change the site-wide unit system (`metric` or `imperial`).
 * `gpxrm_show_stats` - change whether the stats bar shows by default (boolean).
 * `gpxrm_show_elevation` - change whether the elevation profile shows by default (boolean).
@@ -113,6 +116,10 @@ Yes. Go to Settings > GPX Route Map and set "Units" to Imperial, and every map o
 = Can I change how tall the maps are? =
 
 Yes, for the whole site or for a single map. Go to Settings > GPX Route Map and set "Map height" to size every map that does not set its own. To change just one map, turn off "Use site default height" in the block's Display panel and pick a height, or add `height="600"` to the shortcode. Heights run from 200 to 1200 pixels.
+
+= Can maps be shorter on phones? =
+
+Yes. Alongside the main height there are separate Tablet and Mobile heights, both site-wide and per map, and a shortcode accepts `height_tablet` and `height_mobile`. Tablet applies at 782px and below and Mobile at 480px and below, matching the widths WordPress itself uses. Leave one empty and the map follows the site's size for that screen, or the size above it when the site sets none - so a site-wide Mobile height applies to every map, including one given its own taller height. The elevation profile also gets shorter on phones so the map and the profile stay visible together.
 
 = Can I hide the stats bar or the elevation profile? =
 
@@ -157,6 +164,7 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 
 = 1.7.0 =
 * New: set the map height once for the whole site under Settings > GPX Route Map, instead of repeating it on every map. Individual maps can still set their own.
+* New: separate heights for tablets and phones, site-wide and per map, so a map can be shorter on a small screen. Leave one empty and it reuses the size above it. The elevation profile shrinks on phones too, so the map and the profile stay visible together.
 * The block's height control now moves in steps of 10 pixels rather than 20, so more heights can actually be chosen.
 * Maps that never had a height set follow the site setting, so existing maps are unaffected until you change it.
 * Updated the map library to MapLibre GL JS 6. Maps now need a browser with WebGL2, which covers Chrome, Edge, Firefox and Safari 15 or newer. Where it is missing, the map shows its "could not load" notice instead of failing silently.
@@ -208,7 +216,7 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 == Upgrade Notice ==
 
 = 1.7.0 =
-Map height can now be set once for the whole site. Existing maps keep the size they already had. Uses MapLibre GL JS 6, which needs a browser with WebGL2.
+Map height can now be set once for the whole site, with separate sizes for tablets and phones. Existing maps keep the size they already had. Uses MapLibre GL JS 6, which needs a browser with WebGL2.
 
 
 = 1.6.1 =

@@ -47,3 +47,14 @@
 .gpxrm-editor-link {
 	font-size: 12px;
 }
+
+// A tablet or mobile slider that has no value of its own shows the height it
+// inherits, so without this cue it looks identical to one that was set
+// deliberately.
+.gpxrm-inherited-range {
+
+	.components-range-control__slider,
+	.components-input-control__input {
+		opacity: 0.55;
+	}
+}

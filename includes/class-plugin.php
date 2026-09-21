@@ -146,6 +146,19 @@ class Plugin {
 			)
 		);
 
+		foreach ( array( 'gpxrm_height_tablet', 'gpxrm_height_mobile' ) as $option ) {
+			register_setting(
+				self::OPTION_GROUP,
+				$option,
+				array(
+					'type'              => 'integer',
+					'default'           => 0,
+					'sanitize_callback' => array( $this, 'sanitize_optional_height' ),
+					'show_in_rest'      => true,
+				)
+			);
+		}
+
 		register_setting(
 			self::OPTION_GROUP,
 			'gpxrm_units',
@@ -651,28 +664,69 @@ class Plugin {
 	 */
 	public function render_height_field(): void {
 		/*
-		 * The stored option, not Renderer::default_height(): that applies the
-		 * gpxrm_height filter, so a filtered value would be pre-filled here and
+		 * The stored options, not Renderer::default_heights(): that applies the
+		 * height filters, so a filtered value would be pre-filled here and
 		 * written to the database by an unrelated "Save Changes" - outliving the
 		 * filter that produced it. Filtering stays a runtime concern.
 		 */
-		$stored = get_option( 'gpxrm_height', Renderer::DEFAULT_HEIGHT );
-
-		printf(
-			'<input type="number" name="gpxrm_height" id="gpxrm_height" value="%1$d" min="%2$d" max="%3$d" step="1" class="small-text" /> %4$s',
-			(int) $this->sanitize_height( $stored ),
-			(int) Renderer::MIN_HEIGHT,
-			(int) Renderer::MAX_HEIGHT,
-			esc_html__( 'px', 'gpx-route-map' )
+		$bands = array(
+			'gpxrm_height'        => array(
+				__( 'All screens', 'gpx-route-map' ),
+				(int) $this->sanitize_height( get_option( 'gpxrm_height', Renderer::DEFAULT_HEIGHT ) ),
+				'',
+			),
+			'gpxrm_height_tablet' => array(
+				__( 'Tablet', 'gpx-route-map' ),
+				Renderer::optional_height( get_option( 'gpxrm_height_tablet', 0 ) ),
+				__( 'Same as above', 'gpx-route-map' ),
+			),
+			'gpxrm_height_mobile' => array(
+				__( 'Mobile', 'gpx-route-map' ),
+				Renderer::optional_height( get_option( 'gpxrm_height_mobile', 0 ) ),
+				__( 'Same as tablet', 'gpx-route-map' ),
+			),
 		);
+
+		echo '<fieldset>';
+		foreach ( $bands as $option => $band ) {
+			printf(
+				'<label for="%1$s" style="display:inline-block;min-width:8em">%2$s</label>' .
+				'<input type="number" name="%1$s" id="%1$s" value="%3$s" min="%4$d" max="%5$d" step="1" class="small-text" placeholder="%6$s" /> %7$s<br />',
+				esc_attr( $option ),
+				esc_html( $band[0] ),
+				// An empty field, not a 0, so "nothing set" reads as empty.
+				$band[1] > 0 ? esc_attr( (string) $band[1] ) : '',
+				(int) Renderer::MIN_HEIGHT,
+				(int) Renderer::MAX_HEIGHT,
+				esc_attr( $band[2] ),
+				esc_html__( 'px', 'gpx-route-map' )
+			);
+		}
+		echo '</fieldset>';
+
 		echo '<p class="description">';
 		printf(
 			/* translators: 1: minimum height in pixels, 2: maximum height in pixels. */
-			esc_html__( 'Height of every GPX map that does not set its own, from %1$d to %2$d pixels. Individual maps can override this.', 'gpx-route-map' ),
+			esc_html__( 'Height of every GPX map that does not set its own, from %1$d to %2$d pixels. Leave Tablet or Mobile empty to reuse the size above it. Individual maps can override all of this.', 'gpx-route-map' ),
 			(int) Renderer::MIN_HEIGHT,
 			(int) Renderer::MAX_HEIGHT
 		);
 		echo '</p>';
+	}
+
+	/**
+	 * Keep an optional per-viewport height within range.
+	 *
+	 * Separate from sanitize_height() on purpose: options.php writes null for
+	 * any registered option absent from the submitted form, and coercing that
+	 * to DEFAULT_HEIGHT would silently invent a per-viewport override on every
+	 * save. 0 means "no override", which is what absent should mean.
+	 *
+	 * @param mixed $value Raw submitted value.
+	 * @return int
+	 */
+	public function sanitize_optional_height( $value ): int {
+		return Renderer::optional_height( $value );
 	}
 
 	/**
@@ -801,7 +855,7 @@ class Plugin {
 				wp_add_inline_script(
 					$handle,
 					'window.gpxrmDefaults = ' . wp_json_encode(
-						array( 'height' => Renderer::default_height() )
+						Renderer::default_heights()
 					) . ';',
 					'before'
 				);
@@ -831,16 +885,18 @@ class Plugin {
 	 */
 	public static function shortcode_defaults(): array {
 		return array(
-			'gpx'       => '',
-			'id'        => '',
-			'height'    => 0,
-			'stats'     => '',
-			'elevation' => '',
-			'download'  => '',
-			'fields'    => '',
-			'maxzoom'   => 17,
-			'tile'      => '',
-			'units'     => '',
+			'gpx'           => '',
+			'id'            => '',
+			'height'        => 0,
+			'height_tablet' => 0,
+			'height_mobile' => 0,
+			'stats'         => '',
+			'elevation'     => '',
+			'download'      => '',
+			'fields'        => '',
+			'maxzoom'       => 17,
+			'tile'          => '',
+			'units'         => '',
 		);
 	}
 
@@ -871,6 +927,8 @@ class Plugin {
 
 		$mapped = array(
 			'height'        => (int) $atts['height'],
+			'heightTablet'  => (int) $atts['height_tablet'],
+			'heightMobile'  => (int) $atts['height_mobile'],
 			'showStats'     => $atts['stats'],
 			'showElevation' => $atts['elevation'],
 			'showDownload'  => $atts['download'],

@@ -29,6 +29,13 @@ import {
 	CheckboxControl,
 } from '@wordpress/components';
 
+import {
+	resolveHeights,
+	siteHeights,
+	MIN_HEIGHT,
+	MAX_HEIGHT,
+	DEFAULT_HEIGHT,
+} from './heights';
 import { parseGPX } from './view/map-core';
 import { routeStats } from './view/stats';
 
@@ -49,6 +56,8 @@ export type GpxBlockAttributes = {
 	gpxId?: number;
 	gpxUrl: string;
 	height: number;
+	heightTablet: number;
+	heightMobile: number;
 	showStats: string;
 	showElevation: string;
 	showDownload: string;
@@ -58,30 +67,6 @@ export type GpxBlockAttributes = {
 	units: string;
 	stats?: GpxStats;
 };
-
-/** Height bounds, mirroring Renderer::MIN_HEIGHT / MAX_HEIGHT / DEFAULT_HEIGHT. */
-const MIN_HEIGHT = 200;
-const MAX_HEIGHT = 1200;
-const DEFAULT_HEIGHT = 480;
-
-/**
- * The site-wide height, printed by the server before this script.
- *
- * Deliberately not read from /wp/v2/settings: core gates that route on
- * manage_options, so an Editor or Author would silently get the shipped
- * default and be shown a height the front end will not use.
- */
-function siteDefaultHeight(): number {
-	const injected = (
-		window as unknown as {
-			gpxrmDefaults?: { height?: number };
-		}
-	 ).gpxrmDefaults?.height;
-
-	return 'number' === typeof injected && injected > 0
-		? injected
-		: DEFAULT_HEIGHT;
-}
 
 /**
  * The stats the bar can list, in display order. Mirrors Renderer::STAT_FIELDS.
@@ -196,6 +181,8 @@ export default function Edit( {
 		gpxId,
 		gpxUrl,
 		height,
+		heightTablet,
+		heightMobile,
 		showStats,
 		showElevation,
 		showDownload,
@@ -234,9 +221,14 @@ export default function Edit( {
 		},
 		[ gpxId ]
 	);
-	const siteHeight = siteDefaultHeight();
-	const usesSiteHeight = ! height;
-	const effectiveHeight = usesSiteHeight ? siteHeight : height;
+	const site = siteHeights();
+	const usesSiteHeight = ! height && ! heightTablet && ! heightMobile;
+	const resolved = resolveHeights(
+		{ base: height, tablet: heightTablet, mobile: heightMobile },
+		site
+	);
+	const siteHeight = site.base;
+	const effectiveHeight = resolved.base;
 
 	const bakeUrl = gpxUrl || mediaUrl || '';
 
@@ -386,26 +378,94 @@ export default function Edit( {
 						) }
 						checked={ usesSiteHeight }
 						onChange={ ( useDefault ) =>
-							setAttributes( {
-								height: useDefault ? 0 : siteHeight,
-							} )
+							setAttributes(
+								useDefault
+									? {
+											height: 0,
+											heightTablet: 0,
+											heightMobile: 0,
+									  }
+									: { height: siteHeight }
+							)
 						}
 					/>
 					{ ! usesSiteHeight && (
-						<RangeControl
-							__nextHasNoMarginBottom
-							__next40pxDefaultSize
-							label={ __( 'Map height (px)', 'gpx-route-map' ) }
-							value={ height }
-							onChange={ ( value ) =>
-								setAttributes( {
-									height: value ?? DEFAULT_HEIGHT,
-								} )
-							}
-							min={ MIN_HEIGHT }
-							max={ MAX_HEIGHT }
-							step={ 10 }
-						/>
+						<>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'All screens (px)',
+									'gpx-route-map'
+								) }
+								value={ resolved.base }
+								onChange={ ( value ) =>
+									setAttributes( {
+										height: value ?? DEFAULT_HEIGHT,
+									} )
+								}
+								min={ MIN_HEIGHT }
+								max={ MAX_HEIGHT }
+								step={ 10 }
+							/>
+							{ (
+								[
+									[
+										'heightTablet',
+										__( 'Tablet (px)', 'gpx-route-map' ),
+										__(
+											'Applies at 782px and below. Reset to follow the site setting, or the height above when the site has none.',
+											'gpx-route-map'
+										),
+										heightTablet,
+										resolved.tablet,
+									],
+									[
+										'heightMobile',
+										__( 'Mobile (px)', 'gpx-route-map' ),
+										__(
+											'Applies at 480px and below. Reset to follow the site setting, or the tablet height when the site has none.',
+											'gpx-route-map'
+										),
+										heightMobile,
+										resolved.mobile,
+									],
+								] as Array<
+									[ string, string, string, number, number ]
+								>
+							 ).map( ( [ key, label, hint, own, shown ] ) => (
+								<RangeControl
+									key={ key }
+									__nextHasNoMarginBottom
+									__next40pxDefaultSize
+									label={ label }
+									help={ hint }
+									// The inherited value, so the slider
+									// shows what the band actually renders
+									// at rather than a misleading 0.
+									value={ shown }
+									onChange={ ( value ) =>
+										setAttributes( {
+											[ key ]: value ?? 0,
+										} )
+									}
+									min={ MIN_HEIGHT }
+									max={ MAX_HEIGHT }
+									step={ 10 }
+									// Reset hands the change handler undefined,
+									// which the `?? 0` above turns back into
+									// "inherit". Passing resetFallbackValue
+									// here would be identical to omitting it.
+									allowReset
+									// Dimmed while it is only inheriting.
+									className={
+										own
+											? undefined
+											: 'gpxrm-inherited-range'
+									}
+								/>
+							) ) }
+						</>
 					) }
 					<SelectControl
 						__nextHasNoMarginBottom

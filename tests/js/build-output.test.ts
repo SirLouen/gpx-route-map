@@ -112,6 +112,69 @@ describe.skipIf( ! built )( 'compiled stylesheet', () => {
 		}
 	} );
 
+	/**
+	 * Where a selector's height declarations sit, and whether each is inside a
+	 * media query. Walks the stylesheet rather than matching it, because a
+	 * regex cannot tell a rule inside an @media block from one beside it once
+	 * the CSS is minified.
+	 *
+	 * @param selector Class selector, without the leading dot.
+	 */
+	function heightRules( selector: string ) {
+		const out: Array< { at: number; inMedia: boolean } > = [];
+		const needle = `.${ selector }{`;
+		let depth = 0;
+		let mediaDepth = -1;
+
+		for ( let i = 0; i < css.length; i++ ) {
+			if ( css.startsWith( '@media', i ) && mediaDepth < 0 ) {
+				mediaDepth = depth;
+			}
+			if ( css.startsWith( needle, i ) ) {
+				const body = css.slice( i, css.indexOf( '}', i ) );
+				if ( /height:/.test( body ) ) {
+					out.push( { at: i, inMedia: mediaDepth >= 0 } );
+				}
+			}
+			if ( '{' === css[ i ] ) {
+				depth++;
+			}
+			if ( '}' === css[ i ] ) {
+				depth--;
+				if ( mediaDepth >= 0 && depth <= mediaDepth ) {
+					mediaDepth = -1;
+				}
+			}
+		}
+
+		return out;
+	}
+
+	// Source order, not specificity, decides between two rules for the same
+	// selector. The responsive override sat above the base rule at first, so
+	// the base height won and the rule was simply dead - while the CSS
+	// compiled, every test passed, and the map itself still resized correctly.
+	it( 'puts each responsive override after the rule it must beat', () => {
+		for ( const selector of [ 'gpxrm-map', 'gpxrm-elevation-canvas' ] ) {
+			const rules = heightRules( selector );
+			const base = rules.filter( ( r ) => ! r.inMedia );
+			const responsive = rules.filter( ( r ) => r.inMedia );
+
+			expect( base.length, `no base .${ selector } height` ).toBe( 1 );
+			expect(
+				responsive.length,
+				`no responsive .${ selector } height`
+			).toBeGreaterThan( 0 );
+
+			for ( const r of responsive ) {
+				expect(
+					r.at,
+					`the responsive .${ selector } rule must come after its base rule`
+				).toBeGreaterThan( base[ 0 ].at );
+			}
+		}
+	} );
+
 	// min-height alone is not the whole invariant: under the browser default
 	// box model the padding is added to it, so the floor must be border-box
 	// or the error box is 48px taller than the shortest map.

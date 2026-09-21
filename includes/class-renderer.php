@@ -214,6 +214,80 @@ class Renderer {
 	}
 
 	/**
+	 * Normalize an optional per-viewport height.
+	 *
+	 * 0 is the "nothing set" sentinel, meaning the band follows the next larger
+	 * one. Anything else is clamped into the supported range.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return int Height in pixels, or 0 to inherit.
+	 */
+	public static function optional_height( $value ): int {
+		/*
+		 * Positivity is tested on the raw value, not the truncated one: casting
+		 * first would read anything under 1px as "nothing set" and inherit,
+		 * while the JavaScript mirror clamps it up to the minimum.
+		 *
+		 * NAN and INF are is_numeric() here but not Number.isFinite() there,
+		 * and casting either to int yields 0, which would then clamp up to the
+		 * minimum instead of meaning "nothing set". Rejected explicitly so the
+		 * two implementations stay equivalent.
+		 */
+		if ( ! is_numeric( $value ) ) {
+			return 0;
+		}
+
+		$number = (float) $value;
+
+		if ( ! is_finite( $number ) || $number <= 0 ) {
+			return 0;
+		}
+
+		return self::clamp( (int) $value, self::MIN_HEIGHT, self::MAX_HEIGHT );
+	}
+
+	/**
+	 * The site-wide heights for every viewport band.
+	 *
+	 * Tablet and mobile are 0 unless the site sets them, so a site that never
+	 * touches them behaves exactly as it did before they existed.
+	 *
+	 * @return array{base: int, tablet: int, mobile: int}
+	 */
+	public static function default_heights(): array {
+		$heights = array(
+			'base'   => self::default_height(),
+			'tablet' => self::optional_height( get_option( 'gpxrm_height_tablet', 0 ) ),
+			'mobile' => self::optional_height( get_option( 'gpxrm_height_mobile', 0 ) ),
+		);
+
+		/**
+		 * Filters the site-wide heights for every viewport band.
+		 *
+		 * The base height also passes through `gpxrm_height` on its own, which
+		 * predates this filter and keeps working unchanged.
+		 *
+		 * @param array{base: int, tablet: int, mobile: int} $heights Heights in pixels.
+		 */
+
+		/*
+		 * Merged over the defaults rather than indexed directly. Returning only
+		 * the band you care about - array( 'base' => 700 ) - is the natural way
+		 * to use this hook, and indexing a partial array warns on PHP 8 and
+		 * zeroes the bands the filter did not mention. The cast also survives a
+		 * filter that returns something that is not an array at all, which the
+		 * documented signature promises but cannot enforce.
+		 */
+		$filtered = array_merge( $heights, (array) apply_filters( 'gpxrm_heights', $heights ) );
+
+		return array(
+			'base'   => self::clamp( (int) $filtered['base'], self::MIN_HEIGHT, self::MAX_HEIGHT ),
+			'tablet' => self::optional_height( $filtered['tablet'] ),
+			'mobile' => self::optional_height( $filtered['mobile'] ),
+		);
+	}
+
+	/**
 	 * Read a stored 'show'/'hide' option.
 	 *
 	 * @param string $option   Option name.
@@ -450,8 +524,8 @@ class Renderer {
 		$tile_url = '' !== $a['tile_url'] ? $a['tile_url'] : self::default_tile_url();
 
 		$map = sprintf(
-			'<div class="gpxrm-map" style="height:%1$dpx" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" data-gpxrm-units="%7$s"%8$s role="application" aria-label="%9$s">%10$s</div>',
-			$a['height'],
+			'<div class="gpxrm-map" style="%1$s" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" data-gpxrm-units="%7$s"%8$s role="application" aria-label="%9$s">%10$s</div>',
+			esc_attr( self::height_style( $a ) ),
 			esc_url( $a['gpx_url'] ),
 			esc_attr( $tile_url ),
 			esc_attr( self::attribution_for( $tile_url ) ),
@@ -479,7 +553,7 @@ class Renderer {
 	 * Normalize block attributes and shortcode atts into one shape.
 	 *
 	 * @param array<string, mixed> $atts Raw attributes.
-	 * @return array{gpx_url: string, height: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null, units: string, stat_fields: array<int, string>}
+	 * @return array{gpx_url: string, height: int, height_tablet: int, height_mobile: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null, units: string, stat_fields: array<int, string>}
 	 */
 	private static function normalize( array $atts ): array {
 		$gpx_url = '';
@@ -498,15 +572,28 @@ class Renderer {
 
 		// A height of 0 (or none at all) means "use whatever the site says", so
 		// changing the site setting resizes every map that has not set its own.
-		$height   = ( isset( $atts['height'] ) && is_numeric( $atts['height'] ) && (int) $atts['height'] > 0 )
-			? (int) $atts['height']
-			: self::default_height();
+		$site   = self::default_heights();
+		$height = self::optional_height( $atts['height'] ?? 0 );
+		$height = $height > 0 ? $height : $site['base'];
+
+		$tablet = self::optional_height( $atts['heightTablet'] ?? 0 );
+		$mobile = self::optional_height( $atts['heightMobile'] ?? 0 );
+
+		// Cascade rather than disjoint bands: a band with nothing of its own
+		// follows the next larger one, which is what people expect when they
+		// set only a phone height.
+		$tablet   = $tablet > 0 ? $tablet : $site['tablet'];
+		$tablet   = $tablet > 0 ? $tablet : $height;
+		$mobile   = $mobile > 0 ? $mobile : $site['mobile'];
+		$mobile   = $mobile > 0 ? $mobile : $tablet;
 		$max_zoom = ( isset( $atts['maxZoom'] ) && is_numeric( $atts['maxZoom'] ) ) ? (int) $atts['maxZoom'] : 17;
 		$tile_url = self::sanitize_tile_url( $atts['tileUrl'] ?? '' );
 
 		return array(
 			'gpx_url'        => $gpx_url,
 			'height'         => self::clamp( $height, self::MIN_HEIGHT, self::MAX_HEIGHT ),
+			'height_tablet'  => $tablet,
+			'height_mobile'  => $mobile,
 			'show_stats'     => self::normalize_visibility( $atts['showStats'] ?? '', self::default_show_stats() ),
 			'show_elevation' => self::normalize_visibility( $atts['showElevation'] ?? '', self::default_show_elevation() ),
 			'show_download'  => self::normalize_visibility( $atts['showDownload'] ?? '', self::default_show_download() ),
@@ -702,11 +789,39 @@ class Renderer {
 	}
 
 	/**
-	 * Clamp a number to an inclusive range.
+	 * The map element's style attribute.
 	 *
-	 * @param int $value Value.
-	 * @param int $min   Minimum.
-	 * @param int $max   Maximum.
+	 * A map whose bands all resolve to the same number keeps today's literal
+	 * `height`, byte for byte, so every already-published post renders exactly
+	 * as before and never depends on the stylesheet having been printed.
+	 *
+	 * A map that does differ per band switches to custom properties instead.
+	 * It has to: an inline `height` beats any stylesheet rule regardless of
+	 * specificity, so leaving one here would make the media queries dead and
+	 * nothing in the test suite would notice.
+	 *
+	 * @param array{height: int, height_tablet: int, height_mobile: int} $a Normalized attributes.
+	 * @return string
+	 */
+	private static function height_style( array $a ): string {
+		if ( $a['height'] === $a['height_tablet'] && $a['height'] === $a['height_mobile'] ) {
+			return sprintf( 'height:%dpx', $a['height'] );
+		}
+
+		return sprintf(
+			'--gpxrm-h:%1$dpx;--gpxrm-h-t:%2$dpx;--gpxrm-h-m:%3$dpx',
+			$a['height'],
+			$a['height_tablet'],
+			$a['height_mobile']
+		);
+	}
+
+	/**
+	 * Keep a value inside an inclusive range.
+	 *
+	 * @param int $value Value to clamp.
+	 * @param int $min   Lowest allowed value.
+	 * @param int $max   Highest allowed value.
 	 * @return int
 	 */
 	private static function clamp( int $value, int $min, int $max ): int {

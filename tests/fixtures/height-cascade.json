@@ -1,0 +1,239 @@
+{
+  "_comment": "Shared by tests/HeightCascadeTest.php and tests/js/height-cascade.test.ts. The cascade is implemented twice, once per language, and a table like this is the only artefact that fails when the two drift. 0 means nothing set.",
+  "cases": [
+    {
+      "name": "nothing anywhere falls back to the shipped default",
+      "map": {
+        "base": 0,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "site": {
+        "base": 480,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "want": {
+        "base": 480,
+        "tablet": 480,
+        "mobile": 480
+      }
+    },
+    {
+      "name": "site base alone applies to every band",
+      "map": {
+        "base": 0,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "site": {
+        "base": 600,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "want": {
+        "base": 600,
+        "tablet": 600,
+        "mobile": 600
+      }
+    },
+    {
+      "name": "site tablet cascades down to mobile",
+      "map": {
+        "base": 0,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "site": {
+        "base": 600,
+        "tablet": 400,
+        "mobile": 0
+      },
+      "want": {
+        "base": 600,
+        "tablet": 400,
+        "mobile": 400
+      }
+    },
+    {
+      "name": "site mobile does not leak upward into tablet",
+      "map": {
+        "base": 0,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "site": {
+        "base": 600,
+        "tablet": 0,
+        "mobile": 320
+      },
+      "want": {
+        "base": 600,
+        "tablet": 600,
+        "mobile": 320
+      }
+    },
+    {
+      "name": "a per-map base overrides the site base for every band",
+      "map": {
+        "base": 500,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "site": {
+        "base": 600,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "want": {
+        "base": 500,
+        "tablet": 500,
+        "mobile": 500
+      }
+    },
+    {
+      "name": "a per-map band beats the site band",
+      "map": {
+        "base": 0,
+        "tablet": 0,
+        "mobile": 260
+      },
+      "site": {
+        "base": 600,
+        "tablet": 400,
+        "mobile": 320
+      },
+      "want": {
+        "base": 600,
+        "tablet": 400,
+        "mobile": 260
+      }
+    },
+    {
+      "name": "a per-map tablet cascades to mobile over the site mobile",
+      "map": {
+        "base": 0,
+        "tablet": 380,
+        "mobile": 0
+      },
+      "site": {
+        "base": 600,
+        "tablet": 400,
+        "mobile": 0
+      },
+      "want": {
+        "base": 600,
+        "tablet": 380,
+        "mobile": 380
+      }
+    },
+    {
+      "name": "every band set explicitly stays exactly as given",
+      "map": {
+        "base": 700,
+        "tablet": 500,
+        "mobile": 300
+      },
+      "site": {
+        "base": 600,
+        "tablet": 400,
+        "mobile": 320
+      },
+      "want": {
+        "base": 700,
+        "tablet": 500,
+        "mobile": 300
+      }
+    },
+    {
+      "name": "out-of-range per-map values are clamped, not discarded",
+      "map": {
+        "base": 99999,
+        "tablet": 10,
+        "mobile": 0
+      },
+      "site": {
+        "base": 600,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "want": {
+        "base": 1200,
+        "tablet": 200,
+        "mobile": 200
+      }
+    },
+    {
+      "name": "non-integer bands truncate identically in both languages",
+      "map": {
+        "base": 500.9,
+        "tablet": 400.6,
+        "mobile": 300.4
+      },
+      "site": {
+        "base": 480,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "want": {
+        "base": 500,
+        "tablet": 400,
+        "mobile": 300
+      }
+    },
+    {
+      "name": "a non-integer below the minimum still clamps up",
+      "map": {
+        "base": 0,
+        "tablet": 199.9,
+        "mobile": 0
+      },
+      "site": {
+        "base": 480,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "want": {
+        "base": 480,
+        "tablet": 200,
+        "mobile": 200
+      }
+    },
+    {
+      "name": "a band under one pixel is a value, not an absent one",
+      "map": {
+        "base": 0,
+        "tablet": 0.5,
+        "mobile": 0
+      },
+      "site": {
+        "base": 480,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "want": {
+        "base": 480,
+        "tablet": 200,
+        "mobile": 200
+      }
+    },
+    {
+      "name": "a site band still applies to a map that only set its own base",
+      "map": {
+        "base": 800,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "site": {
+        "base": 480,
+        "tablet": 400,
+        "mobile": 0
+      },
+      "want": {
+        "base": 800,
+        "tablet": 400,
+        "mobile": 400
+      }
+    }
+  ]
+}
