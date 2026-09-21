@@ -198,6 +198,24 @@
         "tablet": 200,
         "mobile": 200
       }
+    },
+    {
+      "name": "a band under one pixel is a value, not an absent one",
+      "map": {
+        "base": 0,
+        "tablet": 0.5,
+        "mobile": 0
+      },
+      "site": {
+        "base": 480,
+        "tablet": 0,
+        "mobile": 0
+      },
+      "want": {
+        "base": 480,
+        "tablet": 200,
+        "mobile": 200
+      }
     }
   ]
 }

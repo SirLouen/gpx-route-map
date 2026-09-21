@@ -1,0 +1,20 @@
+{
+  "_comment": "Shared by tests/HeightCascadeTest.php and tests/js/height-cascade.test.ts. optional_height() and optionalHeight() must agree on every one of these, including the inputs where PHP's is_numeric() and JavaScript's Number() disagree.",
+  "cases": [
+    { "in": 640,     "want": 640 },
+    { "in": "640",   "want": 640 },
+    { "in": 0,       "want": 0   },
+    { "in": -5,      "want": 0   },
+    { "in": 0.5,     "want": 200 },
+    { "in": "0.5",   "want": 200 },
+    { "in": 0.9,     "want": 200 },
+    { "in": 199.9,   "want": 200 },
+    { "in": 99999,   "want": 1200 },
+    { "in": true,    "want": 0   },
+    { "in": false,   "want": 0   },
+    { "in": "0x1A",  "want": 0   },
+    { "in": "tall",  "want": 0   },
+    { "in": "",      "want": 0   },
+    { "in": null,    "want": 0   }
+  ]
+}

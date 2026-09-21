@@ -223,7 +223,10 @@ class Renderer {
 	 * @return int Height in pixels, or 0 to inherit.
 	 */
 	public static function optional_height( $value ): int {
-		if ( ! is_numeric( $value ) || (int) $value <= 0 ) {
+		// Positivity is tested on the raw value, not the truncated one: casting
+		// first would read anything under 1px as "nothing set" and inherit,
+		// while the JavaScript mirror clamps it up to the minimum.
+		if ( ! is_numeric( $value ) || (float) $value <= 0 ) {
 			return 0;
 		}
 

@@ -44,16 +44,34 @@ describe( 'resolveHeights', () => {
 	}
 } );
 
+const EDGE_FIXTURE = path.join(
+	path.dirname( path.dirname( fileURLToPath( import.meta.url ) ) ),
+	'fixtures',
+	'optional-height.json'
+);
+
+const edgeCases: Array< { in: unknown; want: number } > = JSON.parse(
+	fs.readFileSync( EDGE_FIXTURE, 'utf8' )
+).cases;
+
 describe( 'optionalHeight', () => {
-	it( 'treats anything non-positive as "nothing set"', () => {
-		for ( const value of [ 0, -1, '', null, undefined, 'tall', NaN ] ) {
-			expect( optionalHeight( value ) ).toBe( 0 );
-		}
+	it( 'reads the shared fixture', () => {
+		expect( edgeCases.length ).toBeGreaterThan( 0 );
 	} );
 
-	it( 'clamps into the supported range', () => {
-		expect( optionalHeight( 99999 ) ).toBe( 1200 );
-		expect( optionalHeight( 10 ) ).toBe( 200 );
-		expect( optionalHeight( 640 ) ).toBe( 640 );
+	// PHP's is_numeric() and JavaScript's Number() disagree about booleans and
+	// hex literals, and casting before testing positivity made anything under
+	// 1px read as "nothing set" on one side only. tests/HeightCascadeTest.php
+	// drives the very same table.
+	for ( const c of edgeCases ) {
+		it( `${ JSON.stringify( c.in ) } resolves to ${ c.want }`, () => {
+			expect( optionalHeight( c.in ) ).toBe( c.want );
+		} );
+	}
+
+	it( 'treats undefined as "nothing set"', () => {
+		// Not in the shared fixture: JSON has no undefined.
+		expect( optionalHeight( undefined ) ).toBe( 0 );
+		expect( optionalHeight( NaN ) ).toBe( 0 );
 	} );
 } );

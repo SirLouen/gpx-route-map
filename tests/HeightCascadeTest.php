@@ -70,3 +70,30 @@ test(
 		expect( $got['height_mobile'] )->toBe( $want['mobile'] );
 	}
 )->with( gpxrm_cascade_cases() );
+
+/**
+ * Every optional_height() edge case in the shared fixture.
+ *
+ * @return array<string, array{0: mixed, 1: int}>
+ */
+function gpxrm_optional_height_cases(): array {
+	$raw  = file_get_contents( __DIR__ . '/fixtures/optional-height.json' );
+	$data = json_decode( (string) $raw, true );
+
+	$cases = array();
+	foreach ( $data['cases'] as $case ) {
+		$cases[ var_export( $case['in'], true ) ] = array( $case['in'], $case['want'] );
+	}
+
+	return $cases;
+}
+
+test(
+	'optional_height agrees with its JavaScript mirror on every edge case',
+	function ( $in, int $want ) {
+		// PHP's is_numeric() and JavaScript's Number() disagree about booleans
+		// and hex literals, and casting before testing positivity made anything
+		// under 1px read as "nothing set" on one side only.
+		expect( Renderer::optional_height( $in ) )->toBe( $want );
+	}
+)->with( gpxrm_optional_height_cases() );

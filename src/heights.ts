@@ -23,6 +23,19 @@ export const DEFAULT_HEIGHT = 480;
  * @param value Raw value.
  */
 export function optionalHeight( value: unknown ): number {
+	// Mirrors PHP's is_numeric(), which Number() does not: booleans and hex
+	// literals are numeric to JavaScript but not to PHP, and disagreeing here
+	// is exactly the drift the shared fixture exists to prevent.
+	if ( 'boolean' === typeof value ) {
+		return 0;
+	}
+	if (
+		'string' === typeof value &&
+		! /^\s*[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?\s*$/.test( value )
+	) {
+		return 0;
+	}
+
 	const n = Number( value );
 
 	if ( ! Number.isFinite( n ) || n <= 0 ) {
