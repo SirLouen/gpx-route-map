@@ -56,6 +56,60 @@ describe.skipIf( ! built )( 'built view bundle', () => {
 	} );
 } );
 
+describe.skipIf( ! built )( 'compiled stylesheet', () => {
+	const css = fs.readFileSync(
+		path.join( BUILD, 'style-index.css' ),
+		'utf8'
+	);
+	const renderer = fs.readFileSync(
+		path.join( path.dirname( BUILD ), 'includes', 'class-renderer.php' ),
+		'utf8'
+	);
+	const phpMin = Number(
+		/const MIN_HEIGHT\s*=\s*(\d+)/.exec( renderer )?.[ 1 ]
+	);
+
+	/**
+	 * Every min-height the stylesheet declares for a given selector.
+	 *
+	 * @param selector Class selector, without the leading dot.
+	 */
+	function minHeights( selector: string ): number[] {
+		const rules = [
+			...css.matchAll(
+				new RegExp( `\\.${ selector }\\{([^}]*)\\}`, 'g' )
+			),
+		];
+		return rules
+			.map( ( m ) => /min-height:(\d+)px/.exec( m[ 1 ] )?.[ 1 ] )
+			.filter( ( v ): v is string => undefined !== v )
+			.map( Number );
+	}
+
+	it( 'reads MIN_HEIGHT from the renderer', () => {
+		expect( phpMin ).toBeGreaterThan( 0 );
+	} );
+
+	// A CSS floor above MIN_HEIGHT silently overrides any smaller height the
+	// renderer resolved - min-height beats height - so the shortest maps the
+	// UI offers are simply unreachable, with every PHP test still passing.
+	it( 'never floors the map above the height the renderer can resolve', () => {
+		const found = minHeights( 'gpxrm-map' );
+		expect( found.length ).toBeGreaterThan( 0 );
+		for ( const value of found ) {
+			expect( value ).toBeLessThanOrEqual( phpMin );
+		}
+	} );
+
+	// .gpxrm-error is rendered inside .gpxrm-map, so it cannot be taller than
+	// the shortest map without overflowing its own container.
+	it( 'keeps the error box within the shortest possible map', () => {
+		for ( const value of minHeights( 'gpxrm-error' ) ) {
+			expect( value ).toBeLessThanOrEqual( phpMin );
+		}
+	} );
+} );
+
 it( 'has a build to inspect', () => {
 	// Guards against the suite silently skipping everything above.
 	expect( built, 'run `pnpm run build` before the JS tests' ).toBe( true );

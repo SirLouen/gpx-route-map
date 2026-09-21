@@ -21,7 +21,9 @@
 .gpxrm-map {
 	position: relative;
 	width: 100%;
-	min-height: 240px;
+	// Matches Renderer::MIN_HEIGHT. A larger floor here silently overrides any
+	// smaller height the renderer resolved, because min-height beats height.
+	min-height: 200px;
 	background: #e5e7eb;
 
 	.maplibregl-map {
@@ -80,7 +82,9 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 240px;
+	// Rendered inside .gpxrm-map, so it must not be taller than the shortest
+	// map the renderer can produce, or it overflows its own container.
+	min-height: 200px;
 	padding: 24px;
 	text-align: center;
 	color: #b91c1c;
