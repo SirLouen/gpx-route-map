@@ -86,11 +86,13 @@ describe.skipIf( ! built )( 'compiled stylesheet', () => {
 	function minHeights( selector: string ): number[] {
 		const rules = [
 			...css.matchAll(
-				new RegExp( `\\.${ selector }\\{([^}]*)\\}`, 'g' )
+				// Whitespace-tolerant: the build emits compressed CSS today,
+				// but the assertions should not depend on that.
+				new RegExp( `\\.${ selector }\\s*\\{([^}]*)\\}`, 'g' )
 			),
 		];
 		return rules
-			.map( ( m ) => /min-height:(\d+)px/.exec( m[ 1 ] )?.[ 1 ] )
+			.map( ( m ) => /min-height:\s*(\d+)px/.exec( m[ 1 ] )?.[ 1 ] )
 			.filter( ( v ): v is string => undefined !== v )
 			.map( Number );
 	}
@@ -107,6 +109,17 @@ describe.skipIf( ! built )( 'compiled stylesheet', () => {
 		expect( found.length ).toBeGreaterThan( 0 );
 		for ( const value of found ) {
 			expect( value ).toBeLessThanOrEqual( phpMin );
+		}
+	} );
+
+	// min-height alone is not the whole invariant: under the browser default
+	// box model the padding is added to it, so the floor must be border-box
+	// or the error box is 48px taller than the shortest map.
+	it( 'sizes the error box so its padding stays inside the floor', () => {
+		const rule = /\.gpxrm-error\s*\{([^}]*)\}/.exec( css )?.[ 1 ] ?? '';
+		expect( rule ).toMatch( /min-height:\s*\d+px/ );
+		if ( /padding:/.test( rule ) ) {
+			expect( rule ).toMatch( /box-sizing:\s*border-box/ );
 		}
 	} );
 
