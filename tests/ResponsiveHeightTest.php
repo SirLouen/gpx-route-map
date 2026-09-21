@@ -121,3 +121,35 @@ test(
 		expect( $style )->toContain( '--gpxrm-h-m:' . Renderer::MIN_HEIGHT . 'px' );
 	}
 );
+
+test(
+	'a filter may change one band without discarding the others',
+	function () {
+		// Returning only the band you care about is the natural way to use the
+		// hook. Indexing the result directly warned on PHP 8 and zeroed every
+		// band the filter did not mention.
+		$GLOBALS['gpxrm_test_options']['gpxrm_height']        = 500;
+		$GLOBALS['gpxrm_test_options']['gpxrm_height_tablet'] = 400;
+
+		add_filter( 'gpxrm_heights', fn() => array( 'base' => 700 ) );
+
+		expect( Renderer::default_heights() )->toBe(
+			array(
+				'base'   => 700,
+				'tablet' => 400,
+				'mobile' => 0,
+			)
+		);
+	}
+);
+
+test(
+	'a filter that returns nothing usable leaves the heights alone',
+	function () {
+		$GLOBALS['gpxrm_test_options']['gpxrm_height'] = 500;
+
+		add_filter( 'gpxrm_heights', fn() => null );
+
+		expect( Renderer::default_heights()['base'] )->toBe( 500 );
+	}
+);

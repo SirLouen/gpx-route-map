@@ -29,7 +29,10 @@ export function optionalHeight( value: unknown ): number {
 		return 0;
 	}
 
-	return Math.min( MAX_HEIGHT, Math.max( MIN_HEIGHT, Math.round( n ) ) );
+	// Math.trunc, not Math.round: PHP's (int) cast in Renderer::optional_height
+	// truncates, and a non-integer band would otherwise render one pixel taller
+	// in the editor than on the front end.
+	return Math.min( MAX_HEIGHT, Math.max( MIN_HEIGHT, Math.trunc( n ) ) );
 }
 
 /**

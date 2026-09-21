@@ -253,7 +253,16 @@ class Renderer {
 		 *
 		 * @param array{base: int, tablet: int, mobile: int} $heights Heights in pixels.
 		 */
-		$filtered = apply_filters( 'gpxrm_heights', $heights );
+
+		/*
+		 * Merged over the defaults rather than indexed directly. Returning only
+		 * the band you care about - array( 'base' => 700 ) - is the natural way
+		 * to use this hook, and indexing a partial array warns on PHP 8 and
+		 * zeroes the bands the filter did not mention. The cast also survives a
+		 * filter that returns something that is not an array at all, which the
+		 * documented signature promises but cannot enforce.
+		 */
+		$filtered = array_merge( $heights, (array) apply_filters( 'gpxrm_heights', $heights ) );
 
 		return array(
 			'base'   => self::clamp( (int) $filtered['base'], self::MIN_HEIGHT, self::MAX_HEIGHT ),
