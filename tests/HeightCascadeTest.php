@@ -80,9 +80,23 @@ function gpxrm_optional_height_cases(): array {
 	$raw  = file_get_contents( __DIR__ . '/fixtures/optional-height.json' );
 	$data = json_decode( (string) $raw, true );
 
+	// JSON has no NaN or Infinity, so the fixture names them and each language
+	// substitutes its own value. Without this the table could never cover the
+	// inputs the two implementations were most likely to disagree about.
+	$markers = array(
+		'__NAN__'     => NAN,
+		'__INF__'     => INF,
+		'__NEG_INF__' => -INF,
+	);
+
 	$cases = array();
 	foreach ( $data['cases'] as $case ) {
-		$cases[ var_export( $case['in'], true ) ] = array( $case['in'], $case['want'] );
+		$raw = $case['in'];
+		// Guarded on is_string: indexing an array with a float is deprecated
+		// in PHP 8.1, and several of these inputs are floats.
+		$in = ( is_string( $raw ) && isset( $markers[ $raw ] ) ) ? $markers[ $raw ] : $raw;
+
+		$cases[ is_string( $raw ) ? $raw : var_export( $raw, true ) ] = array( $in, $case['want'] );
 	}
 
 	return $cases;

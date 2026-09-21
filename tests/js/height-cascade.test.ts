@@ -50,9 +50,21 @@ const EDGE_FIXTURE = path.join(
 	'optional-height.json'
 );
 
+// JSON has no NaN or Infinity, so the fixture names them and each language
+// substitutes its own value. Without this the table could never cover the
+// inputs the two implementations were most likely to disagree about.
+const MARKERS: Record< string, number > = {
+	__NAN__: NaN,
+	__INF__: Infinity,
+	__NEG_INF__: -Infinity,
+};
+
 const edgeCases: Array< { in: unknown; want: number } > = JSON.parse(
 	fs.readFileSync( EDGE_FIXTURE, 'utf8' )
-).cases;
+).cases.map( ( c: { in: unknown; want: number } ) => ( {
+	...c,
+	in: 'string' === typeof c.in && c.in in MARKERS ? MARKERS[ c.in ] : c.in,
+} ) );
 
 describe( 'optionalHeight', () => {
 	it( 'reads the shared fixture', () => {

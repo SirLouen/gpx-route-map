@@ -223,10 +223,23 @@ class Renderer {
 	 * @return int Height in pixels, or 0 to inherit.
 	 */
 	public static function optional_height( $value ): int {
-		// Positivity is tested on the raw value, not the truncated one: casting
-		// first would read anything under 1px as "nothing set" and inherit,
-		// while the JavaScript mirror clamps it up to the minimum.
-		if ( ! is_numeric( $value ) || (float) $value <= 0 ) {
+		/*
+		 * Positivity is tested on the raw value, not the truncated one: casting
+		 * first would read anything under 1px as "nothing set" and inherit,
+		 * while the JavaScript mirror clamps it up to the minimum.
+		 *
+		 * NAN and INF are is_numeric() here but not Number.isFinite() there,
+		 * and casting either to int yields 0, which would then clamp up to the
+		 * minimum instead of meaning "nothing set". Rejected explicitly so the
+		 * two implementations stay equivalent.
+		 */
+		if ( ! is_numeric( $value ) ) {
+			return 0;
+		}
+
+		$number = (float) $value;
+
+		if ( ! is_finite( $number ) || $number <= 0 ) {
 			return 0;
 		}
 
