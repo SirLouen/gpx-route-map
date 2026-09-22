@@ -41,7 +41,7 @@ test(
 );
 
 test(
-	'a stored value outside the range is clamped rather than trusted',
+	'a stored zoom above the range is clamped rather than trusted',
 	function ( $stored, $expected ) {
 		$GLOBALS['gpxrm_test_options']['gpxrm_max_zoom'] = $stored;
 
@@ -49,11 +49,10 @@ test(
 	}
 )->with(
 	array(
-		'too low'        => array( 0, Renderer::MIN_ZOOM ),
-		'negative'       => array( -3, Renderer::MIN_ZOOM ),
 		'too high'       => array( 99, Renderer::MAX_ZOOM ),
 		'numeric string' => array( '18', 18 ),
-		'nonsense'       => array( 'close', Renderer::DEFAULT_ZOOM ),
+		// Fractional but positive, so a real zoom rather than a missing one.
+		'fractional'     => array( 0.5, Renderer::MIN_ZOOM ),
 	)
 );
 
@@ -106,6 +105,67 @@ test(
 		add_filter( 'gpxrm_max_zoom', fn() => 99 );
 
 		expect( Renderer::default_max_zoom() )->toBe( Renderer::MAX_ZOOM );
+	}
+);
+
+test(
+	'saving a zoom that is not a real zoom restores the default',
+	function ( $submitted ) {
+		// This is the path that actually reaches the database: the settings
+		// API runs the sanitizer on every update_option, so clamping here
+		// would persist MIN_ZOOM and outlive whatever caused it.
+		expect( ( new Plugin() )->sanitize_max_zoom( $submitted ) )->toBe( Renderer::DEFAULT_ZOOM );
+	}
+)->with(
+	array(
+		'zero'           => array( 0 ),
+		'zero as string' => array( '0' ),
+		'negative'       => array( -3 ),
+		'emptied field'  => array( '' ),
+		'nonsense'       => array( 'close' ),
+	)
+);
+
+test(
+	'saving a real zoom keeps it, clamped to the supported range',
+	function ( $submitted, int $expected ) {
+		expect( ( new Plugin() )->sanitize_max_zoom( $submitted ) )->toBe( $expected );
+	}
+)->with(
+	array(
+		'in range'   => array( 19, 19 ),
+		'as string'  => array( '19', 19 ),
+		'too high'   => array( 99, Renderer::MAX_ZOOM ),
+		'fractional' => array( 0.5, Renderer::MIN_ZOOM ),
+	)
+);
+
+test(
+	'a stored value that is not a real zoom falls back to the default',
+	function ( $stored ) {
+		// Clamping instead would give MIN_ZOOM - the most zoomed-out level a
+		// map can show - so a site that never set a zoom, or that an old
+		// version left at zero, would open on a view of the whole world.
+		$GLOBALS['gpxrm_test_options']['gpxrm_max_zoom'] = $stored;
+
+		expect( Renderer::default_max_zoom() )->toBe( Renderer::DEFAULT_ZOOM );
+	}
+)->with(
+	array(
+		'zero'            => array( 0 ),
+		'zero as string'  => array( '0' ),
+		'negative'        => array( -1 ),
+		'empty string'    => array( '' ),
+		'nonsense'        => array( 'close' ),
+	)
+);
+
+test(
+	'a filter cannot leave maps on a zoom that is not a real zoom',
+	function () {
+		add_filter( 'gpxrm_max_zoom', fn() => 0 );
+
+		expect( Renderer::default_max_zoom() )->toBe( Renderer::DEFAULT_ZOOM );
 	}
 );
 

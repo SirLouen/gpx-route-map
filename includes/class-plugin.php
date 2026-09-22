@@ -756,7 +756,16 @@ class Plugin {
 	 * @return int
 	 */
 	public function sanitize_max_zoom( $value ): int {
+		// An emptied field, a zero or a negative all mean "no zoom set", so
+		// they restore the default. Clamping them would save MIN_ZOOM, and the
+		// site would quietly open every map on a view of the whole world.
 		if ( ! is_numeric( $value ) ) {
+			return Renderer::DEFAULT_ZOOM;
+		}
+
+		$number = (float) $value;
+
+		if ( ! is_finite( $number ) || $number <= 0 ) {
 			return Renderer::DEFAULT_ZOOM;
 		}
 

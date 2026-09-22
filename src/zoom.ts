@@ -21,7 +21,13 @@ export function siteDefaultMaxZoom(): number {
 		window as unknown as { gpxrmDefaults?: { maxZoom?: number } }
 	 ).gpxrmDefaults?.maxZoom;
 
-	if ( 'number' !== typeof injected || ! Number.isFinite( injected ) ) {
+	// Mirrors Renderer::usable_zoom(): at or below zero means "nothing set",
+	// so fall back rather than clamp up to the most zoomed-out level.
+	if (
+		'number' !== typeof injected ||
+		! Number.isFinite( injected ) ||
+		injected <= 0
+	) {
 		return DEFAULT_ZOOM;
 	}
 

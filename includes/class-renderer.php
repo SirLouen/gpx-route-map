@@ -230,15 +230,38 @@ class Renderer {
 	 * @return int Zoom level between MIN_ZOOM and MAX_ZOOM.
 	 */
 	public static function default_max_zoom(): int {
-		$stored = get_option( 'gpxrm_max_zoom', self::DEFAULT_ZOOM );
-		$value  = is_numeric( $stored ) ? (int) $stored : self::DEFAULT_ZOOM;
+		$value = self::usable_zoom( get_option( 'gpxrm_max_zoom', self::DEFAULT_ZOOM ) );
 
 		/**
 		 * Filters the site-wide maximum zoom for GPX maps.
 		 *
 		 * @param int $value Zoom level.
 		 */
-		$value = apply_filters( 'gpxrm_max_zoom', self::clamp( $value, self::MIN_ZOOM, self::MAX_ZOOM ) );
+		return self::usable_zoom( apply_filters( 'gpxrm_max_zoom', $value ) );
+	}
+
+	/**
+	 * A stored or filtered zoom, or the shipped default when there is none.
+	 *
+	 * Anything at or below zero means "nothing set" rather than a real zoom.
+	 * Clamping it instead would give MIN_ZOOM, the most zoomed-out level the
+	 * map can show - a broken-looking map from a value that was only ever a
+	 * sentinel. A positive but fractional value is a real, if odd, zoom and is
+	 * clamped normally.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return int
+	 */
+	private static function usable_zoom( $value ): int {
+		if ( ! is_numeric( $value ) ) {
+			return self::DEFAULT_ZOOM;
+		}
+
+		$number = (float) $value;
+
+		if ( ! is_finite( $number ) || $number <= 0 ) {
+			return self::DEFAULT_ZOOM;
+		}
 
 		return self::clamp( (int) $value, self::MIN_ZOOM, self::MAX_ZOOM );
 	}
