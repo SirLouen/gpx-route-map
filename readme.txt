@@ -119,7 +119,9 @@ Yes, for the whole site or for a single map. Go to Settings > GPX Route Map and 
 
 = My custom tile URL shows a blank map =
 
-Browsers refuse to load tiles requested over `http` on a site served over `https`, and the map ends up blank even though the track, markers and stats still draw. Use an `https` tile address. The block warns about this in the Map tiles panel while you are editing. A tile server running on the same machine as the browser, such as `http://localhost:8080`, is exempt and keeps working.
+Browsers refuse to load tiles requested over `http` on a site served over `https`, and the map ends up blank even though the track, markers and stats still draw. Use an `https` tile address. A tile server running on the same machine as the browser, such as `http://localhost:8080`, is exempt and keeps working.
+
+An address without `http://` or `https://` in front of it, including one starting with `//`, is ignored altogether and the map falls back to OpenStreetMap. The block warns about both cases in the Map tiles panel while you are editing.
 
 = Can maps be shorter on phones? =
 
@@ -167,7 +169,7 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 == Changelog ==
 
 = 1.7.1 =
-* The block now warns when a custom tile URL is not secure. Browsers refuse insecure tile requests on an https site, which left the map blank with nothing to explain why.
+* The block now warns when a custom tile URL will not work: an insecure address that browsers refuse to load, or one missing http:// or https:// that the plugin ignores. Both left the map blank with nothing to explain why.
 
 
 = 1.7.0 =

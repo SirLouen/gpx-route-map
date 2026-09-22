@@ -17,8 +17,8 @@ msgstr ""
 #: gpx-route-map.php
 #: includes/class-plugin.php:73
 #: includes/class-plugin.php:74
-#: build/index.js:685
-#: build/index.js:707
+#: build/index.js:700
+#: build/index.js:722
 msgid "GPX Route Map"
 msgstr "GPX Route Map"
 
@@ -80,38 +80,38 @@ msgstr "No se han encontrado puntos de pista ni de ruta en el archivo GPX."
 
 #: includes/class-plugin.php:424
 #: includes/class-renderer.php:730
-#: build/index.js:332
+#: build/index.js:343
 msgid "Distance"
 msgstr "Distancia"
 
 #: includes/class-plugin.php:425
 #: includes/class-renderer.php:731
-#: build/index.js:336
+#: build/index.js:347
 msgid "Elevation gain"
 msgstr "Desnivel positivo"
 
 #: includes/class-plugin.php:426
 #: includes/class-renderer.php:732
-#: build/index.js:340
+#: build/index.js:351
 msgid "Elevation loss"
 msgstr "Desnivel negativo"
 
 #: includes/class-plugin.php:427
 #: includes/class-renderer.php:733
-#: build/index.js:344
+#: build/index.js:355
 msgid "Max elevation"
 msgstr "Altitud máxima"
 
 #: includes/class-plugin.php:428
 #: includes/class-renderer.php:734
-#: build/index.js:348
+#: build/index.js:359
 msgid "Waypoints"
 msgstr "Waypoints"
 
 #: includes/class-plugin.php:120
 #: includes/class-renderer.php:761
-#: build/index.js:588
-#: build/index.js:722
+#: build/index.js:599
+#: build/index.js:737
 msgid "Elevation profile"
 msgstr "Perfil de desnivel"
 
@@ -119,67 +119,67 @@ msgstr "Perfil de desnivel"
 msgid "Elevation profile along the route"
 msgstr "Perfil de desnivel a lo largo de la ruta"
 
-#: build/index.js:498
+#: build/index.js:509
 msgid "Paste a direct link to a .gpx file. The file must be hosted on this site, or on a host that allows cross-origin (CORS) requests — most external sites do not."
 msgstr "Pega un enlace directo a un archivo .gpx. El archivo debe estar alojado en este sitio o en un servidor que permita peticiones de origen cruzado (CORS); la mayoría de los sitios externos no lo permiten."
 
-#: build/index.js:499
+#: build/index.js:510
 #, js-format
 msgid "Currently using the selected media file \"%s\". Entering a URL here replaces it (applied on Enter or when leaving the field)."
 msgstr "Actualmente se usa el archivo de medios seleccionado «%s». Si introduces una URL aquí, la sustituirás (se aplica al pulsar Intro o al salir del campo)."
 
-#: build/index.js:505
+#: build/index.js:516
 msgid "Source"
 msgstr "Origen"
 
-#: build/index.js:513
+#: build/index.js:524
 msgid "Replace GPX file"
 msgstr "Reemplazar el archivo GPX"
 
-#: build/index.js:513
-#: build/index.js:694
+#: build/index.js:524
+#: build/index.js:709
 msgid "Select GPX file"
 msgstr "Seleccionar un archivo GPX"
 
-#: build/index.js:518
+#: build/index.js:529
 msgid "or GPX file URL"
 msgstr "o URL del archivo GPX"
 
 #: includes/class-plugin.php:208
-#: build/index.js:530
+#: build/index.js:541
 msgid "Display"
 msgstr "Visualización"
 
-#: build/index.js:627
+#: build/index.js:638
 msgid "Max zoom"
 msgstr "Zoom máximo"
 
 #: includes/class-plugin.php:338
-#: build/index.js:657
+#: build/index.js:668
 msgid "Map tiles"
 msgstr "Teselas del mapa"
 
-#: build/index.js:662
+#: build/index.js:673
 msgid "Custom tile URL"
 msgstr "URL de teselas personalizada"
 
-#: build/index.js:680
+#: build/index.js:695
 msgid "Replace GPX"
 msgstr "Reemplazar GPX"
 
-#: build/index.js:686
+#: build/index.js:701
 msgid "Select a GPX track to render it as an interactive map with an elevation profile."
 msgstr "Selecciona una pista GPX para mostrarla como un mapa interactivo con un perfil de desnivel."
 
-#: build/index.js:715
+#: build/index.js:730
 msgid "The interactive map renders on the front end."
 msgstr "El mapa interactivo se muestra en la parte pública del sitio."
 
-#: build/index.js:720
+#: build/index.js:735
 msgid "Stats"
 msgstr "Estadísticas"
 
-#: build/index.js:728
+#: build/index.js:743
 msgid "Open GPX file"
 msgstr "Abrir el archivo GPX"
 
@@ -244,12 +244,12 @@ msgid "cycling"
 msgstr "ciclismo"
 
 #: includes/class-plugin.php:756
-#: build/index.js:614
+#: build/index.js:625
 msgid "Metric (km / m)"
 msgstr "Métrico (km / m)"
 
 #: includes/class-plugin.php:757
-#: build/index.js:618
+#: build/index.js:629
 msgid "Imperial (mi / ft)"
 msgstr "Imperial (mi / ft)"
 
@@ -282,21 +282,21 @@ msgid "m"
 msgstr "m"
 
 #: includes/class-plugin.php:232
-#: build/index.js:605
+#: build/index.js:616
 msgid "Units"
 msgstr "Unidades"
 
-#: build/index.js:606
+#: build/index.js:617
 msgid "Distance and elevation units for this map."
 msgstr "Unidades de distancia y desnivel de este mapa."
 
-#: build/index.js:374
-#: build/index.js:610
+#: build/index.js:385
+#: build/index.js:621
 msgid "Site default"
 msgstr "Ajuste del sitio"
 
 #: includes/class-plugin.php:119
-#: build/index.js:580
+#: build/index.js:591
 msgid "Stats bar"
 msgstr "Barra de estadísticas"
 
@@ -305,17 +305,17 @@ msgid "Defaults for every GPX map on this site. Individual maps can override the
 msgstr "Valores predeterminados para todos los mapas GPX de este sitio. Cada mapa puede cambiarlos."
 
 #: includes/class-plugin.php:634
-#: build/index.js:378
+#: build/index.js:389
 msgid "Shown"
 msgstr "Mostrar"
 
 #: includes/class-plugin.php:635
-#: build/index.js:382
+#: build/index.js:393
 msgid "Hidden"
 msgstr "Ocultar"
 
 #: includes/class-plugin.php:122
-#: build/index.js:596
+#: build/index.js:607
 msgid "Download button"
 msgstr "Botón de descarga"
 
@@ -323,7 +323,7 @@ msgstr "Botón de descarga"
 msgid "Download GPX file"
 msgstr "Descargar el archivo GPX"
 
-#: build/index.js:597
+#: build/index.js:608
 msgid "Adds a button on the map for visitors to download the GPX file."
 msgstr "Añade un botón en el mapa para que los visitantes descarguen el archivo GPX."
 
@@ -332,11 +332,11 @@ msgstr "Añade un botón en el mapa para que los visitantes descarguen el archiv
 msgid "Stats shown"
 msgstr "Estadísticas mostradas"
 
-#: build/index.js:636
+#: build/index.js:647
 msgid "Stats bar items"
 msgstr "Elementos de la barra de estadísticas"
 
-#: build/index.js:640
+#: build/index.js:651
 msgid "Use site default"
 msgstr "Usar el ajuste del sitio"
 
@@ -406,11 +406,11 @@ msgstr "Atlas (general)"
 msgid "Map failed to load. Click to retry."
 msgstr "No se ha podido cargar el mapa. Haz clic para reintentar."
 
-#: build/index.js:641
+#: build/index.js:652
 msgid "Follow the stats chosen under Settings → GPX Route Map."
 msgstr "Usa las estadísticas elegidas en Ajustes → GPX Route Map."
 
-#: build/index.js:663
+#: build/index.js:674
 msgid "Raster tile template with {z}/{x}/{y}, over https. Add {ratio} where the provider expects a retina suffix, for example {z}/{x}/{y}{ratio}.png. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites."
 msgstr "Plantilla de teselas ráster con {z}/{x}/{y}, sobre https. Añade {ratio} donde el proveedor espere un sufijo retina, por ejemplo {z}/{x}/{y}{ratio}.png. Déjalo en blanco para usar OpenStreetMap. Las teselas públicas de OSM tienen un límite de uso; usa tu propio proveedor en sitios con mucho tráfico."
 
@@ -422,11 +422,11 @@ msgstr "Altura del mapa"
 msgid "px"
 msgstr "px"
 
-#: build/index.js:534
+#: build/index.js:545
 msgid "Use site default height"
 msgstr "Usar la altura del sitio"
 
-#: build/index.js:535
+#: build/index.js:546
 #, js-format
 msgid "Follow the height set under Settings → GPX Route Map (%d px)."
 msgstr "Usa la altura definida en Ajustes → GPX Route Map (%d px)."
@@ -457,26 +457,30 @@ msgstr "Igual que en tableta"
 msgid "Height of every GPX map that does not set its own, from %1$d to %2$d pixels. Leave Tablet or Mobile empty to reuse the size above it. Individual maps can override all of this."
 msgstr "Altura de los mapas GPX que no definen la suya, de %1$d a %2$d píxeles. Deja Tableta o Móvil en blanco para reutilizar el tamaño de encima. Cada mapa puede anular todo esto."
 
-#: build/index.js:546
+#: build/index.js:557
 msgid "All screens (px)"
 msgstr "Todas las pantallas (px)"
 
-#: build/index.js:554
+#: build/index.js:565
 msgid "Tablet (px)"
 msgstr "Tableta (px)"
 
-#: build/index.js:560
+#: build/index.js:571
 msgid "Mobile (px)"
 msgstr "Móvil (px)"
 
-#: build/index.js:555
+#: build/index.js:566
 msgid "Applies at 782px and below. Reset to follow the site setting, or the height above when the site has none."
 msgstr "Se aplica a 782px o menos. Restáblecelo para seguir el ajuste del sitio, o la altura de arriba si el sitio no define ninguna."
 
-#: build/index.js:561
+#: build/index.js:572
 msgid "Applies at 480px and below. Reset to follow the site setting, or the tablet height when the site has none."
 msgstr "Se aplica a 480px o menos. Restáblecelo para seguir el ajuste del sitio, o la altura de tableta si el sitio no define ninguna."
 
-#: build/index.js:670
+#: build/index.js:684
 msgid "This address is not secure, so visitors’ browsers will refuse to load the tiles and the map will appear blank. Use an https address, unless the tile server runs on the same machine as the browser."
 msgstr "Esta dirección no es segura, así que los navegadores de los visitantes se negarán a cargar las teselas y el mapa aparecerá en blanco. Usa una dirección https, salvo que el servidor de teselas esté en la misma máquina que el navegador."
+
+#: build/index.js:684
+msgid "This address is missing http:// or https://, so it will be ignored and the map will fall back to OpenStreetMap."
+msgstr "A esta dirección le falta http:// o https://, así que se ignorará y el mapa usará OpenStreetMap."

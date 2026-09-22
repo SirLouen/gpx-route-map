@@ -37,7 +37,7 @@ import {
 	MAX_HEIGHT,
 	DEFAULT_HEIGHT,
 } from './heights';
-import { tileUrlWillBeBlocked } from './tile-url';
+import { tileUrlProblem } from './tile-url';
 import { parseGPX } from './view/map-core';
 import { routeStats } from './view/stats';
 
@@ -630,17 +630,30 @@ export default function Edit( {
 						}
 						placeholder="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 					/>
-					{ tileUrlWillBeBlocked(
-						tileUrl,
-						window.location.protocol
-					) && (
-						<Notice status="warning" isDismissible={ false }>
-							{ __(
-								'This address is not secure, so visitors\u2019 browsers will refuse to load the tiles and the map will appear blank. Use an https address, unless the tile server runs on the same machine as the browser.',
-								'gpx-route-map'
-							) }
-						</Notice>
-					) }
+					{ ( () => {
+						const problem = tileUrlProblem(
+							tileUrl,
+							window.location.protocol
+						);
+
+						if ( ! problem ) {
+							return null;
+						}
+
+						return (
+							<Notice status="warning" isDismissible={ false }>
+								{ 'insecure' === problem
+									? __(
+											'This address is not secure, so visitors\u2019 browsers will refuse to load the tiles and the map will appear blank. Use an https address, unless the tile server runs on the same machine as the browser.',
+											'gpx-route-map'
+									  )
+									: __(
+											'This address is missing http:// or https://, so it will be ignored and the map will fall back to OpenStreetMap.',
+											'gpx-route-map'
+									  ) }
+							</Notice>
+						);
+					} )() }
 				</PanelBody>
 			</InspectorControls>
 

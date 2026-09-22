@@ -5,33 +5,66 @@
  */
 
 /**
- * Whether the browser will refuse to load these tiles.
+ * What is wrong with a tile URL, if anything.
  *
- * MapLibre fetches raster tiles with fetch() rather than as <img> elements,
- * because the Map default `refreshExpiredTiles: true` rules out the image
- * path. That distinction decides the answer: an <img> over http on an https
- * page is silently upgraded, but fetch() is *blockable* mixed content and is
- * refused outright. The map then draws the track, markers, stats and
- * elevation profile over a blank basemap, with nothing logged, because the
- * view registers no MapLibre error handler.
+ * 'insecure' - the browser will refuse to fetch it.
+ * 'ignored'  - the plugin itself will discard it.
+ */
+export type TileUrlProblem = 'insecure' | 'ignored' | null;
+
+/** Mirrors the scheme test in Renderer::sanitize_tile_url(). */
+const HAS_SCHEME = /^\s*https?:\/\//i;
+
+/** An address the browser blocks as mixed content when the page is https. */
+const IS_HTTP = /^\s*http:\/\//i;
+
+/**
+ * Why a tile URL will not produce the map the author expects.
  *
- * Keyed on the protocol of the page doing the editing, not on the tile host.
- * An https admin screen implies an https front end, where the block applies
- * whatever the host is; an http site has no mixed content to worry about, so
- * a local dev environment never sees this. That also avoids classifying the
- * host, which is a nest of edge cases: 127.1, 127.000.000.1 and [::1] all
- * reach the loopback yet none of them passes a naive IP check.
+ * Both problems fail the same way - a blank basemap with the track, markers,
+ * stats bar and elevation profile drawn over nothing - and neither logs
+ * anything, because the view registers no MapLibre error handler. The only
+ * place either can be noticed is here, while the value is being typed.
+ *
+ * 'insecure': MapLibre fetches raster tiles with fetch() rather than as <img>
+ * elements, because the Map default `refreshExpiredTiles: true` rules out the
+ * image path. An <img> over http on an https page would be silently upgraded,
+ * but fetch() is *blockable* mixed content and is refused outright.
+ *
+ * Keyed on the protocol of the editing page rather than the tile host, which
+ * avoids classifying the host - a nest of edge cases, since 127.1,
+ * 127.000.000.1 and [::1] all reach the loopback yet none of them passes a
+ * naive IP check.
+ *
+ * 'ignored': Renderer::sanitize_tile_url() requires an http or https scheme,
+ * so a protocol-relative "//host/..." or a bare "host/..." is discarded and
+ * the map quietly falls back to OpenStreetMap. That is a plugin rule, not a
+ * browser one, so it applies whatever the page protocol is.
+ *
+ * This mirrors only the scheme test, not the FILTER_VALIDATE_URL step that
+ * follows it in PHP. It is advisory and deliberately conservative: it may
+ * stay silent about a URL PHP would still reject, but it never calls one
+ * acceptable that PHP would refuse.
  *
  * @param url          The tile URL template as typed.
  * @param pageProtocol location.protocol of the editing page, e.g. 'https:'.
  */
-export function tileUrlWillBeBlocked(
+export function tileUrlProblem(
 	url: string,
 	pageProtocol: string
-): boolean {
-	if ( 'https:' !== pageProtocol ) {
-		return false;
+): TileUrlProblem {
+	// Blank is not a mistake: it means "use the default tiles".
+	if ( '' === url.trim() ) {
+		return null;
 	}
 
-	return /^\s*http:\/\//i.test( url );
+	if ( ! HAS_SCHEME.test( url ) ) {
+		return 'ignored';
+	}
+
+	if ( 'https:' === pageProtocol && IS_HTTP.test( url ) ) {
+		return 'insecure';
+	}
+
+	return null;
 }
