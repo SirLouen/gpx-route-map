@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-21T17:25:09+00:00\n"
+"POT-Creation-Date: 2026-09-22T12:06:07+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: gpx-route-map\n"
@@ -18,8 +18,8 @@ msgstr ""
 #: gpx-route-map.php
 #: includes/class-plugin.php:73
 #: includes/class-plugin.php:74
-#: build/index.js:649
-#: build/index.js:671
+#: build/index.js:685
+#: build/index.js:707
 msgid "GPX Route Map"
 msgstr ""
 
@@ -48,24 +48,24 @@ msgid "Defaults for every GPX map on this site. Individual maps can override the
 msgstr ""
 
 #: includes/class-plugin.php:119
-#: build/index.js:548
+#: build/index.js:580
 msgid "Stats bar"
 msgstr ""
 
 #: includes/class-plugin.php:120
 #: includes/class-renderer.php:761
-#: build/index.js:556
-#: build/index.js:686
+#: build/index.js:588
+#: build/index.js:722
 msgid "Elevation profile"
 msgstr ""
 
 #: includes/class-plugin.php:122
-#: build/index.js:564
+#: build/index.js:596
 msgid "Download button"
 msgstr ""
 
 #: includes/class-plugin.php:208
-#: build/index.js:498
+#: build/index.js:530
 msgid "Display"
 msgstr ""
 
@@ -74,7 +74,7 @@ msgid "Map height"
 msgstr ""
 
 #: includes/class-plugin.php:232
-#: build/index.js:573
+#: build/index.js:605
 msgid "Units"
 msgstr ""
 
@@ -84,7 +84,7 @@ msgid "Stats shown"
 msgstr ""
 
 #: includes/class-plugin.php:338
-#: build/index.js:625
+#: build/index.js:657
 msgid "Map tiles"
 msgstr ""
 
@@ -102,31 +102,31 @@ msgstr ""
 
 #: includes/class-plugin.php:424
 #: includes/class-renderer.php:730
-#: build/index.js:300
+#: build/index.js:332
 msgid "Distance"
 msgstr ""
 
 #: includes/class-plugin.php:425
 #: includes/class-renderer.php:731
-#: build/index.js:304
+#: build/index.js:336
 msgid "Elevation gain"
 msgstr ""
 
 #: includes/class-plugin.php:426
 #: includes/class-renderer.php:732
-#: build/index.js:308
+#: build/index.js:340
 msgid "Elevation loss"
 msgstr ""
 
 #: includes/class-plugin.php:427
 #: includes/class-renderer.php:733
-#: build/index.js:312
+#: build/index.js:344
 msgid "Max elevation"
 msgstr ""
 
 #: includes/class-plugin.php:428
 #: includes/class-renderer.php:734
-#: build/index.js:316
+#: build/index.js:348
 msgid "Waypoints"
 msgstr ""
 
@@ -165,12 +165,12 @@ msgid "The key is visible in your pages, because visitors' browsers load the til
 msgstr ""
 
 #: includes/class-plugin.php:634
-#: build/index.js:346
+#: build/index.js:378
 msgid "Shown"
 msgstr ""
 
 #: includes/class-plugin.php:635
-#: build/index.js:350
+#: build/index.js:382
 msgid "Hidden"
 msgstr ""
 
@@ -205,12 +205,12 @@ msgid "Height of every GPX map that does not set its own, from %1$d to %2$d pixe
 msgstr ""
 
 #: includes/class-plugin.php:756
-#: build/index.js:582
+#: build/index.js:614
 msgid "Metric (km / m)"
 msgstr ""
 
 #: includes/class-plugin.php:757
-#: build/index.js:586
+#: build/index.js:618
 msgid "Imperial (mi / ft)"
 msgstr ""
 
@@ -306,115 +306,119 @@ msgstr ""
 msgid "Elevation profile along the route"
 msgstr ""
 
-#: build/index.js:342
-#: build/index.js:578
+#: build/index.js:374
+#: build/index.js:610
 msgid "Site default"
 msgstr ""
 
-#: build/index.js:466
+#: build/index.js:498
 msgid "Paste a direct link to a .gpx file. The file must be hosted on this site, or on a host that allows cross-origin (CORS) requests — most external sites do not."
 msgstr ""
 
-#: build/index.js:467
+#: build/index.js:499
 #, js-format
 msgid "Currently using the selected media file \"%s\". Entering a URL here replaces it (applied on Enter or when leaving the field)."
 msgstr ""
 
-#: build/index.js:473
+#: build/index.js:505
 msgid "Source"
 msgstr ""
 
-#: build/index.js:481
+#: build/index.js:513
 msgid "Replace GPX file"
 msgstr ""
 
-#: build/index.js:481
-#: build/index.js:658
+#: build/index.js:513
+#: build/index.js:694
 msgid "Select GPX file"
 msgstr ""
 
-#: build/index.js:486
+#: build/index.js:518
 msgid "or GPX file URL"
 msgstr ""
 
-#: build/index.js:502
+#: build/index.js:534
 msgid "Use site default height"
 msgstr ""
 
-#: build/index.js:503
+#: build/index.js:535
 #, js-format
 msgid "Follow the height set under Settings → GPX Route Map (%d px)."
 msgstr ""
 
-#: build/index.js:514
+#: build/index.js:546
 msgid "All screens (px)"
 msgstr ""
 
-#: build/index.js:522
+#: build/index.js:554
 msgid "Tablet (px)"
 msgstr ""
 
-#: build/index.js:523
+#: build/index.js:555
 msgid "Applies at 782px and below. Reset to follow the site setting, or the height above when the site has none."
 msgstr ""
 
-#: build/index.js:528
+#: build/index.js:560
 msgid "Mobile (px)"
 msgstr ""
 
-#: build/index.js:529
+#: build/index.js:561
 msgid "Applies at 480px and below. Reset to follow the site setting, or the tablet height when the site has none."
 msgstr ""
 
-#: build/index.js:565
+#: build/index.js:597
 msgid "Adds a button on the map for visitors to download the GPX file."
 msgstr ""
 
-#: build/index.js:574
+#: build/index.js:606
 msgid "Distance and elevation units for this map."
 msgstr ""
 
-#: build/index.js:595
+#: build/index.js:627
 msgid "Max zoom"
 msgstr ""
 
-#: build/index.js:604
+#: build/index.js:636
 msgid "Stats bar items"
 msgstr ""
 
-#: build/index.js:608
+#: build/index.js:640
 msgid "Use site default"
 msgstr ""
 
-#: build/index.js:609
+#: build/index.js:641
 msgid "Follow the stats chosen under Settings → GPX Route Map."
 msgstr ""
 
-#: build/index.js:630
+#: build/index.js:662
 msgid "Custom tile URL"
 msgstr ""
 
-#: build/index.js:631
+#: build/index.js:663
 msgid "Raster tile template with {z}/{x}/{y}, over https. Add {ratio} where the provider expects a retina suffix, for example {z}/{x}/{y}{ratio}.png. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites."
 msgstr ""
 
-#: build/index.js:644
+#: build/index.js:670
+msgid "This address is not secure, so visitors’ browsers will refuse to load the tiles and the map will appear blank. Use an https address, unless the tile server runs on the same machine as the browser."
+msgstr ""
+
+#: build/index.js:680
 msgid "Replace GPX"
 msgstr ""
 
-#: build/index.js:650
+#: build/index.js:686
 msgid "Select a GPX track to render it as an interactive map with an elevation profile."
 msgstr ""
 
-#: build/index.js:679
+#: build/index.js:715
 msgid "The interactive map renders on the front end."
 msgstr ""
 
-#: build/index.js:684
+#: build/index.js:720
 msgid "Stats"
 msgstr ""
 
-#: build/index.js:692
+#: build/index.js:728
 msgid "Open GPX file"
 msgstr ""
 
