@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,7 +81,7 @@ Shortcode attributes:
 * `elevation` - Show the interactive elevation profile. `true` or `false`. Default: the site setting.
 * `download` - Show the GPX download button on the map. `true` or `false`. Default: the site setting (off).
 * `maxzoom` - Maximum zoom level, from 1 to 22. Default: 17.
-* `tile` - Custom raster tile URL template using `{z}/{x}/{y}`. Default: OpenStreetMap.
+* `tile` - Custom raster tile URL template using `{z}/{x}/{y}`. Must be https on an https site: browsers refuse insecure tile requests and the map draws blank. Default: OpenStreetMap.
 * `units` - `metric` (km / m) or `imperial` (mi / ft). Default: the site setting.
 * `fields` - Which stats to list, e.g. `distance,gain`. Default: the site setting. Use `stats="false"` to remove the bar.
 
@@ -116,6 +116,12 @@ Yes. Go to Settings > GPX Route Map and set "Units" to Imperial, and every map o
 = Can I change how tall the maps are? =
 
 Yes, for the whole site or for a single map. Go to Settings > GPX Route Map and set "Map height" to size every map that does not set its own. To change just one map, turn off "Use site default height" in the block's Display panel and pick a height, or add `height="600"` to the shortcode. Heights run from 200 to 1200 pixels.
+
+= My custom tile URL shows a blank map =
+
+Browsers refuse to load tiles requested over `http` on a site served over `https`, and the map ends up blank even though the track, markers and stats still draw. Use an `https` tile address. A tile server running on the same machine as the browser, such as `http://localhost:8080`, is exempt and keeps working.
+
+An address without `http://` or `https://` in front of it, including one starting with `//`, is ignored altogether and the map falls back to OpenStreetMap. The block warns about both cases in the Map tiles panel while you are editing.
 
 = Can maps be shorter on phones? =
 
@@ -161,6 +167,10 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 2. Selecting a GPX file in the block editor.
 
 == Changelog ==
+
+= 1.7.1 =
+* The block now warns when a custom tile URL will not work: an insecure address that browsers refuse to load, or one missing http:// or https:// that the plugin ignores. Both left the map blank with nothing to explain why.
+
 
 = 1.7.0 =
 * New: set the map height once for the whole site under Settings > GPX Route Map, instead of repeating it on every map. Individual maps can still set their own.
@@ -214,6 +224,10 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 1.7.1 =
+The block warns when a custom tile URL is not secure. Nothing else changes.
+
 
 = 1.7.0 =
 Map height can now be set once for the whole site, with separate sizes for tablets and phones. Existing maps keep the size they already had. Uses MapLibre GL JS 6, which needs a browser with WebGL2.
