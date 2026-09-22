@@ -37,6 +37,7 @@ import {
 	MAX_HEIGHT,
 	DEFAULT_HEIGHT,
 } from './heights';
+import { siteDefaultMaxZoom, MIN_ZOOM, MAX_ZOOM } from './zoom';
 import { tileUrlProblem } from './tile-url';
 import { parseGPX } from './view/map-core';
 import { routeStats } from './view/stats';
@@ -224,6 +225,7 @@ export default function Edit( {
 		[ gpxId ]
 	);
 	const site = siteHeights();
+	const siteMaxZoom = siteDefaultMaxZoom();
 	const usesSiteHeight = ! height && ! heightTablet && ! heightMobile;
 	const resolved = resolveHeights(
 		{ base: height, tablet: heightTablet, mobile: heightMobile },
@@ -537,12 +539,28 @@ export default function Edit( {
 						__nextHasNoMarginBottom
 						__next40pxDefaultSize
 						label={ __( 'Max zoom', 'gpx-route-map' ) }
-						value={ maxZoom }
+						help={ sprintf(
+							/* translators: %d: zoom level. */
+							__(
+								'Reset to follow the site setting (%d).',
+								'gpx-route-map'
+							),
+							siteMaxZoom
+						) }
+						// The inherited value, so the slider shows what the map
+						// actually uses rather than a meaningless 0.
+						value={ maxZoom || siteMaxZoom }
 						onChange={ ( value ) =>
-							setAttributes( { maxZoom: value } )
+							// Reset hands back undefined, which is how the map
+							// returns to following the site.
+							setAttributes( { maxZoom: value ?? 0 } )
 						}
-						min={ 1 }
-						max={ 22 }
+						min={ MIN_ZOOM }
+						max={ MAX_ZOOM }
+						allowReset
+						className={
+							maxZoom ? undefined : 'gpxrm-inherited-range'
+						}
 					/>
 				</PanelBody>
 

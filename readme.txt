@@ -80,7 +80,7 @@ Shortcode attributes:
 * `stats` - Show the stats bar (distance, elevation, waypoints). `true` or `false`. Default: the site setting.
 * `elevation` - Show the interactive elevation profile. `true` or `false`. Default: the site setting.
 * `download` - Show the GPX download button on the map. `true` or `false`. Default: the site setting (off).
-* `maxzoom` - Maximum zoom level, from 1 to 22. Default: 17.
+* `maxzoom` - Maximum zoom level, from 1 to 22. Default: the site setting.
 * `tile` - Custom raster tile URL template using `{z}/{x}/{y}`. Must be https on an https site: browsers refuse insecure tile requests and the map draws blank. Default: OpenStreetMap.
 * `units` - `metric` (km / m) or `imperial` (mi / ft). Default: the site setting.
 * `fields` - Which stats to list, e.g. `distance,gain`. Default: the site setting. Use `stats="false"` to remove the bar.
@@ -92,6 +92,7 @@ Filters (for developers):
 * `gpxrm_tile_url` - change the default raster tile URL template.
 * `gpxrm_tile_attribution` - change the attribution HTML.
 * `gpxrm_height` - change the site-wide map height in pixels (integer).
+* `gpxrm_max_zoom` - change the site-wide maximum zoom level (integer).
 * `gpxrm_heights` - change the site-wide height for every viewport band (array of `base`, `tablet`, `mobile`; 0 means "follow the next larger band").
 * `gpxrm_units` - change the site-wide unit system (`metric` or `imperial`).
 * `gpxrm_show_stats` - change whether the stats bar shows by default (boolean).
@@ -122,6 +123,10 @@ Yes, for the whole site or for a single map. Go to Settings > GPX Route Map and 
 Browsers refuse to load tiles requested over `http` on a site served over `https`, and the map ends up blank even though the track, markers and stats still draw. Use an `https` tile address. A tile server running on the same machine as the browser, such as `http://localhost:8080`, is exempt and keeps working.
 
 An address without `http://` or `https://` in front of it, including one starting with `//`, is ignored altogether and the map falls back to OpenStreetMap. The block warns about both cases in the Map tiles panel while you are editing.
+
+= Visitors can zoom in past where my tiles stop =
+
+Set a lower "Max zoom" under Settings > GPX Route Map. Most raster providers stop supplying tiles well before zoom 22, and past that point the map keeps zooming into blank space. A single map can differ: use the block's Max zoom slider, or add `maxzoom="18"` to the shortcode.
 
 = Can maps be shorter on phones? =
 
@@ -169,6 +174,7 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 == Changelog ==
 
 = 1.7.1 =
+* New: set the maximum zoom once for the whole site under Settings > GPX Route Map, instead of repeating it on every map.
 * The block now warns when a custom tile URL will not work: an insecure address that browsers refuse to load, or one missing http:// or https:// that the plugin ignores. Both left the map blank with nothing to explain why.
 
 
