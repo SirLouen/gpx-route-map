@@ -81,7 +81,7 @@ jobs:
             echo "::error::PR #${PR_NUMBER} comes from '${head}', not ${REPOSITORY}; refusing"; exit 1
           fi
 
-      - uses: SirLouen/ai-pr-review@0e7d39891e2f0e8b9e44ffee703c3bbef6315f56 # v1.2.1
+      - uses: SirLouen/ai-pr-review@a2be39d8d56336c34c439cf38572285812ccc89e # v1.2.2
         with:
           pr-number: ${{ steps.target.outputs.number }}
           publish: ${{ steps.target.outputs.publish }}
