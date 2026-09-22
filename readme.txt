@@ -164,7 +164,7 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 
 = 1.7.0 =
 * New: set the map height once for the whole site under Settings > GPX Route Map, instead of repeating it on every map. Individual maps can still set their own.
-* New: separate heights for tablets and phones, site-wide and per map, so a map can be shorter on a small screen. Leave one empty and it reuses the size above it. The elevation profile shrinks on phones too, so the map and the profile stay visible together.
+* New: separate heights for tablets and phones, site-wide and per map, so a map can be shorter on a small screen. Leave one empty and the map follows the site's size for that screen. The elevation profile shrinks on phones too, so the map and the profile stay visible together.
 * The block's height control now moves in steps of 10 pixels rather than 20, so more heights can actually be chosen.
 * Maps that never had a height set follow the site setting, so existing maps are unaffected until you change it.
 * Updated the map library to MapLibre GL JS 6. Maps now need a browser with WebGL2, which covers Chrome, Edge, Firefox and Safari 15 or newer. Where it is missing, the map shows its "could not load" notice instead of failing silently.
