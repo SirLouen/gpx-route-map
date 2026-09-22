@@ -24,7 +24,6 @@ class Plugin {
 	 * @return void
 	 */
 	public function register(): void {
-		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( $this, 'register_block' ) );
 		add_action( 'init', array( $this, 'register_shortcode' ) );
 		add_action( 'admin_menu', array( $this, 'register_settings_page' ) );
@@ -32,19 +31,6 @@ class Plugin {
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'upload_mimes', array( $this, 'allow_gpx_upload' ) );
 		add_filter( 'wp_check_filetype_and_ext', array( $this, 'fix_gpx_filetype_check' ), 10, 4 );
-	}
-
-	/**
-	 * Load the plugin's bundled translations from /languages.
-	 *
-	 * @return void
-	 */
-	public function load_textdomain(): void {
-		load_plugin_textdomain(
-			'gpx-route-map',
-			false,
-			dirname( plugin_basename( GPXRM_PLUGIN_DIR . 'gpx-route-map.php' ) ) . '/languages'
-		);
 	}
 
 	/**
@@ -913,6 +899,10 @@ class Plugin {
 
 		if ( $block_type instanceof \WP_Block_Type ) {
 			foreach ( $block_type->editor_script_handles as $handle ) {
+				// The third argument is required, not tidy-up-able: without it
+				// core looks only in WP_LANG_DIR/plugins and finds nothing until
+				// the site has downloaded a language pack, so the editor falls
+				// back to English even though /languages ships a translation.
 				wp_set_script_translations( $handle, 'gpx-route-map', GPXRM_PLUGIN_DIR . 'languages' );
 
 				/*
