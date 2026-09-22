@@ -35,6 +35,14 @@ class Renderer {
 	const DEFAULT_HEIGHT = 480;
 
 	/**
+	 * Zoom bounds. 22 is as far as MapLibre will go; most raster providers
+	 * stop supplying tiles well before that, which is why the default is 17.
+	 */
+	const MIN_ZOOM     = 1;
+	const MAX_ZOOM     = 22;
+	const DEFAULT_ZOOM = 17;
+
+	/**
 	 * OpenStreetMap's standard tiles, used when no provider is configured.
 	 */
 	const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -211,6 +219,51 @@ class Renderer {
 		$value = apply_filters( 'gpxrm_height', self::clamp( $value, self::MIN_HEIGHT, self::MAX_HEIGHT ) );
 
 		return self::clamp( (int) $value, self::MIN_HEIGHT, self::MAX_HEIGHT );
+	}
+
+	/**
+	 * The site-wide maximum zoom, filterable.
+	 *
+	 * Maps that do not set their own use this, so a site whose tile provider
+	 * stops at zoom 18 can say so once instead of on every map.
+	 *
+	 * @return int Zoom level between MIN_ZOOM and MAX_ZOOM.
+	 */
+	public static function default_max_zoom(): int {
+		$value = self::usable_zoom( get_option( 'gpxrm_max_zoom', self::DEFAULT_ZOOM ) );
+
+		/**
+		 * Filters the site-wide maximum zoom for GPX maps.
+		 *
+		 * @param int $value Zoom level.
+		 */
+		return self::usable_zoom( apply_filters( 'gpxrm_max_zoom', $value ) );
+	}
+
+	/**
+	 * A stored or filtered zoom, or the shipped default when there is none.
+	 *
+	 * Anything at or below zero means "nothing set" rather than a real zoom.
+	 * Clamping it instead would give MIN_ZOOM, the most zoomed-out level the
+	 * map can show - a broken-looking map from a value that was only ever a
+	 * sentinel. A positive but fractional value is a real, if odd, zoom and is
+	 * clamped normally.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return int
+	 */
+	private static function usable_zoom( $value ): int {
+		if ( ! is_numeric( $value ) ) {
+			return self::DEFAULT_ZOOM;
+		}
+
+		$number = (float) $value;
+
+		if ( ! is_finite( $number ) || $number <= 0 ) {
+			return self::DEFAULT_ZOOM;
+		}
+
+		return self::clamp( (int) $value, self::MIN_ZOOM, self::MAX_ZOOM );
 	}
 
 	/**
@@ -582,11 +635,16 @@ class Renderer {
 		// Cascade rather than disjoint bands: a band with nothing of its own
 		// follows the next larger one, which is what people expect when they
 		// set only a phone height.
-		$tablet   = $tablet > 0 ? $tablet : $site['tablet'];
-		$tablet   = $tablet > 0 ? $tablet : $height;
-		$mobile   = $mobile > 0 ? $mobile : $site['mobile'];
-		$mobile   = $mobile > 0 ? $mobile : $tablet;
-		$max_zoom = ( isset( $atts['maxZoom'] ) && is_numeric( $atts['maxZoom'] ) ) ? (int) $atts['maxZoom'] : 17;
+		$tablet = $tablet > 0 ? $tablet : $site['tablet'];
+		$tablet = $tablet > 0 ? $tablet : $height;
+		$mobile = $mobile > 0 ? $mobile : $site['mobile'];
+		$mobile = $mobile > 0 ? $mobile : $tablet;
+		// As with height, 0 (or nothing at all) means "use whatever the site
+		// says", so changing the site setting reaches every map that has not
+		// chosen its own.
+		$max_zoom = ( isset( $atts['maxZoom'] ) && is_numeric( $atts['maxZoom'] ) && (int) $atts['maxZoom'] > 0 )
+			? (int) $atts['maxZoom']
+			: self::default_max_zoom();
 		$tile_url = self::sanitize_tile_url( $atts['tileUrl'] ?? '' );
 
 		return array(
@@ -598,7 +656,7 @@ class Renderer {
 			'show_elevation' => self::normalize_visibility( $atts['showElevation'] ?? '', self::default_show_elevation() ),
 			'show_download'  => self::normalize_visibility( $atts['showDownload'] ?? '', self::default_show_download() ),
 			'stat_fields'    => self::normalize_stat_fields( $atts['statFields'] ?? '', self::default_stat_fields() ),
-			'max_zoom'       => self::clamp( $max_zoom, 1, 22 ),
+			'max_zoom'       => self::clamp( $max_zoom, self::MIN_ZOOM, self::MAX_ZOOM ),
 			'tile_url'       => $tile_url,
 			'stats'          => self::normalize_stats( $atts['stats'] ?? null ),
 			'units'          => self::normalize_units( $atts['units'] ?? '' ),

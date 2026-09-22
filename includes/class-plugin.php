@@ -161,6 +161,17 @@ class Plugin {
 
 		register_setting(
 			self::OPTION_GROUP,
+			'gpxrm_max_zoom',
+			array(
+				'type'              => 'integer',
+				'default'           => Renderer::DEFAULT_ZOOM,
+				'sanitize_callback' => array( $this, 'sanitize_max_zoom' ),
+				'show_in_rest'      => true,
+			)
+		);
+
+		register_setting(
+			self::OPTION_GROUP,
 			'gpxrm_units',
 			array(
 				'type'              => 'string',
@@ -234,6 +245,15 @@ class Plugin {
 			self::SETTINGS_PAGE,
 			'gpxrm_display',
 			array( 'label_for' => 'gpxrm_units' )
+		);
+
+		add_settings_field(
+			'gpxrm_max_zoom',
+			__( 'Max zoom', 'gpx-route-map' ),
+			array( $this, 'render_max_zoom_field' ),
+			self::SETTINGS_PAGE,
+			'gpxrm_display',
+			array( 'label_for' => 'gpxrm_max_zoom' )
 		);
 
 		add_settings_field(
@@ -730,6 +750,56 @@ class Plugin {
 	}
 
 	/**
+	 * Keep the stored zoom within the range the renderer accepts.
+	 *
+	 * @param mixed $value Raw submitted value.
+	 * @return int
+	 */
+	public function sanitize_max_zoom( $value ): int {
+		// An emptied field, a zero or a negative all mean "no zoom set", so
+		// they restore the default. Clamping them would save MIN_ZOOM, and the
+		// site would quietly open every map on a view of the whole world.
+		if ( ! is_numeric( $value ) ) {
+			return Renderer::DEFAULT_ZOOM;
+		}
+
+		$number = (float) $value;
+
+		if ( ! is_finite( $number ) || $number <= 0 ) {
+			return Renderer::DEFAULT_ZOOM;
+		}
+
+		return max( Renderer::MIN_ZOOM, min( Renderer::MAX_ZOOM, (int) $value ) );
+	}
+
+	/**
+	 * Output the site-wide maximum zoom control.
+	 *
+	 * @return void
+	 */
+	public function render_max_zoom_field(): void {
+		// The stored option, not Renderer::default_max_zoom(): that applies the
+		// filter, and a filtered value pre-filled here would be written to the
+		// database by an unrelated "Save Changes".
+		$stored = get_option( 'gpxrm_max_zoom', Renderer::DEFAULT_ZOOM );
+
+		printf(
+			'<input type="number" name="gpxrm_max_zoom" id="gpxrm_max_zoom" value="%1$d" min="%2$d" max="%3$d" step="1" class="small-text" />',
+			(int) $this->sanitize_max_zoom( $stored ),
+			(int) Renderer::MIN_ZOOM,
+			(int) Renderer::MAX_ZOOM
+		);
+		echo '<p class="description">';
+		printf(
+			/* translators: 1: lowest zoom level, 2: highest zoom level. */
+			esc_html__( 'How far visitors can zoom in, from %1$d to %2$d. Lower this if your tile provider stops supplying tiles before the map stops zooming. Individual maps can override it.', 'gpx-route-map' ),
+			(int) Renderer::MIN_ZOOM,
+			(int) Renderer::MAX_ZOOM
+		);
+		echo '</p>';
+	}
+
+	/**
 	 * Keep the stored height within the range the renderer accepts.
 	 *
 	 * @param mixed $value Raw submitted value.
@@ -855,7 +925,7 @@ class Plugin {
 				wp_add_inline_script(
 					$handle,
 					'window.gpxrmDefaults = ' . wp_json_encode(
-						Renderer::default_heights()
+						Renderer::default_heights() + array( 'maxZoom' => Renderer::default_max_zoom() )
 					) . ';',
 					'before'
 				);
@@ -894,7 +964,7 @@ class Plugin {
 			'elevation'     => '',
 			'download'      => '',
 			'fields'        => '',
-			'maxzoom'       => 17,
+			'maxzoom'       => 0,
 			'tile'          => '',
 			'units'         => '',
 		);
@@ -911,7 +981,7 @@ class Plugin {
 	 *   elevation Show the elevation profile: "true"/"false" (defaults to the site setting).
 	 *   download  Show the GPX download button: "true"/"false" (defaults to the site setting).
 	 *   fields    Which stats to list, e.g. "distance,gain"; "none" hides them all.
-	 *   maxzoom   Maximum zoom level (default 17).
+	 *   maxzoom   Maximum zoom level (defaults to the site setting).
 	 *   tile      Override raster tile URL template.
 	 *   units     "metric" or "imperial" (defaults to the site setting).
 	 *

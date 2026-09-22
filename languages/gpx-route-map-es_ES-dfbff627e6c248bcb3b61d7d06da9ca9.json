@@ -144,6 +144,9 @@
             ],
             "This address is missing http:\/\/ or https:\/\/, so it will be ignored and the map will fall back to OpenStreetMap.": [
                 "A esta direcci\u00f3n le falta http:\/\/ o https:\/\/, as\u00ed que se ignorar\u00e1 y el mapa usar\u00e1 OpenStreetMap."
+            ],
+            "Reset to follow the site setting (%d).": [
+                "Rest\u00e1blecelo para seguir el ajuste del sitio (%d)."
             ]
         }
     }

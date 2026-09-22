@@ -65,7 +65,7 @@
 		},
 		"maxZoom": {
 			"type": "number",
-			"default": 17
+			"default": 0
 		},
 		"tileUrl": {
 			"type": "string",
