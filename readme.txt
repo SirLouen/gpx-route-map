@@ -1,7 +1,7 @@
 === GPX Route Map ===
 Contributors: sirlouen
 Tags: gpx, map, openstreetmap, elevation, route
-Requires at least: 6.6
+Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 1.7.1
@@ -174,6 +174,7 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 == Changelog ==
 
 = 1.7.1 =
+* Now requires WordPress 6.8 or newer. WordPress loads plugin translations by itself from 6.8 on, so the plugin no longer does it. Sites on 6.6 or 6.7 keep the version they already have.
 * New: set the maximum zoom once for the whole site under Settings > GPX Route Map, instead of repeating it on every map.
 * The block now warns when a custom tile URL will not work: an insecure address that browsers refuse to load, or one missing http:// or https:// that the plugin ignores. Both left the map blank with nothing to explain why.
 
