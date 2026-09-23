@@ -237,6 +237,11 @@ export default function Edit( {
 
 	const bakeUrl = gpxUrl || mediaUrl || '';
 
+	// Only ever an http(s) target: the attribute is free text that survives
+	// saving untouched, so an unchecked value would become an href in the
+	// session of whoever opens the post. Empty means no link is offered.
+	const linkUrl = safeGpxUrl( gpxUrl );
+
 	// The effect below writes stats, so it must not depend on them: listing
 	// them re-runs it on its own write, which fetches every GPX file twice on
 	// every editor load (measured - the sameStats guard stops it there, so it
@@ -758,13 +763,9 @@ export default function Edit( {
 						{ elevationShown &&
 							__( 'Elevation profile', 'gpx-route-map' ) }
 					</span>
-					{ /* Only ever an http(s) target: the attribute is free
-					     text that survives saving untouched, so an unchecked
-					     value would become an href in the session of whoever
-					     opens the post. */ }
-					{ !! safeGpxUrl( gpxUrl ) && (
+					{ !! linkUrl && (
 						<ExternalLink
-							href={ safeGpxUrl( gpxUrl ) }
+							href={ linkUrl }
 							className="gpxrm-editor-link"
 						>
 							{ __( 'Open GPX file', 'gpx-route-map' ) }
