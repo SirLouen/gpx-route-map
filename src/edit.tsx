@@ -39,6 +39,7 @@ import {
 } from './heights';
 import { siteDefaultMaxZoom, MIN_ZOOM, MAX_ZOOM } from './zoom';
 import { tileUrlProblem } from './tile-url';
+import { safeGpxUrl } from './gpx-url';
 import { parseGPX } from './view/map-core';
 import { routeStats } from './view/stats';
 
@@ -244,10 +245,16 @@ export default function Edit( {
 	// from testing against a value that went stale while the fetch was in
 	// flight.
 	const statsRef = useRef( attributes.stats );
-	statsRef.current = attributes.stats;
-
 	const setAttributesRef = useRef( setAttributes );
-	setAttributesRef.current = setAttributes;
+
+	// Synced in an effect rather than during render: a render that React
+	// throws away must not leave the refs holding a value that never
+	// committed. Declared before the fetch effect so it runs first on the
+	// commit that re-runs it.
+	useEffect( () => {
+		statsRef.current = attributes.stats;
+		setAttributesRef.current = setAttributes;
+	} );
 
 	useEffect( () => {
 		if ( ! bakeUrl ) {
@@ -751,9 +758,18 @@ export default function Edit( {
 						{ elevationShown &&
 							__( 'Elevation profile', 'gpx-route-map' ) }
 					</span>
-					<ExternalLink href={ gpxUrl } className="gpxrm-editor-link">
-						{ __( 'Open GPX file', 'gpx-route-map' ) }
-					</ExternalLink>
+					{ /* Only ever an http(s) target: the attribute is free
+					     text that survives saving untouched, so an unchecked
+					     value would become an href in the session of whoever
+					     opens the post. */ }
+					{ !! safeGpxUrl( gpxUrl ) && (
+						<ExternalLink
+							href={ safeGpxUrl( gpxUrl ) }
+							className="gpxrm-editor-link"
+						>
+							{ __( 'Open GPX file', 'gpx-route-map' ) }
+						</ExternalLink>
+					) }
 				</div>
 			) }
 		</div>
