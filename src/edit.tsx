@@ -5,7 +5,7 @@
 import type { KeyboardEvent } from 'react';
 
 import { __, sprintf } from '@wordpress/i18n';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useRef, useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import type { BlockEditProps } from '@wordpress/blocks';
 import {
@@ -39,6 +39,7 @@ import {
 } from './heights';
 import { siteDefaultMaxZoom, MIN_ZOOM, MAX_ZOOM } from './zoom';
 import { tileUrlProblem } from './tile-url';
+import { safeGpxUrl } from './gpx-url';
 import { parseGPX } from './view/map-core';
 import { routeStats } from './view/stats';
 
@@ -236,10 +237,34 @@ export default function Edit( {
 
 	const bakeUrl = gpxUrl || mediaUrl || '';
 
+	// Only ever an http(s) target: the attribute is free text that survives
+	// saving untouched, so an unchecked value would become an href in the
+	// session of whoever opens the post. Empty means no link is offered.
+	const linkUrl = safeGpxUrl( gpxUrl );
+
+	// The effect below writes stats, so it must not depend on them: listing
+	// them re-runs it on its own write, which fetches every GPX file twice on
+	// every editor load (measured - the sameStats guard stops it there, so it
+	// is waste rather than a loop). Reading through refs keeps the dependency
+	// list honestly limited to the URL, and also stops the async comparison
+	// from testing against a value that went stale while the fetch was in
+	// flight.
+	const statsRef = useRef( attributes.stats );
+	const setAttributesRef = useRef( setAttributes );
+
+	// Synced in an effect rather than during render: a render that React
+	// throws away must not leave the refs holding a value that never
+	// committed. Declared before the fetch effect so it runs first on the
+	// commit that re-runs it.
+	useEffect( () => {
+		statsRef.current = attributes.stats;
+		setAttributesRef.current = setAttributes;
+	} );
+
 	useEffect( () => {
 		if ( ! bakeUrl ) {
-			if ( attributes.stats ) {
-				setAttributes( { stats: undefined } );
+			if ( statsRef.current ) {
+				setAttributesRef.current( { stats: undefined } );
 			}
 			return;
 		}
@@ -265,12 +290,12 @@ export default function Edit( {
 					max: s.maxEle,
 					waypoints: parsed.waypoints.length,
 				};
-				if ( ! cancelled && ! sameStats( attributes.stats, next ) ) {
-					setAttributes( { stats: next } );
+				if ( ! cancelled && ! sameStats( statsRef.current, next ) ) {
+					setAttributesRef.current( { stats: next } );
 				}
 			} catch {
-				if ( ! cancelled && attributes.stats ) {
-					setAttributes( { stats: undefined } );
+				if ( ! cancelled && statsRef.current ) {
+					setAttributesRef.current( { stats: undefined } );
 				}
 			}
 		} )();
@@ -738,9 +763,14 @@ export default function Edit( {
 						{ elevationShown &&
 							__( 'Elevation profile', 'gpx-route-map' ) }
 					</span>
-					<ExternalLink href={ gpxUrl } className="gpxrm-editor-link">
-						{ __( 'Open GPX file', 'gpx-route-map' ) }
-					</ExternalLink>
+					{ !! linkUrl && (
+						<ExternalLink
+							href={ linkUrl }
+							className="gpxrm-editor-link"
+						>
+							{ __( 'Open GPX file', 'gpx-route-map' ) }
+						</ExternalLink>
+					) }
 				</div>
 			) }
 		</div>
