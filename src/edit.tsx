@@ -5,7 +5,7 @@
 import type { KeyboardEvent } from 'react';
 
 import { __, sprintf } from '@wordpress/i18n';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useRef, useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import type { BlockEditProps } from '@wordpress/blocks';
 import {
@@ -236,10 +236,23 @@ export default function Edit( {
 
 	const bakeUrl = gpxUrl || mediaUrl || '';
 
+	// The effect below writes stats, so it must not depend on them: listing
+	// them re-runs it on its own write, which fetches every GPX file twice on
+	// every editor load (measured - the sameStats guard stops it there, so it
+	// is waste rather than a loop). Reading through refs keeps the dependency
+	// list honestly limited to the URL, and also stops the async comparison
+	// from testing against a value that went stale while the fetch was in
+	// flight.
+	const statsRef = useRef( attributes.stats );
+	statsRef.current = attributes.stats;
+
+	const setAttributesRef = useRef( setAttributes );
+	setAttributesRef.current = setAttributes;
+
 	useEffect( () => {
 		if ( ! bakeUrl ) {
-			if ( attributes.stats ) {
-				setAttributes( { stats: undefined } );
+			if ( statsRef.current ) {
+				setAttributesRef.current( { stats: undefined } );
 			}
 			return;
 		}
@@ -265,12 +278,12 @@ export default function Edit( {
 					max: s.maxEle,
 					waypoints: parsed.waypoints.length,
 				};
-				if ( ! cancelled && ! sameStats( attributes.stats, next ) ) {
-					setAttributes( { stats: next } );
+				if ( ! cancelled && ! sameStats( statsRef.current, next ) ) {
+					setAttributesRef.current( { stats: next } );
 				}
 			} catch {
-				if ( ! cancelled && attributes.stats ) {
-					setAttributes( { stats: undefined } );
+				if ( ! cancelled && statsRef.current ) {
+					setAttributesRef.current( { stats: undefined } );
 				}
 			}
 		} )();
