@@ -146,10 +146,16 @@ function buildStyles() {
 		const css = sass.compile( path.join( SRC, src ), {
 			style: 'compressed',
 		} ).css;
-		fs.writeFileSync( path.join( OUT, out ), css );
 		fs.writeFileSync(
 			path.join( OUT, out.replace( /\.css$/, '-rtl.css' ) ),
 			rtlcss.process( css )
+		);
+		// rtlcss directives have to be loud comments (/*! */) to survive the
+		// compressed output, which leaves them in the LTR file too. They mean
+		// nothing there, and WordPress inlines this file into every page.
+		fs.writeFileSync(
+			path.join( OUT, out ),
+			css.replace( /\/\*!\s*rtl:[^*]*\*\//g, '' )
 		);
 	}
 }

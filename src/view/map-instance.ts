@@ -72,6 +72,8 @@ interface ViewMessages {
 	nopoints: string;
 	download: string;
 	maplibre: string;
+	start: string;
+	end: string;
 }
 
 const FALLBACK_MESSAGES: ViewMessages = {
@@ -81,6 +83,8 @@ const FALLBACK_MESSAGES: ViewMessages = {
 	nopoints: 'No track or route points found in GPX file.',
 	download: 'Download GPX file',
 	maplibre: 'Map failed to load. Click to retry.',
+	start: 'Start',
+	end: 'End',
 };
 
 /**
@@ -325,23 +329,24 @@ export async function initInstance(
 			},
 		} );
 
+		// Built from text nodes rather than setHTML: the labels are now
+		// translations, and a translation is not markup.
+		const pinPopup = ( label: string ) => {
+			const name = document.createElement( 'div' );
+			name.className = 'gpxrm-popup-name';
+			name.textContent = label;
+			return new maplibregl.Popup().setDOMContent( name );
+		};
+
 		const start = coords[ 0 ];
 		const end = coords[ coords.length - 1 ];
 		new maplibregl.Marker( { color: '#22c55e' } )
 			.setLngLat( [ start[ 0 ], start[ 1 ] ] )
-			.setPopup(
-				new maplibregl.Popup().setHTML(
-					'<div class="gpxrm-popup-name">Start</div>'
-				)
-			)
+			.setPopup( pinPopup( msg.start ) )
 			.addTo( map );
 		new maplibregl.Marker( { color: '#ef4444' } )
 			.setLngLat( [ end[ 0 ], end[ 1 ] ] )
-			.setPopup(
-				new maplibregl.Popup().setHTML(
-					'<div class="gpxrm-popup-name">End</div>'
-				)
-			)
+			.setPopup( pinPopup( msg.end ) )
 			.addTo( map );
 
 		addWaypointMarkers( maplibregl, map, waypoints, TRACK_CASING );

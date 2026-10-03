@@ -1,0 +1,4 @@
+{
+	"_comment": "Every message key the front-end view renders. Renderer::view_messages_json() must send all of them and FALLBACK_MESSAGES in src/view/map-instance.ts must define all of them; a key either side forgets silently falls back to English. Read by tests/ViewMessagesTest.php and tests/js/view-messages.test.ts.",
+	"keys": [ "load", "cors", "invalid", "nopoints", "download", "maplibre", "start", "end" ]
+}

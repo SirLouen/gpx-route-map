@@ -198,6 +198,243 @@ describe.skipIf( ! built )( 'compiled stylesheet', () => {
 	} );
 } );
 
+describe.skipIf( ! built )( 'map chrome under theme styles', () => {
+	const css = readIfBuilt( path.join( BUILD, 'style-index.css' ) );
+	const rtl = readIfBuilt( path.join( BUILD, 'style-index-rtl.css' ) );
+
+	const CLOSE = '.gpxrm .gpxrm-map .maplibregl-popup-close-button';
+	const CONTENT = '.gpxrm .gpxrm-map .maplibregl-popup-content';
+	const CONTROL = '.gpxrm .gpxrm-map .maplibregl-ctrl-group button';
+	const DOWNLOAD = '.gpxrm .gpxrm-map .gpxrm-download-btn';
+
+	/**
+	 * The declarations of every rule whose selector is exactly `selector`.
+	 *
+	 * @param source   Compiled stylesheet.
+	 * @param selector Full selector, as the build emits it.
+	 */
+	function declarations( source: string, selector: string ): string {
+		const escaped = selector.replace( /[.*+?^${}()|[\]\\]/g, '\\$&' );
+		return [
+			...source.matchAll(
+				new RegExp(
+					`(?:^|[}{;])\\s*${ escaped }\\s*\\{([^}]*)\\}`,
+					'g'
+				)
+			),
+		]
+			.map( ( m ) => m[ 1 ] )
+			.join( ';' );
+	}
+
+	/**
+	 * Property names a rule sets.
+	 *
+	 * @param body Declaration block, without braces.
+	 */
+	function properties( body: string ): string[] {
+		return body
+			.split( ';' )
+			.map( ( d ) => d.split( ':' )[ 0 ].trim() )
+			.filter( Boolean );
+	}
+
+	// Under Vantage, a bare `button` rule filled every gap MapLibre leaves to
+	// the browser and grew the close button to 49x38px, on top of the
+	// waypoint's name. Each property here is one a popular theme sets on bare
+	// buttons; losing any of them from the reset reopens that door.
+	it( 'pins everything a theme button rule can inflate', () => {
+		const set = properties( declarations( css, CLOSE ) );
+		expect( set, `${ CLOSE } is missing from the build` ).not.toHaveLength(
+			0
+		);
+
+		for ( const property of [
+			'display',
+			'width',
+			'height',
+			'min-width',
+			'min-height',
+			'margin',
+			'padding',
+			'border',
+			'background-image',
+			'background-color',
+			'box-shadow',
+			'color',
+			'font-size',
+			'line-height',
+			'text-shadow',
+			'appearance',
+		] ) {
+			expect( set, `${ CLOSE } no longer sets ${ property }` ).toContain(
+				property
+			);
+		}
+	} );
+
+	// Twenty Twenty-One (0,4,1), Twenty Seventeen's dark scheme (0,3,1) and
+	// Hestia (0,6,2) set these three on every button, above any reasonable
+	// selector - TT1 alone hides MapLibre's dark icons behind its fill.
+	it( 'holds the contested properties against theme specificity', () => {
+		const contested: Array< [ string, string[] ] > = [
+			[ CLOSE, [ 'background-color', 'color', 'box-shadow' ] ],
+			[ CONTROL, [ 'background-color', 'box-shadow' ] ],
+			[ DOWNLOAD, [ 'background-color', 'color', 'box-shadow' ] ],
+		];
+
+		for ( const [ selector, props ] of contested ) {
+			const body = declarations( css, selector );
+			for ( const property of props ) {
+				// Anchored on the declaration boundary: unanchored, `color`
+				// also matched the tail of `background-color` and could never
+				// fail on its own.
+				expect(
+					body,
+					`${ selector } ${ property } must be !important`
+				).toMatch(
+					new RegExp( `(?:^|;)\\s*${ property }\\s*:[^;]*!important` )
+				);
+			}
+		}
+	} );
+
+	// An !important reset also beats MapLibre's own hover and focus rules,
+	// so they are restated at the same strength. Dropping these would leave
+	// the controls with no hover feedback and no keyboard focus ring.
+	it( "restates MapLibre's control states it outranks", () => {
+		expect( declarations( css, `${ CONTROL }:focus-visible` ) ).toMatch(
+			/box-shadow:0 0 2px 2px #0096ff\s*!important/
+		);
+		expect(
+			declarations( css, `${ CONTROL }:not(:disabled):active` )
+		).toMatch(
+			/background-color:rgba\(0,\s*0,\s*0,\s*\.05\)\s*!important/
+		);
+	} );
+
+	// MapLibre gates its hover tint to hover-capable devices so a tapped
+	// button does not stay tinted on a touch screen. Restating it outside
+	// that gate quietly brought the sticky tint back.
+	it( 'keeps the hover tint behind the (hover: hover) gate', () => {
+		const gated = [
+			...css.matchAll( /@media\s*\(hover:\s*hover\)\s*\{(.*?\})\s*\}/gs ),
+		]
+			.map( ( m ) => m[ 1 ] )
+			.join( '' );
+
+		expect(
+			declarations( gated, `${ CONTROL }:not(:disabled):hover` )
+		).toMatch(
+			/background-color:rgba\(0,\s*0,\s*0,\s*\.05\)\s*!important/
+		);
+		// And nowhere outside it.
+		expect(
+			declarations(
+				css.replace(
+					/@media\s*\(hover:\s*hover\)\s*\{.*?\}\s*\}/gs,
+					''
+				),
+				`${ CONTROL }:not(:disabled):hover`
+			)
+		).toBe( '' );
+	} );
+
+	// Theme button rules up to (0,2,x) set these on every button; MapLibre
+	// sets none of them on its controls, so the gradient and rounding showed
+	// through behind every icon until this rule existed.
+	it( 'resets the control buttons below MapLibre focus rules', () => {
+		const set = properties(
+			declarations(
+				css,
+				'.gpxrm .gpxrm-map .maplibregl-ctrl-group :where(button)'
+			)
+		);
+		for ( const property of [
+			'background-image',
+			'border-radius',
+			'margin',
+			'min-width',
+			'min-height',
+			'text-shadow',
+		] ) {
+			expect(
+				set,
+				`control reset no longer sets ${ property }`
+			).toContain( property );
+		}
+	} );
+
+	// The reset also strips whatever border or shadow a theme draws in place
+	// of the outline it switched off, so the button brings its own ring - a
+	// shadow, since Hestia forces outline-width to 0, plus a transparent
+	// outline for forced-colors mode.
+	it( 'gives the close button and download link their own focus ring', () => {
+		for ( const selector of [ CLOSE, DOWNLOAD ] ) {
+			const ring = declarations( css, `${ selector }:focus-visible` );
+			expect( ring, selector ).toMatch(
+				/box-shadow:\s*inset[^;]*!important/
+			);
+			// Sass compresses `transparent` to rgba(0,0,0,0); either is the
+			// same. !important so Hestia's `outline: 0 !important` cannot
+			// erase it in forced-colors mode, where the shadow is dropped.
+			expect( ring, selector ).toMatch(
+				/outline:\s*2px solid (?:transparent|rgba\(0,\s*0,\s*0,\s*0\))\s*!important/
+			);
+		}
+	} );
+
+	// Raising the base rule's specificity silently outranked the
+	// reduced-motion override written against the old, bare selector.
+	it( 'keeps the reduced-motion override as strong as its base rule', () => {
+		// Every reduced-motion block: the build emits one per source rule.
+		const media = [
+			...css.matchAll(
+				/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{(.*?\})\s*\}/gs
+			),
+		]
+			.map( ( m ) => m[ 1 ] )
+			.join( '' );
+
+		expect( declarations( media, DOWNLOAD ) ).toMatch(
+			/transition:\s*none/
+		);
+
+		// Same specificity, so source order decides: the override has to
+		// come after the rule that sets the transition.
+		const base = css.search(
+			new RegExp(
+				`${ DOWNLOAD.replace(
+					/[.]/g,
+					'\\.'
+				) }\\{[^}]*transition:background`
+			)
+		);
+		const override = css.search(
+			/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[^@]*gpxrm-download-btn\{transition:none/
+		);
+		expect( base ).toBeGreaterThan( -1 );
+		expect( override ).toBeGreaterThan( base );
+	} );
+
+	// MapLibre pins the button at `right: 0` whatever the writing direction,
+	// and its own stylesheet is never mirrored. If rtlcss flips the room we
+	// reserve for it, the overlap comes back on every RTL site.
+	it( 'keeps the popup rules physical in the RTL build', () => {
+		expect( declarations( rtl, CONTENT ) ).toMatch(
+			/padding-right:\s*28px/
+		);
+		expect( declarations( rtl, CLOSE ) ).toMatch(
+			/border-radius:\s*0 3px 0 0/
+		);
+	} );
+
+	it( 'leaves no rtlcss directive behind in either build', () => {
+		expect( css ).not.toMatch( /rtl:/ );
+		expect( rtl ).not.toMatch( /rtl:/ );
+	} );
+} );
+
 it( 'has a build to inspect', () => {
 	// Guards against the suite silently skipping everything above.
 	expect( built, 'run `pnpm run build` before the JS tests' ).toBe( true );

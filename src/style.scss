@@ -163,11 +163,128 @@
 	font-weight: 600;
 }
 
+/* Map chrome, hardened against theme styles.
+   MapLibre styles its buttons with single-class selectors and leaves a lot to
+   the browser's defaults. Themes fill those gaps: under Vantage, a bare
+   `button` rule with `padding: 12px 20px` and a gradient grew the popup close
+   button into a 49x38px box on top of the waypoint's name, and Twenty
+   Twenty-One fills every button with its own colour, hiding MapLibre's dark
+   icons. So everything a theme can set on these elements is pinned here.
+
+   Two strengths, chosen from a survey of 17 popular themes:
+   - Layout and typography: `.gpxrm .gpxrm-map ...` (0,3,0), the real ancestor
+     chain. No theme rule in a context that can hold a map goes above (0,2,1)
+     for these.
+   - Colour, background colour and box-shadow: `!important`. Twenty Twenty-One
+     (0,4,1), Twenty Seventeen's dark scheme (0,3,1) and Hestia (0,6,2) set
+     these on every button, above any reasonable selector. Since MapLibre's own
+     hover and focus rules (0,3,1) lose to that too, their values are restated
+     below at the same strength, unchanged. */
+
+/*! rtl:ignore */
+.gpxrm .gpxrm-map .maplibregl-popup-close-button {
+	// MapLibre pins the button at `right: 0` in every writing direction and its
+	// stylesheet is never mirrored, so this rule must not be either.
+	position: absolute;
+	top: 0;
+	right: 0;
+	display: block;
+	box-sizing: border-box;
+	width: 24px;
+	height: 24px;
+	min-width: 0;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0 3px 0 0;
+	background-image: none;
+	font-family: Arial, sans-serif;
+	font-size: 18px;
+	font-style: normal;
+	font-weight: 400;
+	line-height: 24px;
+	letter-spacing: normal;
+	text-align: center;
+	text-decoration: none;
+	text-shadow: none;
+	text-transform: none;
+	appearance: none;
+	cursor: pointer;
+	background-color: transparent !important;
+	color: #333 !important;
+	box-shadow: none !important;
+
+	&:hover {
+		background-color: rgba(0, 0, 0, 0.05) !important;
+	}
+
+	// The reset also strips whatever border or shadow a theme draws in place
+	// of the outline it switched off, so the button brings its own ring. A
+	// shadow, because Hestia forces `outline-width: 0 !important` on :focus;
+	// the transparent outline is what forced-colors mode paints instead.
+	&:focus-visible {
+		box-shadow: inset 0 0 0 2px var(--gpxrm-track) !important;
+		outline: 2px solid transparent !important;
+		outline-offset: -2px;
+	}
+}
+
+// Room for the 24px button, so a long first line never runs underneath it.
+// On the content box rather than the name, which can be empty. Physical
+// right in RTL too, since that is where the button stays.
+
+/*! rtl:ignore */
+.gpxrm .gpxrm-map .maplibregl-popup-content {
+	padding-right: 28px;
+}
+
+// Zoom, compass, fullscreen and locate. MapLibre sizes these itself; the
+// :where() keeps this rule at (0,3,0), one notch below MapLibre's own focus
+// rules (0,3,1), so their corner rounding still applies.
+.gpxrm .gpxrm-map .maplibregl-ctrl-group :where(button) {
+	min-width: 0;
+	min-height: 0;
+	margin: 0;
+	border-radius: 0;
+	background-image: none;
+	text-shadow: none;
+}
+
+.gpxrm .gpxrm-map .maplibregl-ctrl-group button {
+	background-color: transparent !important;
+	box-shadow: none !important;
+
+	// MapLibre's values, restated at the strength the reset above needs. The
+	// transparent outline is an addition: MapLibre's ring is only a shadow,
+	// which forced-colors mode drops, so it paints this instead.
+	&:focus-visible {
+		box-shadow: 0 0 2px 2px #0096ff !important;
+		outline: 2px solid transparent !important;
+		outline-offset: -2px;
+	}
+
+	&:not(:disabled):active {
+		background-color: rgba(0, 0, 0, 0.05) !important;
+	}
+
+	// Gated like MapLibre's own, so a tapped button does not stay tinted on
+	// touch screens, where :hover sticks after the tap.
+	@media (hover: hover) {
+
+		&:not(:disabled):hover {
+			background-color: rgba(0, 0, 0, 0.05) !important;
+		}
+	}
+}
+
 /* Download control.
    MapLibre styles its own controls via `.maplibregl-ctrl button`, and this one
    is an anchor so it can be a real link, so the button chrome is repeated here
-   to sit flush with the zoom and fullscreen controls. */
-.gpxrm-download-btn {
+   to sit flush with the zoom and fullscreen controls. Scoped like the rest of
+   the chrome: a theme's `.entry-content a` (0,1,1) otherwise beats a bare
+   class and paints the icon in the site's link colour. */
+.gpxrm .gpxrm-map .gpxrm-download-btn {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -176,22 +293,27 @@
 	padding: 0;
 	border: 0;
 	border-radius: inherit;
-	background: transparent;
-	color: #333;
+	background-image: none;
 	cursor: pointer;
-	box-shadow: none;
 	text-decoration: none;
 	transition: background-color 0.15s ease;
+	background-color: transparent !important;
+	color: #333 !important;
+	box-shadow: none !important;
 
 	&:hover,
 	&:focus-visible {
-		background-color: rgba(0, 0, 0, 0.05);
-		color: var(--gpxrm-track);
+		background-color: rgba(0, 0, 0, 0.05) !important;
+		color: var(--gpxrm-track) !important;
 		text-decoration: none;
 	}
 
+	// A shadow ring like the close button's, for the same reasons: Twenty
+	// Twenty-One's link focus rule (0,4,1) makes outlines transparent and
+	// Hestia zeroes them with !important.
 	&:focus-visible {
-		outline: 2px solid var(--gpxrm-track);
+		box-shadow: inset 0 0 0 2px var(--gpxrm-track) !important;
+		outline: 2px solid transparent !important;
 		outline-offset: -2px;
 	}
 
@@ -202,7 +324,8 @@
 
 @media (prefers-reduced-motion: reduce) {
 
-	.gpxrm-download-btn {
+	// Same specificity as the rule it overrides, or the transition comes back.
+	.gpxrm .gpxrm-map .gpxrm-download-btn {
 		transition: none;
 	}
 }

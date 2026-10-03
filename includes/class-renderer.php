@@ -750,6 +750,8 @@ class Renderer {
 				'nopoints' => __( 'No track or route points found in GPX file.', 'gpx-route-map' ),
 				'download' => __( 'Download GPX file', 'gpx-route-map' ),
 				'maplibre' => __( 'Map failed to load. Click to retry.', 'gpx-route-map' ),
+				'start'    => _x( 'Start', 'popup on the pin marking where the route begins', 'gpx-route-map' ),
+				'end'      => _x( 'End', 'popup on the pin marking where the route finishes', 'gpx-route-map' ),
 			)
 		);
 	}
