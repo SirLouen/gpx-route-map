@@ -34,8 +34,9 @@ const fixture: { sent: string[]; notShown: Record< string, string > } =
 /**
  * Every string ID the installed MapLibre defines, from its own source.
  *
- * MapLibre does not export the table, but it ships the source file it is
- * built from.
+ * MapLibre does not export the table, but it publishes the source file it is
+ * built from. If a MapLibre update moves or reshapes that file, this fails
+ * with a message saying so rather than passing as "MapLibre has no strings".
  */
 function mapLibreStringIds(): string[] {
 	const require = createRequire( import.meta.url );
@@ -45,10 +46,24 @@ function mapLibreStringIds(): string[] {
 		'ui',
 		'default_locale.ts'
 	);
-	const source = fs.readFileSync( file, 'utf8' );
-	return [ ...source.matchAll( /^\s*'([\w.]+)'\s*:/gm ) ].map(
-		( m ) => m[ 1 ]
+	const fix = 'update mapLibreStringIds() in this test to read it.';
+
+	let source: string;
+	try {
+		source = fs.readFileSync( file, 'utf8' );
+	} catch {
+		throw new Error( `MapLibre no longer ships ${ file }; ${ fix }` );
+	}
+
+	const ids = [ ...source.matchAll( /^\s*(['"])([\w.]+)\1\s*:/gm ) ].map(
+		( m ) => m[ 2 ]
 	);
+	if ( ids.length < 20 ) {
+		throw new Error(
+			`Found ${ ids.length } string IDs in ${ file }, so its format has changed; ${ fix }`
+		);
+	}
+	return ids;
 }
 
 /**
@@ -67,9 +82,6 @@ function elementWith( value?: string ): HTMLElement {
 describe( 'the translated strings', () => {
 	it( 'account for every string MapLibre has', () => {
 		const ids = mapLibreStringIds();
-		// Guards the parse: a changed file format must not pass as "no strings".
-		expect( ids.length ).toBeGreaterThan( 20 );
-
 		const accounted = [
 			...fixture.sent,
 			...Object.keys( fixture.notShown ),
