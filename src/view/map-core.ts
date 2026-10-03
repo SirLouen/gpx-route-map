@@ -144,6 +144,7 @@ export interface CreateMapOptions {
 	style: StyleSpecification;
 	bounds: LngLatBoundsLike;
 	maxZoom?: number;
+	locale?: Record< string, string >;
 }
 
 /**
@@ -155,6 +156,7 @@ export interface CreateMapOptions {
  * @param options.style      Style spec.
  * @param options.bounds     Initial bounds.
  * @param options.maxZoom    Max zoom for fitBounds.
+ * @param options.locale     Translated MapLibre UI strings (see readMapUi).
  */
 export function createMap( {
 	maplibregl,
@@ -162,6 +164,7 @@ export function createMap( {
 	style,
 	bounds,
 	maxZoom,
+	locale,
 }: CreateMapOptions ): MapLibreMap {
 	const map = new maplibregl.Map( {
 		container,
@@ -173,6 +176,8 @@ export function createMap( {
 		},
 		pitch: 0,
 		attributionControl: { compact: true },
+		// Only accepted here: MapLibre has no way to change it afterwards.
+		locale,
 	} );
 
 	map.addControl( new maplibregl.NavigationControl(), 'top-right' );

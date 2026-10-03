@@ -18,7 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 if ( ! function_exists( '_x' ) ) {
 	/**
-	 * Return the text unchanged.
+	 * Return the text unchanged, unless a test stands in a translation through
+	 * the gettext_with_context filter, as WordPress's own _x() allows.
 	 *
 	 * @param string $text    Text to translate.
 	 * @param string $context Disambiguating context.
@@ -26,8 +27,7 @@ if ( ! function_exists( '_x' ) ) {
 	 * @return string
 	 */
 	function _x( string $text, string $context, string $domain = 'default' ): string {
-		unset( $context, $domain );
-		return $text;
+		return (string) apply_filters( 'gettext_with_context', $text, $text, $context, $domain );
 	}
 }
 
@@ -66,15 +66,15 @@ if ( ! function_exists( 'apply_filters' ) ) {
 
 if ( ! function_exists( '__' ) ) {
 	/**
-	 * Return the text unchanged.
+	 * Return the text unchanged, unless a test stands in a translation through
+	 * the gettext filter, as WordPress's own __() allows.
 	 *
 	 * @param string $text   Text to translate.
 	 * @param string $domain Text domain.
 	 * @return string
 	 */
 	function __( string $text, string $domain = 'default' ): string {
-		unset( $domain );
-		return $text;
+		return (string) apply_filters( 'gettext', $text, $text, $domain );
 	}
 }
 
@@ -137,11 +137,14 @@ if ( ! function_exists( 'esc_attr' ) ) {
 	/**
 	 * Minimal stand-in for WordPress's attribute escaper.
 	 *
+	 * Like the real one, it leaves entities that are already in the text
+	 * alone rather than encoding their ampersand again.
+	 *
 	 * @param string $text Text to escape.
 	 * @return string
 	 */
 	function esc_attr( string $text ): string {
-		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8', false );
 	}
 }
 
@@ -191,13 +194,14 @@ if ( ! class_exists( '\WP_Block_Type_Registry' ) ) {
 
 if ( ! function_exists( 'esc_html' ) ) {
 	/**
-	 * Escaping stand-in: these tests assert on structure, not on escaping.
+	 * Escaping stand-in. Like WordPress's, it leaves an entity that is already
+	 * in the text alone and escapes the "&" of one it does not recognise.
 	 *
-	 * @param string $text Text to pass through.
+	 * @param string $text Text to escape.
 	 * @return string
 	 */
 	function esc_html( string $text ): string {
-		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8', false );
 	}
 }
 
@@ -243,11 +247,12 @@ if ( ! function_exists( 'wp_json_encode' ) ) {
 	/**
 	 * Stand in for WordPress's JSON encoder.
 	 *
-	 * @param mixed $data Data to encode.
+	 * @param mixed $data  Data to encode.
+	 * @param int   $flags json_encode() flags.
 	 * @return string|false
 	 */
-	function wp_json_encode( $data ) {
-		return json_encode( $data ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
+	function wp_json_encode( $data, int $flags = 0 ) {
+		return json_encode( $data, $flags ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
 	}
 }
 
