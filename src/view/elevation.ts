@@ -191,7 +191,7 @@ export class ElevationProfile {
 								coords[ i - 1 ][ 0 ],
 								coords[ i ][ 1 ],
 								coords[ i ][ 0 ]
-						  ) )
+							) )
 			);
 		}
 		const totalDist = dists[ dists.length - 1 ] || 1;

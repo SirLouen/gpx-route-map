@@ -1,5 +1,5 @@
 /**
- * Minimal typings for @wordpress/block-editor.
+ * Minimal typings for `@wordpress/block-editor`.
  */
 declare module '@wordpress/block-editor' {
 	import type { ComponentType, ReactNode } from 'react';
