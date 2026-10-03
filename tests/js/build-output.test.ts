@@ -239,6 +239,64 @@ describe.skipIf( ! built )( 'map chrome under theme styles', () => {
 			.filter( Boolean );
 	}
 
+	/**
+	 * Every `@media` block whose condition matches `query`.
+	 *
+	 * Brace-matched rather than a lazy `.*?}}` regex, which ends at the first
+	 * `}}` and so would cut a block short the moment it held a nested at-rule.
+	 * Like heightRules() above, it assumes no braces inside strings, which this
+	 * stylesheet does not have.
+	 *
+	 * @param source Compiled stylesheet.
+	 * @param query  Pattern the media condition must match.
+	 */
+	function mediaBlocks( source: string, query: RegExp ) {
+		const out: Array< { start: number; end: number; body: string } > = [];
+		const head = /@media\s*([^{]*)\{/g;
+		let match: RegExpExecArray | null;
+
+		while ( ( match = head.exec( source ) ) ) {
+			let depth = 1;
+			let i = head.lastIndex;
+			for ( ; i < source.length && depth > 0; i++ ) {
+				if ( '{' === source[ i ] ) {
+					depth++;
+				} else if ( '}' === source[ i ] ) {
+					depth--;
+				}
+			}
+			if ( query.test( match[ 1 ] ) ) {
+				out.push( {
+					start: match.index,
+					end: i,
+					body: source.slice( head.lastIndex, i - 1 ),
+				} );
+			}
+			head.lastIndex = i;
+		}
+
+		return out;
+	}
+
+	/**
+	 * The stylesheet with the given blocks cut out.
+	 *
+	 * @param source Compiled stylesheet.
+	 * @param blocks Blocks from mediaBlocks().
+	 */
+	function without(
+		source: string,
+		blocks: Array< { start: number; end: number } >
+	): string {
+		return blocks
+			.slice()
+			.reverse()
+			.reduce(
+				( rest, b ) => rest.slice( 0, b.start ) + rest.slice( b.end ),
+				source
+			);
+	}
+
 	// Under Vantage, a bare `button` rule filled every gap MapLibre leaves to
 	// the browser and grew the close button to 49x38px, on top of the
 	// waypoint's name. Each property here is one a popular theme sets on bare
@@ -317,24 +375,20 @@ describe.skipIf( ! built )( 'map chrome under theme styles', () => {
 	// button does not stay tinted on a touch screen. Restating it outside
 	// that gate quietly brought the sticky tint back.
 	it( 'keeps the hover tint behind the (hover: hover) gate', () => {
-		const gated = [
-			...css.matchAll( /@media\s*\(hover:\s*hover\)\s*\{(.*?\})\s*\}/gs ),
-		]
-			.map( ( m ) => m[ 1 ] )
-			.join( '' );
+		const gated = mediaBlocks( css, /hover:\s*hover/ );
+		const tint =
+			/background-color:rgba\(0,\s*0,\s*0,\s*\.05\)\s*!important/;
 
 		expect(
-			declarations( gated, `${ CONTROL }:not(:disabled):hover` )
-		).toMatch(
-			/background-color:rgba\(0,\s*0,\s*0,\s*\.05\)\s*!important/
-		);
+			declarations(
+				gated.map( ( b ) => b.body ).join( '' ),
+				`${ CONTROL }:not(:disabled):hover`
+			)
+		).toMatch( tint );
 		// And nowhere outside it.
 		expect(
 			declarations(
-				css.replace(
-					/@media\s*\(hover:\s*hover\)\s*\{.*?\}\s*\}/gs,
-					''
-				),
+				without( css, gated ),
 				`${ CONTROL }:not(:disabled):hover`
 			)
 		).toBe( '' );
@@ -388,17 +442,14 @@ describe.skipIf( ! built )( 'map chrome under theme styles', () => {
 	// reduced-motion override written against the old, bare selector.
 	it( 'keeps the reduced-motion override as strong as its base rule', () => {
 		// Every reduced-motion block: the build emits one per source rule.
-		const media = [
-			...css.matchAll(
-				/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{(.*?\})\s*\}/gs
-			),
-		]
-			.map( ( m ) => m[ 1 ] )
-			.join( '' );
-
-		expect( declarations( media, DOWNLOAD ) ).toMatch(
-			/transition:\s*none/
+		const blocks = mediaBlocks( css, /prefers-reduced-motion:\s*reduce/ );
+		const override = blocks.find( ( b ) =>
+			/transition:\s*none/.test( declarations( b.body, DOWNLOAD ) )
 		);
+		expect(
+			override,
+			'no reduced-motion override for the download link'
+		).toBeDefined();
 
 		// Same specificity, so source order decides: the override has to
 		// come after the rule that sets the transition.
@@ -410,11 +461,8 @@ describe.skipIf( ! built )( 'map chrome under theme styles', () => {
 				) }\\{[^}]*transition:background`
 			)
 		);
-		const override = css.search(
-			/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[^@]*gpxrm-download-btn\{transition:none/
-		);
 		expect( base ).toBeGreaterThan( -1 );
-		expect( override ).toBeGreaterThan( base );
+		expect( override?.start ).toBeGreaterThan( base );
 	} );
 
 	// MapLibre pins the button at `right: 0` whatever the writing direction,
