@@ -18,21 +18,6 @@ module.exports = [
 
 	...wpPlugin.configs.recommended,
 
-	// The project has no Babel config of its own, so the parser needs the
-	// WordPress preset to read JSX and modern syntax.
-	{
-		languageOptions: {
-			parserOptions: {
-				requireConfigFile: false,
-				babelOptions: {
-					presets: [
-						require.resolve( '@wordpress/babel-preset-default' ),
-					],
-				},
-			},
-		},
-	},
-
 	// The build script is a Node ES module, not browser code.
 	{
 		files: [ 'bin/**/*.mjs' ],
@@ -45,12 +30,12 @@ module.exports = [
 		},
 	},
 
-	// No test-unit config here, deliberately. It is built on
-	// eslint-plugin-jest, which only recognises describe/it/expect as test
-	// functions when they are globals; our tests import them from vitest, so
-	// all 19 of its rules sit inert (verified: a file with it.only and two
-	// identical titles reports nothing). Its one rule worth having,
-	// no-focused-tests, is already covered - vitest's allowOnly defaults to
-	// !CI, so a stray .only fails the run in CI rather than passing green.
-	// If these ever need linting, the answer is @vitest/eslint-plugin.
+	// No test-unit config here yet. Up to @wordpress/eslint-plugin 26 it was
+	// eslint-plugin-jest, whose rules sat inert on these tests because they
+	// import describe/it/expect from vitest rather than using globals. From
+	// 27 it is @vitest/eslint-plugin, which would apply, but it has no `files`
+	// scope of its own, so adopting it means scoping it to tests/js and
+	// clearing whatever it reports. Until then, the one rule that matters
+	// most, no-focused-tests, is covered anyway: vitest's allowOnly defaults
+	// to !CI, so a stray .only fails the run in CI rather than passing green.
 ];

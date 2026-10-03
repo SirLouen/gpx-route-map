@@ -342,7 +342,7 @@ export default function Edit( {
 						'gpx-route-map'
 					),
 					fileName
-			  )
+				)
 			: '';
 
 	return (
@@ -360,11 +360,11 @@ export default function Edit( {
 										? __(
 												'Replace GPX file',
 												'gpx-route-map'
-										  )
+											)
 										: __(
 												'Select GPX file',
 												'gpx-route-map'
-										  ) }
+											) }
 								</Button>
 							) }
 						/>
@@ -413,7 +413,7 @@ export default function Edit( {
 											height: 0,
 											heightTablet: 0,
 											heightMobile: 0,
-									  }
+										}
 									: { height: siteHeight }
 							)
 						}
@@ -612,7 +612,7 @@ export default function Edit( {
 												STAT_FIELDS.map(
 													( f ) => f.key
 												)
-										  ),
+											),
 								} )
 							}
 						/>
@@ -640,12 +640,12 @@ export default function Edit( {
 														? [
 																...selected,
 																field.key,
-														  ]
+															]
 														: selected.filter(
 																( k ) =>
 																	k !==
 																	field.key
-														  )
+															)
 												),
 											} )
 										}
@@ -689,11 +689,11 @@ export default function Edit( {
 									? __(
 											'This address is not secure, so visitors\u2019 browsers will refuse to load the tiles and the map will appear blank. Use an https address, unless the tile server runs on the same machine as the browser.',
 											'gpx-route-map'
-									  )
+										)
 									: __(
 											'This address is missing http:// or https://, so it will be ignored and the map will fall back to OpenStreetMap.',
 											'gpx-route-map'
-									  ) }
+										) }
 							</Notice>
 						);
 					} )() }

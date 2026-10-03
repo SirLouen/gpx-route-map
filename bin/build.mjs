@@ -25,7 +25,7 @@ const OUT = path.join( ROOT, 'build' );
 const camel = ( s ) => s.replace( /-([a-z])/g, ( m, c ) => c.toUpperCase() );
 
 /**
- * Collect @wordpress/* imports across the editor source tree.
+ * Collect `@wordpress/*` imports across the editor source tree.
  *
  * @param {string[]} files Source files (relative to src/) to scan.
  * @return {string[]} Sorted script-handle dependencies.

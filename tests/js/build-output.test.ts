@@ -115,7 +115,7 @@ describe.skipIf( ! built )( 'compiled stylesheet', () => {
 	/**
 	 * Where a selector's height declarations sit, and whether each is inside a
 	 * media query. Walks the stylesheet rather than matching it, because a
-	 * regex cannot tell a rule inside an @media block from one beside it once
+	 * regex cannot tell a rule inside an `@media` block from one beside it once
 	 * the CSS is minified.
 	 *
 	 * @param selector Class selector, without the leading dot.
