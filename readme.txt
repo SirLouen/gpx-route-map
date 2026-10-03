@@ -178,6 +178,7 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * New: set the maximum zoom once for the whole site under Settings > GPX Route Map, instead of repeating it on every map.
 * Fixed: on themes that style buttons, such as Vantage, the waypoint popup's close button grew into a large box that covered the waypoint's name. The map's zoom, fullscreen and download buttons no longer pick up the theme's button styling either.
 * The labels on the start and end pins can now be translated. They were always shown in English.
+* Map markers now work from the keyboard: Enter or Space opens a marker's popup, Escape closes it, and focus returns to the marker afterwards. Before, the keys did nothing and Space scrolled the page away. Markers also show a focus ring on every theme and have a name screen readers announce.
 * The editor now ignores a GPX file URL that is not http or https, instead of turning it into a link.
 * The block now warns when a custom tile URL will not work: an insecure address that browsers refuse to load, or one missing http:// or https:// that the plugin ignores. Both left the map blank with nothing to explain why.
 

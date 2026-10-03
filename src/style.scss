@@ -278,6 +278,24 @@
 	}
 }
 
+// Markers. MapLibre gives them no focus style, and a theme reset such as
+// Vantage's `div { outline: 0 }` removes the browser's, so a keyboard user
+// tabbing through the markers could not see which one has focus. A white and
+// a dark ring, so one of the two stands out on any colour the map shows; the
+// transparent outline is what forced-colors mode paints instead.
+.gpxrm .gpxrm-map .maplibregl-marker:focus-visible {
+	outline: 2px solid transparent !important;
+	outline-offset: 2px;
+	box-shadow:
+		0 0 0 2px #fff,
+		0 0 0 4px var(--gpxrm-track) !important;
+}
+
+// Round, to follow the waypoint dot it wraps.
+.gpxrm .gpxrm-map .gpxrm-waypoint {
+	border-radius: 50%;
+}
+
 /* Download control.
    MapLibre styles its own controls via `.maplibregl-ctrl button`, and this one
    is an anchor so it can be a real link, so the button chrome is repeated here
