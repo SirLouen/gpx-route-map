@@ -176,6 +176,8 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 = 1.8.0 =
 * Now requires WordPress 6.8 or newer. WordPress loads plugin translations by itself from 6.8 on, so the plugin no longer does it. Sites on 6.6 or 6.7 keep the version they already have.
 * New: set the maximum zoom once for the whole site under Settings > GPX Route Map, instead of repeating it on every map.
+* Fixed: on themes that style buttons, such as Vantage, the waypoint popup's close button grew into a large box that covered the waypoint's name. The map's zoom, fullscreen and download buttons no longer pick up the theme's button styling either.
+* The labels on the start and end pins can now be translated. They were always shown in English.
 * The editor now ignores a GPX file URL that is not http or https, instead of turning it into a link.
 * The block now warns when a custom tile URL will not work: an insecure address that browsers refuse to load, or one missing http:// or https:// that the plugin ignores. Both left the map blank with nothing to explain why.
 
@@ -234,7 +236,7 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 == Upgrade Notice ==
 
 = 1.8.0 =
-Needs WordPress 6.8 or newer. Adds a site-wide maximum zoom setting, and warns in the editor about a tile URL that will not work. Sites on 6.6 or 6.7 are not offered this update and keep the version they have.
+Needs WordPress 6.8 or newer. Adds a site-wide maximum zoom setting, fixes waypoint popups that some themes made unreadable, and warns in the editor about a tile URL that will not work. Sites on 6.6 or 6.7 are not offered this update and keep the version they have.
 
 
 = 1.7.0 =

@@ -9,22 +9,33 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { viewMessages } from '../../src/view/map-instance';
 
 /** The message set the view renders, derived so it cannot drift from source. */
 type ViewMessages = ReturnType< typeof viewMessages >;
 
-// Typed as keys, so adding a message to the source without listing it here is
-// a compile error rather than a silently unverified string.
-const KEYS: ( keyof ViewMessages )[] = [
-	'load',
-	'cors',
-	'invalid',
-	'nopoints',
-	'download',
-	'maplibre',
-];
+/**
+ * The keys both sides must agree on, from the fixture tests/ViewMessagesTest.php
+ * checks the PHP payload against.
+ *
+ * Read at runtime, so the type annotation checks nothing by itself; drift is
+ * caught by the fallback test at the bottom, which compares this list with the
+ * keys the view actually defines.
+ */
+const KEYS: ( keyof ViewMessages )[] = JSON.parse(
+	fs.readFileSync(
+		path.join(
+			path.dirname( path.dirname( fileURLToPath( import.meta.url ) ) ),
+			'fixtures',
+			'view-message-keys.json'
+		),
+		'utf8'
+	)
+).keys;
 
 /**
  * Build a map element carrying an i18n payload.
@@ -82,5 +93,16 @@ describe( 'viewMessages', () => {
 
 		expect( messages.maplibre ).toBeTypeOf( 'string' );
 		expect( messages.maplibre.length ).toBeGreaterThan( 0 );
+	} );
+} );
+
+describe( 'the English fallback', () => {
+	it( 'defines exactly the keys the server sends', () => {
+		// Without the attribute, viewMessages() returns the fallback as is.
+		const fallback = Object.keys(
+			viewMessages( elementWith( undefined ) )
+		);
+
+		expect( [ ...fallback ].sort() ).toEqual( [ ...KEYS ].sort() );
 	} );
 } );
