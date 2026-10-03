@@ -795,9 +795,11 @@ class Renderer {
 	/**
 	 * Encode a value as JSON for a data attribute.
 	 *
-	 * Entities in the strings are decoded first, once, as the browser decodes
-	 * them in anything WordPress escapes: a translation with "&nbsp;" before a
-	 * colon reaches the view as the non-breaking space a visitor would see.
+	 * Each string becomes the text a visitor reads wherever WordPress prints
+	 * it: escaped by esc_html(), which decides which entities are real, then
+	 * decoded once, as the browser does. So "&nbsp;" before a colon in a French
+	 * translation arrives as a non-breaking space, while a name WordPress does
+	 * not know as an entity, such as "&apos;", stays text, as it does elsewhere.
 	 *
 	 * Each "&" left after that is written as \u0026. esc_attr() leaves an
 	 * entity that is already in the text alone, so the "&quot;" left over from
@@ -810,7 +812,7 @@ class Renderer {
 	private static function attr_json( array $value ): string {
 		foreach ( $value as $key => $item ) {
 			if ( is_string( $item ) ) {
-				$value[ $key ] = html_entity_decode( $item, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+				$value[ $key ] = html_entity_decode( esc_html( $item ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 			}
 		}
 

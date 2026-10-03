@@ -40,14 +40,15 @@ test(
 	'a translation with entities reaches the view as a visitor reads it',
 	function () {
 		// A quote and an ampersand, the non-breaking space French puts before a
-		// colon, and an escaped entity that must stay one after decoding.
-		$suffix    = ' &quot;x&quot; &amp; y&nbsp;: &amp;quot;z&amp;quot;';
+		// colon, an escaped entity that must stay one after decoding, and names
+		// WordPress does not recognise as entities, so it prints them as text.
+		$suffix    = ' &quot;x&quot; &amp; y&nbsp;: &amp;quot;z&amp;quot; &apos;&bigstar;&NewLine;';
 		$translate = fn( $translation ) => $translation . $suffix;
 		add_filter( 'gettext', $translate );
 		add_filter( 'gettext_with_context', $translate );
 
 		// What the browser shows for that translation printed through esc_html().
-		$seen = " \"x\" & y\u{00A0}: &quot;z&quot;";
+		$seen = " \"x\" & y\u{00A0}: &quot;z&quot; &apos;&bigstar;&NewLine;";
 
 		$html = Renderer::render( array( 'gpxUrl' => 'https://example.test/route.gpx' ) );
 

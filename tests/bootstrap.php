@@ -194,13 +194,14 @@ if ( ! class_exists( '\WP_Block_Type_Registry' ) ) {
 
 if ( ! function_exists( 'esc_html' ) ) {
 	/**
-	 * Escaping stand-in: these tests assert on structure, not on escaping.
+	 * Escaping stand-in. Like WordPress's, it leaves an entity that is already
+	 * in the text alone and escapes the "&" of one it does not recognise.
 	 *
-	 * @param string $text Text to pass through.
+	 * @param string $text Text to escape.
 	 * @return string
 	 */
 	function esc_html( string $text ): string {
-		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8', false );
 	}
 }
 
