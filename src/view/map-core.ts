@@ -5,6 +5,7 @@
 import type * as MapLibreNs from 'maplibre-gl';
 
 import type { Bounds, Coord, MapLibreGl, ParsedGpx, Waypoint } from './types';
+import { keyboardMarker } from './marker-keyboard';
 
 type MapLibreMap = MapLibreNs.Map;
 type StyleSpecification = MapLibreNs.StyleSpecification;
@@ -67,7 +68,9 @@ export function parseGPX( xmlText: string ): ParsedGpx {
 		waypoints.push( {
 			lon,
 			lat,
-			name: w.querySelector( 'name' )?.textContent || 'Waypoint',
+			// Trimmed: a whitespace-only name would otherwise count as one, and as
+			// the marker's accessible name it would announce as nothing at all.
+			name: w.querySelector( 'name' )?.textContent?.trim() || 'Waypoint',
 			desc: w.querySelector( 'desc' )?.textContent || '',
 			type: w.querySelector( 'type' )?.textContent || '',
 			link: w.querySelector( 'link' )?.getAttribute( 'href' ) || '',
@@ -284,6 +287,7 @@ export function addWaypointMarkers(
 		const cfg = iconFor( wpt.type );
 
 		const el = document.createElement( 'div' );
+		el.className = 'gpxrm-waypoint';
 		const dot = document.createElement( 'div' );
 		dot.className = 'gpxrm-marker';
 		dot.style.background = cfg.color;
@@ -318,10 +322,11 @@ export function addWaypointMarkers(
 			closeButton: true,
 		} ).setDOMContent( content );
 
-		new maplibregl.Marker( { element: el } )
+		const marker = new maplibregl.Marker( { element: el } )
 			.setLngLat( [ wpt.lon, wpt.lat ] )
-			.setPopup( popup )
-			.addTo( map );
+			.setPopup( popup );
+		keyboardMarker( marker, popup, wpt.name );
+		marker.addTo( map );
 	} );
 }
 

@@ -104,4 +104,26 @@ describe( 'parseGPX', () => {
 			},
 		] );
 	} );
+
+	// The name becomes the marker's accessible name, so whitespace alone must
+	// not count as one: it would announce as nothing at all.
+	it.each( [
+		[ 'missing', '', 'Waypoint' ],
+		[ 'whitespace only', '<name>  \n\t </name>', 'Waypoint' ],
+		[
+			'padded, as pretty-printed GPX has it',
+			'<name>\n  Fountain\n</name>',
+			'Fountain',
+		],
+	] )( 'names a waypoint whose name is %s', ( _label, nameXml, want ) => {
+		const { waypoints } = parseGPX(
+			PROLOG +
+				`<gpx ${ NS }>` +
+				`<wpt lat="43.3" lon="-5.8">${ nameXml }</wpt>` +
+				'<trk><trkseg>' +
+				'<trkpt lat="43.0" lon="-6.0"><ele>1</ele></trkpt>' +
+				'</trkseg></trk></gpx>'
+		);
+		expect( waypoints[ 0 ].name ).toBe( want );
+	} );
 } );

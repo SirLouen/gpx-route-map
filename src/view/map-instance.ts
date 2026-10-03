@@ -14,6 +14,7 @@ import {
 	DEFAULT_ATTRIBUTION,
 	DownloadControl,
 } from './map-core';
+import { keyboardMarker } from './marker-keyboard';
 import type { FeatureCollection } from 'geojson';
 import type { GeoJSONSource } from 'maplibre-gl';
 
@@ -330,24 +331,22 @@ export async function initInstance(
 		} );
 
 		// Built from text nodes rather than setHTML: the labels are now
-		// translations, and a translation is not markup.
-		const pinPopup = ( label: string ) => {
+		// translations, and a translation is not markup. The same label names
+		// the pin for screen readers, in place of MapLibre's English default.
+		const addPin = ( lngLat: Coord, color: string, label: string ) => {
 			const name = document.createElement( 'div' );
 			name.className = 'gpxrm-popup-name';
 			name.textContent = label;
-			return new maplibregl.Popup().setDOMContent( name );
+			const popup = new maplibregl.Popup().setDOMContent( name );
+			const marker = new maplibregl.Marker( { color } )
+				.setLngLat( [ lngLat[ 0 ], lngLat[ 1 ] ] )
+				.setPopup( popup );
+			keyboardMarker( marker, popup, label );
+			marker.addTo( map );
 		};
 
-		const start = coords[ 0 ];
-		const end = coords[ coords.length - 1 ];
-		new maplibregl.Marker( { color: '#22c55e' } )
-			.setLngLat( [ start[ 0 ], start[ 1 ] ] )
-			.setPopup( pinPopup( msg.start ) )
-			.addTo( map );
-		new maplibregl.Marker( { color: '#ef4444' } )
-			.setLngLat( [ end[ 0 ], end[ 1 ] ] )
-			.setPopup( pinPopup( msg.end ) )
-			.addTo( map );
+		addPin( coords[ 0 ], '#22c55e', msg.start );
+		addPin( coords[ coords.length - 1 ], '#ef4444', msg.end );
 
 		addWaypointMarkers( maplibregl, map, waypoints, TRACK_CASING );
 

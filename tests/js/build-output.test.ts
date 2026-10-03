@@ -419,6 +419,21 @@ describe.skipIf( ! built )( 'map chrome under theme styles', () => {
 		}
 	} );
 
+	// MapLibre gives markers no focus style and a theme reset such as
+	// Vantage's `div { outline: 0 }` removes the browser's, so a keyboard user
+	// could not see which marker had focus. Hestia also forces outline-width
+	// to 0, hence a shadow ring, with a transparent outline for forced-colors.
+	it( 'gives markers a focus ring themes cannot remove', () => {
+		const ring = declarations(
+			css,
+			'.gpxrm .gpxrm-map .maplibregl-marker:focus-visible'
+		);
+		expect( ring ).toMatch( /box-shadow:[^;]*!important/ );
+		expect( ring ).toMatch(
+			/outline:\s*2px solid (?:transparent|rgba\(0,\s*0,\s*0,\s*0\))\s*!important/
+		);
+	} );
+
 	// The reset also strips whatever border or shadow a theme draws in place
 	// of the outline it switched off, so the button brings its own ring - a
 	// shadow, since Hestia forces outline-width to 0, plus a transparent
