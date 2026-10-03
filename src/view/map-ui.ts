@@ -10,10 +10,10 @@
 /**
  * Read the translated MapLibre strings the server attached to a map element.
  *
- * Returns only non-empty strings, so a bad entry leaves that one string in
- * English rather than breaking the map: MapLibre throws, and the map never
- * builds, if a string it asks for is null, and an empty one would leave a
- * button with no name.
+ * Returns only strings with something in them, so a bad entry leaves that one
+ * string in English rather than breaking the map: MapLibre throws, and the map
+ * never builds, if a string it asks for is null, and an empty or blank one
+ * would leave a button with no name.
  *
  * @param mapEl The `.gpxrm-map` element.
  * @return The `locale` option for the MapLibre map; empty means English.
@@ -31,7 +31,7 @@ export function readMapUi( mapEl: HTMLElement ): Record< string, string > {
 
 	const strings: Record< string, string > = {};
 	for ( const [ key, value ] of Object.entries( parsed ) ) {
-		if ( 'string' === typeof value && '' !== value ) {
+		if ( 'string' === typeof value && '' !== value.trim() ) {
 			strings[ key ] = value;
 		}
 	}

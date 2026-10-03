@@ -108,15 +108,16 @@ describe( 'readMapUi', () => {
 	} );
 
 	// MapLibre throws on a null string, which stops the map from building at
-	// all; an empty one would leave the button with no name.
-	it( 'drops anything that is not a non-empty string', () => {
+	// all; an empty or blank one would leave the button with no name.
+	it( 'drops anything that is not a string with something in it', () => {
 		const strings = readMapUi(
 			elementWith(
 				JSON.stringify( {
 					'NavigationControl.ZoomIn': 'Acercar',
 					'NavigationControl.ZoomOut': null,
 					'FullscreenControl.Enter': '',
-					'FullscreenControl.Exit': 3,
+					'FullscreenControl.Exit': ' \t\n',
+					'GeolocateControl.FindMyLocation': 3,
 					'Popup.Close': { text: 'Cerrar' },
 				} )
 			)
