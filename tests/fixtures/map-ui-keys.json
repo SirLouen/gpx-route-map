@@ -1,0 +1,32 @@
+{
+	"_comment": "Every MapLibre interface string, by MapLibre's own ID. Renderer::map_ui_json() must translate exactly the 'sent' ones (tests/MapUiTest.php); 'notShown' says why each of the others never appears on these maps. tests/js/map-ui.test.ts checks that the two lists together are MapLibre's full set, so a string a MapLibre update adds fails the tests until it is sorted into one of them.",
+	"sent": [
+		"Map.Title",
+		"NavigationControl.ZoomIn",
+		"NavigationControl.ZoomOut",
+		"NavigationControl.ResetBearing",
+		"FullscreenControl.Enter",
+		"FullscreenControl.Exit",
+		"GeolocateControl.FindMyLocation",
+		"GeolocateControl.LocationNotAvailable",
+		"AttributionControl.ToggleAttribution",
+		"Popup.Close",
+		"ScaleControl.Meters",
+		"ScaleControl.Kilometers"
+	],
+	"notShown": {
+		"AttributionControl.MapFeedback": "MapLibre defines it but never uses it.",
+		"LogoControl.Title": "The MapLibre logo is off.",
+		"Marker.Title": "Only for a default pin with no name of its own, and keyboardMarker() names every pin before it is added to the map.",
+		"ScaleControl.Feet": "The scale bar is always metric.",
+		"ScaleControl.Miles": "The scale bar is always metric.",
+		"ScaleControl.NauticalMiles": "The scale bar is always metric.",
+		"GlobeControl.Enable": "No globe control.",
+		"GlobeControl.Disable": "No globe control.",
+		"TerrainControl.Enable": "No terrain control.",
+		"TerrainControl.Disable": "No terrain control.",
+		"CooperativeGesturesHandler.WindowsHelpText": "Cooperative gestures are off.",
+		"CooperativeGesturesHandler.MacHelpText": "Cooperative gestures are off.",
+		"CooperativeGesturesHandler.MobileHelpText": "Cooperative gestures are off."
+	}
+}

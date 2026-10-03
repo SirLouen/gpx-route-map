@@ -577,14 +577,15 @@ class Renderer {
 		$tile_url = '' !== $a['tile_url'] ? $a['tile_url'] : self::default_tile_url();
 
 		$map = sprintf(
-			'<div class="gpxrm-map" style="%1$s" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" data-gpxrm-units="%7$s"%8$s role="application" aria-label="%9$s">%10$s</div>',
+			'<div class="gpxrm-map" style="%1$s" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" data-gpxrm-map-ui="%7$s" data-gpxrm-units="%8$s"%9$s role="application" aria-label="%10$s">%11$s</div>',
 			esc_attr( self::height_style( $a ) ),
 			esc_url( $a['gpx_url'] ),
 			esc_attr( $tile_url ),
 			esc_attr( self::attribution_for( $tile_url ) ),
 			$a['max_zoom'],
 			esc_attr( self::view_messages_json() ),
-			esc_attr( (string) wp_json_encode( $units ) ),
+			esc_attr( self::map_ui_json() ),
+			esc_attr( self::attr_json( $units ) ),
 			$download,
 			esc_attr__( 'Interactive route map', 'gpx-route-map' ),
 			self::placeholder_html()
@@ -742,7 +743,7 @@ class Renderer {
 	 * @return string
 	 */
 	private static function view_messages_json(): string {
-		return (string) wp_json_encode(
+		return self::attr_json(
 			array(
 				'load'     => __( 'Could not load GPX file.', 'gpx-route-map' ),
 				'cors'     => __( 'Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead.', 'gpx-route-map' ),
@@ -754,6 +755,56 @@ class Renderer {
 				'end'      => _x( 'End', 'popup on the pin marking where the route finishes', 'gpx-route-map' ),
 			)
 		);
+	}
+
+	/**
+	 * JSON of MapLibre's own interface strings, localized server-side.
+	 *
+	 * MapLibre writes its button tooltips, screen reader names and scale bar
+	 * units in English, and takes replacements through its `locale` map
+	 * option, keyed by its own string IDs. Only the strings these maps can
+	 * show are here; tests/fixtures/map-ui-keys.json says why each of the
+	 * others is left out, and tests/js/map-ui.test.ts checks that list against
+	 * MapLibre's, so a string a MapLibre update adds does not go unnoticed.
+	 *
+	 * @return string
+	 */
+	private static function map_ui_json(): string {
+		return self::attr_json(
+			array(
+				'Map.Title'                             => _x( 'Map', 'screen reader name of the map area', 'gpx-route-map' ),
+				'NavigationControl.ZoomIn'              => _x( 'Zoom in', 'map button', 'gpx-route-map' ),
+				'NavigationControl.ZoomOut'             => _x( 'Zoom out', 'map button', 'gpx-route-map' ),
+				'NavigationControl.ResetBearing'        => _x( 'Drag to rotate map, click to reset north', 'map compass button', 'gpx-route-map' ),
+				'FullscreenControl.Enter'               => _x( 'Enter fullscreen', 'map button', 'gpx-route-map' ),
+				'FullscreenControl.Exit'                => _x( 'Exit fullscreen', 'map button', 'gpx-route-map' ),
+				'GeolocateControl.FindMyLocation'       => _x( 'Find my location', 'map button', 'gpx-route-map' ),
+				'GeolocateControl.LocationNotAvailable' => _x( 'Location not available', 'map button, when the browser cannot tell where the visitor is', 'gpx-route-map' ),
+				'AttributionControl.ToggleAttribution'  => _x( 'Toggle attribution', 'map button that shows or hides the map credits', 'gpx-route-map' ),
+				'Popup.Close'                           => _x( 'Close popup', 'button in a map popup', 'gpx-route-map' ),
+				// Metres get their own string: in the stats bar they are an
+				// elevation, which some languages abbreviate differently from a
+				// distance. Kilometres are a distance in both, so they share one.
+				/* translators: Abbreviation for metres, shown after a distance on the map's scale bar. */
+				'ScaleControl.Meters'                   => _x( 'm', 'unit on the map scale bar', 'gpx-route-map' ),
+				'ScaleControl.Kilometers'               => _x( 'km', 'unit', 'gpx-route-map' ),
+			)
+		);
+	}
+
+	/**
+	 * Encode a value as JSON for a data attribute.
+	 *
+	 * Escapes "&" as & because esc_attr() leaves an entity that is already
+	 * in the text alone: a translation containing "&quot;" would otherwise reach
+	 * the browser as a bare quote, break the JSON and send every string in the
+	 * payload back to English.
+	 *
+	 * @param array<string, mixed> $value Value to encode.
+	 * @return string
+	 */
+	private static function attr_json( array $value ): string {
+		return (string) wp_json_encode( $value, JSON_HEX_AMP );
 	}
 
 	/**

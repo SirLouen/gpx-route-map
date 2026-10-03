@@ -50,72 +50,72 @@ msgstr "GPX Route Map: no se ha seleccionado ningún archivo GPX."
 msgid "GPX Route Map: plugin assets are not built. Run \"pnpm install && pnpm run build\" in the plugin directory."
 msgstr "GPX Route Map: los recursos del plugin no están compilados. Ejecuta «pnpm install && pnpm run build» en el directorio del plugin."
 
-#: includes/class-renderer.php:589
+#: includes/class-renderer.php:590
 msgid "Interactive route map"
 msgstr "Mapa interactivo de la ruta"
 
-#: includes/class-renderer.php:734
+#: includes/class-renderer.php:735
 msgid "Loading map…"
 msgstr "Cargando el mapa…"
 
-#: includes/class-renderer.php:735
+#: includes/class-renderer.php:736
 msgid "Scroll or tap to load the interactive map"
 msgstr "Desplázate o toca para cargar el mapa interactivo"
 
-#: includes/class-renderer.php:747
+#: includes/class-renderer.php:748
 msgid "Could not load GPX file."
 msgstr "No se ha podido cargar el archivo GPX."
 
-#: includes/class-renderer.php:748
+#: includes/class-renderer.php:749
 msgid "Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead."
 msgstr "No se ha podido cargar el archivo GPX: su servidor no permite peticiones de origen cruzado (CORS). Sube el archivo a este sitio en su lugar."
 
-#: includes/class-renderer.php:749
+#: includes/class-renderer.php:750
 msgid "Invalid GPX file."
 msgstr "Archivo GPX no válido."
 
-#: includes/class-renderer.php:750
+#: includes/class-renderer.php:751
 msgid "No track or route points found in GPX file."
 msgstr "No se han encontrado puntos de pista ni de ruta en el archivo GPX."
 
 #: includes/class-plugin.php:430
-#: includes/class-renderer.php:790
+#: includes/class-renderer.php:841
 #: build/index.js:390
 msgid "Distance"
 msgstr "Distancia"
 
 #: includes/class-plugin.php:431
-#: includes/class-renderer.php:791
+#: includes/class-renderer.php:842
 #: build/index.js:394
 msgid "Elevation gain"
 msgstr "Desnivel positivo"
 
 #: includes/class-plugin.php:432
-#: includes/class-renderer.php:792
+#: includes/class-renderer.php:843
 #: build/index.js:398
 msgid "Elevation loss"
 msgstr "Desnivel negativo"
 
 #: includes/class-plugin.php:433
-#: includes/class-renderer.php:793
+#: includes/class-renderer.php:844
 #: build/index.js:402
 msgid "Max elevation"
 msgstr "Altitud máxima"
 
 #: includes/class-plugin.php:434
-#: includes/class-renderer.php:794
+#: includes/class-renderer.php:845
 #: build/index.js:406
 msgid "Waypoints"
 msgstr "Waypoints"
 
 #: includes/class-plugin.php:106
-#: includes/class-renderer.php:821
+#: includes/class-renderer.php:872
 #: build/index.js:654
 #: build/index.js:795
 msgid "Elevation profile"
 msgstr "Perfil de desnivel"
 
-#: includes/class-renderer.php:822
+#: includes/class-renderer.php:873
 msgid "Elevation profile along the route"
 msgstr "Perfil de desnivel a lo largo de la ruta"
 
@@ -272,6 +272,7 @@ msgstr "ft"
 
 #. translators: Abbreviation for kilometres, shown after a distance.
 #: includes/class-renderer.php:531
+#: includes/class-renderer.php:790
 msgctxt "unit"
 msgid "km"
 msgstr "km"
@@ -320,7 +321,7 @@ msgstr "Ocultar"
 msgid "Download button"
 msgstr "Botón de descarga"
 
-#: includes/class-renderer.php:751
+#: includes/class-renderer.php:752
 msgid "Download GPX file"
 msgstr "Descargar el archivo GPX"
 
@@ -403,7 +404,7 @@ msgstr "Landscape (relieve)"
 msgid "Atlas (general)"
 msgstr "Atlas (general)"
 
-#: includes/class-renderer.php:752
+#: includes/class-renderer.php:753
 msgid "Map failed to load. Click to retry."
 msgstr "No se ha podido cargar el mapa. Haz clic para reintentar."
 
@@ -497,12 +498,68 @@ msgstr "Hasta dónde pueden acercarse los visitantes, de %1$d a %2$d. Bájalo si
 msgid "Reset to follow the site setting (%d)."
 msgstr "Restáblecelo para seguir el ajuste del sitio (%d)."
 
-#: includes/class-renderer.php:753
+#: includes/class-renderer.php:754
 msgctxt "popup on the pin marking where the route begins"
 msgid "Start"
 msgstr "Inicio"
 
-#: includes/class-renderer.php:754
+#: includes/class-renderer.php:755
 msgctxt "popup on the pin marking where the route finishes"
 msgid "End"
 msgstr "Fin"
+
+#: includes/class-renderer.php:775
+msgctxt "screen reader name of the map area"
+msgid "Map"
+msgstr "Mapa"
+
+#: includes/class-renderer.php:776
+msgctxt "map button"
+msgid "Zoom in"
+msgstr "Acercar"
+
+#: includes/class-renderer.php:777
+msgctxt "map button"
+msgid "Zoom out"
+msgstr "Alejar"
+
+#: includes/class-renderer.php:778
+msgctxt "map compass button"
+msgid "Drag to rotate map, click to reset north"
+msgstr "Arrastra para girar el mapa, haz clic para orientarlo al norte"
+
+#: includes/class-renderer.php:779
+msgctxt "map button"
+msgid "Enter fullscreen"
+msgstr "Ver a pantalla completa"
+
+#: includes/class-renderer.php:780
+msgctxt "map button"
+msgid "Exit fullscreen"
+msgstr "Salir de pantalla completa"
+
+#: includes/class-renderer.php:781
+msgctxt "map button"
+msgid "Find my location"
+msgstr "Buscar mi ubicación"
+
+#: includes/class-renderer.php:782
+msgctxt "map button, when the browser cannot tell where the visitor is"
+msgid "Location not available"
+msgstr "Ubicación no disponible"
+
+#: includes/class-renderer.php:783
+msgctxt "map button that shows or hides the map credits"
+msgid "Toggle attribution"
+msgstr "Mostrar u ocultar los créditos del mapa"
+
+#: includes/class-renderer.php:784
+msgctxt "button in a map popup"
+msgid "Close popup"
+msgstr "Cerrar ventana emergente"
+
+#. translators: Abbreviation for metres, shown after a distance on the map's scale bar.
+#: includes/class-renderer.php:789
+msgctxt "unit on the map scale bar"
+msgid "m"
+msgstr "m"

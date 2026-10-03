@@ -15,6 +15,7 @@ import {
 	DownloadControl,
 } from './map-core';
 import { keyboardMarker } from './marker-keyboard';
+import { readMapUi } from './map-ui';
 import type { FeatureCollection } from 'geojson';
 import type { GeoJSONSource } from 'maplibre-gl';
 
@@ -169,6 +170,7 @@ export async function initInstance(
 		style,
 		bounds,
 		maxZoom,
+		locale: readMapUi( mapEl ),
 	} );
 
 	// The server only sets this attribute when the download button is enabled.
