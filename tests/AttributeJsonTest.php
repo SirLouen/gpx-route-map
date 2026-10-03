@@ -2,10 +2,11 @@
 /**
  * Translations travelling to the view in JSON data attributes.
  *
- * esc_attr() leaves an entity that is already in the text alone, so a
- * translation containing "&quot;" printed as plain JSON reaches the browser as
- * a bare quote. That breaks the JSON, and the view then falls back to English
- * for every string in the attribute, not just the one with the entity.
+ * Two ways for an entity in a translation to go wrong. Left as text, the view
+ * shows "&nbsp;" where a visitor reading the same translation anywhere else
+ * WordPress prints it sees a space. Left to the browser, an entity esc_attr()
+ * did not touch, such as "&quot;", decodes to a bare quote inside the JSON,
+ * which breaks it and sends every string in the attribute back to English.
  *
  * @package GpxRouteMap
  */
@@ -36,19 +37,25 @@ function gpxrm_attribute_json( string $html, string $name ) {
 }
 
 test(
-	'a translation containing an entity reaches the view intact',
+	'a translation with entities reaches the view as a visitor reads it',
 	function () {
-		$translate = fn( $translation ) => $translation . ' &quot;x&quot; &amp; y';
+		// A quote and an ampersand, the non-breaking space French puts before a
+		// colon, and an escaped entity that must stay one after decoding.
+		$suffix    = ' &quot;x&quot; &amp; y&nbsp;: &amp;quot;z&amp;quot;';
+		$translate = fn( $translation ) => $translation . $suffix;
 		add_filter( 'gettext', $translate );
 		add_filter( 'gettext_with_context', $translate );
+
+		// What the browser shows for that translation printed through esc_html().
+		$seen = " \"x\" & y\u{00A0}: &quot;z&quot;";
 
 		$html = Renderer::render( array( 'gpxUrl' => 'https://example.test/route.gpx' ) );
 
 		expect( gpxrm_attribute_json( $html, 'data-gpxrm-i18n' )['load'] ?? null )
-			->toBe( 'Could not load GPX file. &quot;x&quot; &amp; y' );
+			->toBe( 'Could not load GPX file.' . $seen );
 		expect( gpxrm_attribute_json( $html, 'data-gpxrm-map-ui' )['Popup.Close'] ?? null )
-			->toBe( 'Close popup &quot;x&quot; &amp; y' );
+			->toBe( 'Close popup' . $seen );
 		expect( gpxrm_attribute_json( $html, 'data-gpxrm-units' )['distLabel'] ?? null )
-			->toBe( 'km &quot;x&quot; &amp; y' );
+			->toBe( 'km' . $seen );
 	}
 );

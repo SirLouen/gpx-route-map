@@ -795,16 +795,25 @@ class Renderer {
 	/**
 	 * Encode a value as JSON for a data attribute.
 	 *
-	 * Because esc_attr() leaves an entity that is already in the text alone, a
-	 * translation containing "&quot;" would reach the browser in plain JSON as
-	 * a bare quote, break the JSON and send every string in the payload back to
-	 * English. JSON_HEX_AMP writes each "&" as \u0026 instead, so no entity is
-	 * left for the browser to decode and the view gets the literal text.
+	 * Entities in the strings are decoded first, once, as the browser decodes
+	 * them in anything WordPress escapes: a translation with "&nbsp;" before a
+	 * colon reaches the view as the non-breaking space a visitor would see.
+	 *
+	 * Each "&" left after that is written as \u0026. esc_attr() leaves an
+	 * entity that is already in the text alone, so the "&quot;" left over from
+	 * an escaped "&amp;quot;" would otherwise reach the browser as a bare quote,
+	 * break the JSON and send every string in the payload back to English.
 	 *
 	 * @param array<string, mixed> $value Value to encode.
 	 * @return string
 	 */
 	private static function attr_json( array $value ): string {
+		foreach ( $value as $key => $item ) {
+			if ( is_string( $item ) ) {
+				$value[ $key ] = html_entity_decode( $item, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+			}
+		}
+
 		return (string) wp_json_encode( $value, JSON_HEX_AMP );
 	}
 
