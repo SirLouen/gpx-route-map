@@ -795,10 +795,11 @@ class Renderer {
 	/**
 	 * Encode a value as JSON for a data attribute.
 	 *
-	 * Escapes "&" as & because esc_attr() leaves an entity that is already
-	 * in the text alone: a translation containing "&quot;" would otherwise reach
-	 * the browser as a bare quote, break the JSON and send every string in the
-	 * payload back to English.
+	 * Because esc_attr() leaves an entity that is already in the text alone, a
+	 * translation containing "&quot;" would reach the browser in plain JSON as
+	 * a bare quote, break the JSON and send every string in the payload back to
+	 * English. JSON_HEX_AMP writes each "&" as \u0026 instead, so no entity is
+	 * left for the browser to decode and the view gets the literal text.
 	 *
 	 * @param array<string, mixed> $value Value to encode.
 	 * @return string
