@@ -374,9 +374,12 @@ export class ElevationProfile {
 	 * Removes every listener, including the window's. A rebuild still
 	 * scheduled for the next frame or after a resize then does nothing, so it
 	 * cannot redraw a canvas the next instance on the same element may own.
+	 * A drag cursor is cleared too: the mouseup listener that would have
+	 * cleared it is gone.
 	 */
 	destroy(): void {
 		this.teardown.abort();
+		this.canvas.style.cursor = '';
 	}
 
 	/**

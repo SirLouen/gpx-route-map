@@ -170,12 +170,27 @@ describe( 'ElevationProfile', () => {
 		profile.destroy();
 		press();
 		canvas.dispatchEvent( new MouseEvent( 'mousemove', { clientX: 210 } ) );
+		// Only the window's mouseup listener would reset this; it is gone too.
+		profile.dragging = true;
 		window.dispatchEvent( new MouseEvent( 'mouseup' ) );
 
 		expect( onScrub ).toHaveBeenCalledTimes( 1 );
-		// The window's mouseup listener is gone too: the press before destroy()
-		// left the profile dragging, and only that listener would reset it.
 		expect( profile.dragging ).toBe( true );
+	} );
+
+	// Torn down while the pointer is held on it, the listener that would have
+	// reset the cursor is already gone, and the next profile on this canvas
+	// would start out showing a drag.
+	it( 'leaves no drag cursor behind when destroyed mid-drag', () => {
+		const { canvas } = makeCanvas();
+		const profile = new ElevationProfile( canvas, SEGMENTED_COORDS );
+		profile.build();
+		canvas.dispatchEvent( new MouseEvent( 'mousedown', { clientX: 200 } ) );
+		expect( canvas.style.cursor ).toBe( 'grabbing' );
+
+		profile.destroy();
+
+		expect( canvas.style.cursor ).toBe( '' );
 	} );
 
 	// The map instance draws the profile on the next animation frame, which
