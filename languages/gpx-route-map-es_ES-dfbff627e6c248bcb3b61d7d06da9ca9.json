@@ -113,7 +113,7 @@
                 "Usar el ajuste del sitio"
             ],
             "Follow the stats chosen under Settings \u2192 GPX Route Map.": [
-                "Usa las estad\u00edsticas elegidas en Ajustes \u2192 GPX Route Map."
+                "Sigue las estad\u00edsticas que hayas elegido en Ajustes \u2192 GPX Route Map."
             ],
             "Raster tile template with {z}\/{x}\/{y}, over https. Add {ratio} where the provider expects a retina suffix, for example {z}\/{x}\/{y}{ratio}.png. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited \u2014 use your own provider for busy sites.": [
                 "Plantilla de teselas r\u00e1ster con {z}\/{x}\/{y}, sobre https. A\u00f1ade {ratio} donde el proveedor espere un sufijo retina, por ejemplo {z}\/{x}\/{y}{ratio}.png. D\u00e9jalo en blanco para usar OpenStreetMap. Las teselas p\u00fablicas de OSM tienen un l\u00edmite de uso; usa tu propio proveedor en sitios con mucho tr\u00e1fico."
@@ -134,10 +134,10 @@
                 "M\u00f3vil (px)"
             ],
             "Applies at 782px and below. Reset to follow the site setting, or the height above when the site has none.": [
-                "Se aplica a 782px o menos. Rest\u00e1blecelo para seguir el ajuste del sitio, o la altura de arriba si el sitio no define ninguna."
+                "Se aplica a 782px o menos. Restabl\u00e9celo para seguir el ajuste del sitio, o la altura de arriba si el sitio no define ninguna."
             ],
             "Applies at 480px and below. Reset to follow the site setting, or the tablet height when the site has none.": [
-                "Se aplica a 480px o menos. Rest\u00e1blecelo para seguir el ajuste del sitio, o la altura de tableta si el sitio no define ninguna."
+                "Se aplica a 480px o menos. Restabl\u00e9celo para seguir el ajuste del sitio, o la altura de tableta si el sitio no define ninguna."
             ],
             "This address is not secure, so visitors\u2019 browsers will refuse to load the tiles and the map will appear blank. Use an https address, unless the tile server runs on the same machine as the browser.": [
                 "Esta direcci\u00f3n no es segura, as\u00ed que los navegadores de los visitantes se negar\u00e1n a cargar las teselas y el mapa aparecer\u00e1 en blanco. Usa una direcci\u00f3n https, salvo que el servidor de teselas est\u00e9 en la misma m\u00e1quina que el navegador."
@@ -146,7 +146,7 @@
                 "A esta direcci\u00f3n le falta http:\/\/ o https:\/\/, as\u00ed que se ignorar\u00e1 y el mapa usar\u00e1 OpenStreetMap."
             ],
             "Reset to follow the site setting (%d).": [
-                "Rest\u00e1blecelo para seguir el ajuste del sitio (%d)."
+                "Restabl\u00e9celo para seguir el ajuste del sitio (%d)."
             ]
         }
     }
