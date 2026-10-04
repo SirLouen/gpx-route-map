@@ -25,7 +25,7 @@ msgstr "GPX Route Map"
 #. Plugin URI of the plugin
 #: gpx-route-map.php
 msgid "https://github.com/SirLouen/gpx-route-map"
-msgstr ""
+msgstr "https://github.com/SirLouen/gpx-route-map"
 
 #. Description of the plugin
 #: gpx-route-map.php
@@ -35,12 +35,12 @@ msgstr "Adjunta una pista GPX a cualquier entrada o página y muéstrala como un
 #. Author of the plugin
 #: gpx-route-map.php
 msgid "SirLouen <sir.louen@gmail.com>"
-msgstr ""
+msgstr "SirLouen <sir.louen@gmail.com>"
 
 #. Author URI of the plugin
 #: gpx-route-map.php
 msgid "https://github.com/SirLouen"
-msgstr ""
+msgstr "https://github.com/SirLouen"
 
 #: includes/class-renderer.php:550
 msgid "GPX Route Map: no GPX file selected."
@@ -344,7 +344,7 @@ msgstr "Usar el ajuste del sitio"
 
 #: includes/class-plugin.php:484
 msgid "Which figures the stats bar lists. To remove the bar altogether, set Stats bar to Hidden."
-msgstr "Qué datos aparecen en la barra de estadísticas. Para quitar la barra por completo, pon «Barra de estadísticas» en Ocultar."
+msgstr "Esas son las cifras que aparecen en la barra de estadísticas. Para eliminar la barra por completo, configura la opción «Barra de estadísticas» en «Oculta»."
 
 #: includes/class-plugin.php:351
 msgid "Tile provider"
@@ -410,7 +410,7 @@ msgstr "No se ha podido cargar el mapa. Haz clic para reintentar."
 
 #: build/index.js:710
 msgid "Follow the stats chosen under Settings → GPX Route Map."
-msgstr "Usa las estadísticas elegidas en Ajustes → GPX Route Map."
+msgstr "Sigue las estadísticas que hayas elegido en Ajustes → GPX Route Map."
 
 #: build/index.js:732
 msgid "Raster tile template with {z}/{x}/{y}, over https. Add {ratio} where the provider expects a retina suffix, for example {z}/{x}/{y}{ratio}.png. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites."
@@ -443,7 +443,7 @@ msgstr "Tableta"
 
 #: includes/class-plugin.php:687
 msgid "Same as above"
-msgstr "Igual que arriba"
+msgstr "Igual que lo de arriba"
 
 #: includes/class-plugin.php:690
 msgid "Mobile"
@@ -457,7 +457,7 @@ msgstr "Igual que en tableta"
 #: includes/class-plugin.php:716
 #, php-format
 msgid "Height of every GPX map that does not set its own, from %1$d to %2$d pixels. Leave Tablet or Mobile empty to reuse the size above it. Individual maps can override all of this."
-msgstr "Altura de los mapas GPX que no definen la suya, de %1$d a %2$d píxeles. Deja Tableta o Móvil en blanco para reutilizar el tamaño de encima. Cada mapa puede anular todo esto."
+msgstr "Altura de los mapas GPX que no definen la suya, de %1$d a %2$d píxeles. Deja Tableta o Móvil en blanco para reutilizar el tamaño de arriba. Cada mapa puede anular todo esto."
 
 #: build/index.js:612
 msgid "All screens (px)"
@@ -473,11 +473,11 @@ msgstr "Móvil (px)"
 
 #: build/index.js:621
 msgid "Applies at 782px and below. Reset to follow the site setting, or the height above when the site has none."
-msgstr "Se aplica a 782px o menos. Restáblecelo para seguir el ajuste del sitio, o la altura de arriba si el sitio no define ninguna."
+msgstr "Se aplica a 782px o menos. Restablécelo para seguir el ajuste del sitio, o la altura de arriba si el sitio no define ninguna."
 
 #: build/index.js:627
 msgid "Applies at 480px and below. Reset to follow the site setting, or the tablet height when the site has none."
-msgstr "Se aplica a 480px o menos. Restáblecelo para seguir el ajuste del sitio, o la altura de tableta si el sitio no define ninguna."
+msgstr "Se aplica a 480px o menos. Restablécelo para seguir el ajuste del sitio, o la altura de tableta si el sitio no define ninguna."
 
 #: build/index.js:742
 msgid "This address is not secure, so visitors’ browsers will refuse to load the tiles and the map will appear blank. Use an https address, unless the tile server runs on the same machine as the browser."
@@ -491,12 +491,12 @@ msgstr "A esta dirección le falta http:// o https://, así que se ignorará y e
 #: includes/class-plugin.php:781
 #, php-format
 msgid "How far visitors can zoom in, from %1$d to %2$d. Lower this if your tile provider stops supplying tiles before the map stops zooming. Individual maps can override it."
-msgstr "Hasta dónde pueden acercarse los visitantes, de %1$d a %2$d. Bájalo si tu proveedor de teselas deja de servirlas antes de que el mapa deje de acercarse. Cada mapa puede anularlo."
+msgstr "Hasta dónde pueden hacer zoom los visitantes, de %1$d a %2$d. Redúcelo si tu proveedor de teselas deja de servirlas antes de que el mapa deje de acercarse. Cada mapa puede anularlo."
 
 #: build/index.js:694
 #, js-format
 msgid "Reset to follow the site setting (%d)."
-msgstr "Restáblecelo para seguir el ajuste del sitio (%d)."
+msgstr "Restablécelo para seguir el ajuste del sitio (%d)."
 
 #: includes/class-renderer.php:754
 msgctxt "popup on the pin marking where the route begins"

@@ -8,6 +8,8 @@
 	<exclude-pattern>/node_modules/</exclude-pattern>
 	<exclude-pattern>/vendor/</exclude-pattern>
 	<exclude-pattern>/tools/</exclude-pattern>
+	<!-- Translations compiled by `wp i18n make-php` (pnpm run i18n:php). -->
+	<exclude-pattern>*.l10n.php</exclude-pattern>
 
 	<arg name="extensions" value="php"/>
 	<arg name="basepath" value="."/>
