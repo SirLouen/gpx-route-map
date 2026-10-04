@@ -111,28 +111,44 @@ export function viewMessages( mapEl: HTMLElement ): ViewMessages {
 /**
  * Initialize one map instance.
  *
+ * The front end builds each map once and leaves it. Aborting `signal` tears
+ * the instance down instead, at whatever point it has reached: the GPX
+ * download is cancelled, the map is removed, which frees its WebGL context,
+ * and nothing it set up keeps listening to the page. The element can then
+ * take a fresh instance. What this one wrote into the surrounding markup -
+ * stats values, the drawn profile, the loading placeholder it removed -
+ * stays as it is; rendering fresh markup is up to the caller.
+ *
  * @param mapEl      The `.gpxrm-map` element.
  * @param maplibregl MapLibre GL module.
+ * @param signal     Aborted to tear the instance down.
  */
 export async function initInstance(
 	mapEl: HTMLElement,
-	maplibregl: MapLibreGl
+	maplibregl: MapLibreGl,
+	signal?: AbortSignal
 ): Promise< void > {
 	const root = mapEl.closest( '.gpxrm' ) || mapEl.parentElement || mapEl;
 	const gpxUrl = mapEl.dataset.gpxrmGpx;
 	if ( ! gpxUrl ) {
 		return;
 	}
-	const msg = viewMessages( mapEl );
+	// An error left on this element by an instance that failed before this
+	// one would otherwise sit under the new map and still be read out.
+	mapEl.querySelector( ':scope > .gpxrm-error' )?.remove();
 
 	let text;
 	try {
-		const res = await fetch( gpxUrl );
+		const res = await fetch( gpxUrl, { signal } );
 		if ( ! res.ok ) {
 			throw new Error( `HTTP ${ res.status }` );
 		}
 		text = await res.text();
 	} catch ( err ) {
+		// Torn down mid-download: that is not a failure to report.
+		if ( signal?.aborted ) {
+			return;
+		}
 		let crossOrigin = false;
 		try {
 			crossOrigin =
@@ -143,9 +159,16 @@ export async function initInstance(
 			// A URL we cannot even parse is not worth blaming on CORS.
 			crossOrigin = false;
 		}
+		const msg = viewMessages( mapEl );
 		showError( mapEl, crossOrigin ? msg.cors : msg.load );
 		return;
 	}
+
+	// A download that ignores the signal can still finish after the abort.
+	if ( signal?.aborted ) {
+		return;
+	}
+	const msg = viewMessages( mapEl );
 
 	const { coords, waypoints, segmentStarts, invalid } = parseGPX( text );
 	if ( invalid ) {
@@ -373,9 +396,25 @@ export async function initInstance(
 
 		window.requestAnimationFrame( () => boundProfile.build() );
 		let resizeTimer: ReturnType< typeof setTimeout >;
-		window.addEventListener( 'resize', () => {
-			clearTimeout( resizeTimer );
-			resizeTimer = setTimeout( () => boundProfile.build(), 200 );
-		} );
+		window.addEventListener(
+			'resize',
+			() => {
+				clearTimeout( resizeTimer );
+				resizeTimer = setTimeout( () => boundProfile.build(), 200 );
+			},
+			{ signal }
+		);
 	}
+
+	// Nothing above awaits once the map exists, so the signal cannot fire
+	// between its creation and here. A profile build still queued for the
+	// next frame or after a resize is a no-op once the profile is destroyed.
+	signal?.addEventListener(
+		'abort',
+		() => {
+			profile?.destroy();
+			map.remove();
+		},
+		{ once: true }
+	);
 }

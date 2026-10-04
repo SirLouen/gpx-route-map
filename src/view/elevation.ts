@@ -131,6 +131,7 @@ export class ElevationProfile {
 	state: ProfileState | null;
 	listenersBound: boolean;
 	units: UnitConfig;
+	teardown: AbortController;
 
 	/**
 	 * @param canvas        Target canvas.
@@ -156,12 +157,16 @@ export class ElevationProfile {
 		this.state = null;
 		this.listenersBound = false;
 		this.units = units;
+		this.teardown = new AbortController();
 	}
 
 	/**
 	 * Build geometry, size the canvas and attach interaction listeners.
 	 */
 	build(): void {
+		if ( this.teardown.signal.aborted ) {
+			return;
+		}
 		const { canvas, coords } = this;
 		const rect = canvas.getBoundingClientRect();
 		if ( rect.width === 0 ) {
@@ -272,37 +277,55 @@ export class ElevationProfile {
 		this.listenersBound = true;
 
 		const canvas = this.canvas;
+		// Every listener goes when destroy() aborts this signal.
+		const { signal } = this.teardown;
 
-		canvas.addEventListener( 'mousedown', ( e ) => {
-			this.dragging = true;
-			canvas.style.cursor = 'grabbing';
-			const idx = this.indexAtClientX( e.clientX );
-			if ( idx !== null ) {
+		canvas.addEventListener(
+			'mousedown',
+			( e ) => {
+				this.dragging = true;
+				canvas.style.cursor = 'grabbing';
+				const idx = this.indexAtClientX( e.clientX );
+				if ( idx !== null ) {
+					this.highlight( idx );
+					this.onScrub( idx, false );
+				}
+			},
+			{ signal }
+		);
+
+		canvas.addEventListener(
+			'mousemove',
+			( e ) => {
+				const idx = this.indexAtClientX( e.clientX );
+				if ( idx === null ) {
+					this.clear();
+					return;
+				}
 				this.highlight( idx );
-				this.onScrub( idx, false );
-			}
-		} );
+				this.onScrub( idx, this.dragging );
+			},
+			{ signal }
+		);
 
-		canvas.addEventListener( 'mousemove', ( e ) => {
-			const idx = this.indexAtClientX( e.clientX );
-			if ( idx === null ) {
+		window.addEventListener(
+			'mouseup',
+			() => {
+				this.dragging = false;
+				canvas.style.cursor = '';
+			},
+			{ signal }
+		);
+
+		canvas.addEventListener(
+			'mouseleave',
+			() => {
+				this.dragging = false;
+				canvas.style.cursor = '';
 				this.clear();
-				return;
-			}
-			this.highlight( idx );
-			this.onScrub( idx, this.dragging );
-		} );
-
-		window.addEventListener( 'mouseup', () => {
-			this.dragging = false;
-			canvas.style.cursor = '';
-		} );
-
-		canvas.addEventListener( 'mouseleave', () => {
-			this.dragging = false;
-			canvas.style.cursor = '';
-			this.clear();
-		} );
+			},
+			{ signal }
+		);
 
 		const touchIndex = ( touch: Touch ): number | null =>
 			this.indexAtClientX( touch.clientX );
@@ -318,7 +341,7 @@ export class ElevationProfile {
 					this.onScrub( idx, false );
 				}
 			},
-			{ passive: false }
+			{ passive: false, signal }
 		);
 
 		canvas.addEventListener(
@@ -332,13 +355,31 @@ export class ElevationProfile {
 				this.highlight( idx );
 				this.onScrub( idx, this.dragging );
 			},
-			{ passive: false }
+			{ passive: false, signal }
 		);
 
-		canvas.addEventListener( 'touchend', () => {
-			this.dragging = false;
-			this.clear();
-		} );
+		canvas.addEventListener(
+			'touchend',
+			() => {
+				this.dragging = false;
+				this.clear();
+			},
+			{ signal }
+		);
+	}
+
+	/**
+	 * Stop answering the pointer, for good.
+	 *
+	 * Removes every listener, including the window's. A rebuild still
+	 * scheduled for the next frame or after a resize then does nothing, so it
+	 * cannot redraw a canvas the next instance on the same element may own.
+	 * A drag cursor is cleared too: the mouseup listener that would have
+	 * cleared it is gone.
+	 */
+	destroy(): void {
+		this.teardown.abort();
+		this.canvas.style.cursor = '';
 	}
 
 	/**
