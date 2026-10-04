@@ -150,4 +150,48 @@ describe( 'ElevationProfile', () => {
 		expect( profile.state ).toBeNull();
 		expect( listenerCount() ).toBe( 0 );
 	} );
+
+	it( 'stops answering the pointer once destroyed', () => {
+		const { canvas } = makeCanvas();
+		const onScrub = vi.fn();
+		const profile = new ElevationProfile( canvas, SEGMENTED_COORDS, {
+			onScrub,
+		} );
+		profile.build();
+		const press = () =>
+			canvas.dispatchEvent(
+				new MouseEvent( 'mousedown', { clientX: 200 } )
+			);
+
+		// Live before, so the check after cannot pass for the wrong reason.
+		press();
+		expect( onScrub ).toHaveBeenCalledTimes( 1 );
+
+		profile.destroy();
+		press();
+		canvas.dispatchEvent( new MouseEvent( 'mousemove', { clientX: 210 } ) );
+		window.dispatchEvent( new MouseEvent( 'mouseup' ) );
+
+		expect( onScrub ).toHaveBeenCalledTimes( 1 );
+		// The window's mouseup listener is gone too: the press before destroy()
+		// left the profile dragging, and only that listener would reset it.
+		expect( profile.dragging ).toBe( true );
+	} );
+
+	// The map instance draws the profile on the next animation frame, which
+	// can land after the instance was torn down, on a canvas the next
+	// instance on the same element may already be drawing on.
+	it( 'leaves the canvas alone when rebuilt after being destroyed', () => {
+		const { canvas, listenerCount } = makeCanvas();
+		const unsized = canvas.width;
+		const profile = new ElevationProfile( canvas, SEGMENTED_COORDS );
+
+		profile.destroy();
+		profile.build();
+
+		// Drawing sizes the canvas to its box (400px); it never happened.
+		expect( canvas.width ).toBe( unsized );
+		expect( profile.state ).toBeNull();
+		expect( listenerCount() ).toBe( 0 );
+	} );
 } );
