@@ -30,6 +30,7 @@ const GPX =
 /** A stand-in for the MapLibre module that records what is done to it. */
 function fakeMapLibre() {
 	const maps: FakeMap[] = [];
+	const controls: string[] = [];
 	const setData = vi.fn( () => Promise.resolve() );
 
 	class FakeMap {
@@ -57,7 +58,8 @@ function fakeMapLibre() {
 			( this.handlers[ type ] ?? [] ).forEach( ( fn ) => fn() );
 		}
 
-		addControl() {
+		addControl( control: { name?: string } ) {
+			controls.push( control.name ?? 'other' );
 			return this;
 		}
 
@@ -122,19 +124,22 @@ function fakeMapLibre() {
 		}
 	}
 
-	class Control {}
+	const control = ( name: string ) =>
+		class {
+			name = name;
+		};
 
 	const lib = {
 		Map: FakeMap,
 		Popup: FakePopup,
 		Marker: FakeMarker,
-		NavigationControl: Control,
-		ScaleControl: Control,
-		FullscreenControl: Control,
-		GeolocateControl: Control,
+		NavigationControl: control( 'navigation' ),
+		ScaleControl: control( 'scale' ),
+		FullscreenControl: control( 'fullscreen' ),
+		GeolocateControl: control( 'geolocate' ),
 	} as unknown as MapLibreGl;
 
-	return { lib, maps, setData };
+	return { lib, maps, controls, setData };
 }
 
 type FakeMap = ReturnType< typeof fakeMapLibre >[ 'maps' ][ number ];
@@ -448,6 +453,98 @@ describe( 'initInstance', () => {
 
 		expect( maps ).toHaveLength( 1 );
 		expect( mapEl.querySelector( '.gpxrm-error' ) ).toBeNull();
+	} );
+
+	it.each( [
+		[
+			'leaves out fullscreen and location on a map the editor marks',
+			true,
+			[ 'navigation', 'scale' ],
+		],
+		[
+			'keeps every control on a front-end map',
+			false,
+			[ 'navigation', 'scale', 'fullscreen', 'geolocate' ],
+		],
+	] )( '%s', async ( _label, marked, expected ) => {
+		vi.stubGlobal( 'fetch', answeringFetch() );
+		const { lib, maps, controls } = fakeMapLibre();
+		const { mapEl } = mount();
+		if ( marked ) {
+			mapEl.dataset.gpxrmPreview = '';
+		}
+
+		await buildFully( mapEl, lib, maps, new AbortController().signal );
+
+		expect( controls ).toEqual( expected );
+	} );
+
+	describe( 'where the browser can watch an element’s size', () => {
+		const observers: Array< {
+			callback: () => void;
+			targets: Element[];
+			disconnected: boolean;
+		} > = [];
+
+		beforeEach( () => {
+			observers.length = 0;
+			vi.stubGlobal(
+				'ResizeObserver',
+				class {
+					entry: ( typeof observers )[ number ];
+					constructor( callback: () => void ) {
+						this.entry = {
+							callback,
+							targets: [],
+							disconnected: false,
+						};
+						observers.push( this.entry );
+					}
+					observe( target: Element ) {
+						this.entry.targets.push( target );
+					}
+					disconnect() {
+						this.entry.disconnected = true;
+					}
+				}
+			);
+		} );
+
+		// A theme, or the block editor changing the block's alignment, can
+		// resize the profile without the window changing size at all.
+		it( 'redraws the profile when its own width changes', async () => {
+			vi.stubGlobal( 'fetch', answeringFetch() );
+			const { lib, maps } = fakeMapLibre();
+			const { mapEl, canvas } = mount();
+			const build = vi.spyOn( ElevationProfile.prototype, 'build' );
+			await buildFully( mapEl, lib, maps, new AbortController().signal );
+			const profile = lastProfile( build );
+			const builds = buildsOf( build, profile );
+
+			const watcher = observers.find( ( o ) =>
+				o.targets.includes( canvas )
+			);
+			expect( watcher ).toBeDefined();
+			watcher?.callback();
+			vi.advanceTimersByTime( 300 );
+
+			expect( buildsOf( build, profile ) ).toBe( builds + 1 );
+		} );
+
+		it( 'stops watching the profile when torn down', async () => {
+			vi.stubGlobal( 'fetch', answeringFetch() );
+			const { lib, maps } = fakeMapLibre();
+			const { mapEl, canvas } = mount();
+			const controller = new AbortController();
+			await buildFully( mapEl, lib, maps, controller.signal );
+
+			controller.abort();
+
+			const watcher = observers.find( ( o ) =>
+				o.targets.includes( canvas )
+			);
+			expect( watcher?.disconnected ).toBe( true );
+		} );
 	} );
 
 	// What the editor does under React's mount, unmount, mount.

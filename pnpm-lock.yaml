@@ -24,6 +24,9 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.3.0(@types/react@19.3.0)
+      '@wordpress/api-fetch':
+        specifier: ^7.56.0
+        version: 7.56.0
       '@wordpress/block-editor':
         specifier: ^18.0.0
         version: 18.0.0(@date-fns/tz@1.5.0)(@emotion/is-prop-valid@1.4.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lightningcss@1.33.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(stylelint@17.16.0(typescript@5.3.3))(vite@8.3.1(@types/node@26.6.4)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))
@@ -2827,6 +2830,10 @@ packages:
 
   '@wordpress/a11y@4.56.0':
     resolution: {integrity: sha512-pF17LuL8yPZhTZoA2Oz1MUlacQlizM0DRg6btfhFeuB/Bmx0TnbGp578Z+QDjS/j8WNOLhrHQWwDld/NIs8X7w==}
+    engines: {node: '>=18.12.0'}
+
+  '@wordpress/api-fetch@7.56.0':
+    resolution: {integrity: sha512-O8kK7brnBGD5NFoq9LQaHE5+hO9gMYV+Edj/83U2KIbF0+q6ycS4dNj1J9bI3zTlJw12iwvuIS+s+IpGfycKkA==}
     engines: {node: '>=18.12.0'}
 
   '@wordpress/autop@4.56.0':
@@ -11787,6 +11794,12 @@ snapshots:
     dependencies:
       '@wordpress/dom-ready': 4.56.0
       '@wordpress/i18n': 6.29.0
+
+  '@wordpress/api-fetch@7.56.0':
+    dependencies:
+      '@wordpress/i18n': 6.29.0
+      '@wordpress/private-apis': 1.56.0
+      '@wordpress/url': 4.56.0
 
   '@wordpress/autop@4.56.0': {}
 

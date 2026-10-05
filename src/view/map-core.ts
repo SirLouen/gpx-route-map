@@ -145,6 +145,7 @@ export interface CreateMapOptions {
 	bounds: LngLatBoundsLike;
 	maxZoom?: number;
 	locale?: Record< string, string >;
+	preview?: boolean;
 }
 
 /**
@@ -157,6 +158,7 @@ export interface CreateMapOptions {
  * @param options.bounds     Initial bounds.
  * @param options.maxZoom    Max zoom for fitBounds.
  * @param options.locale     Translated MapLibre UI strings (see readMapUi).
+ * @param options.preview    Whether it is the block editor's preview.
  */
 export function createMap( {
 	maplibregl,
@@ -165,6 +167,7 @@ export function createMap( {
 	bounds,
 	maxZoom,
 	locale,
+	preview = false,
 }: CreateMapOptions ): MapLibreMap {
 	const map = new maplibregl.Map( {
 		container,
@@ -182,14 +185,17 @@ export function createMap( {
 
 	map.addControl( new maplibregl.NavigationControl(), 'top-right' );
 	map.addControl( new maplibregl.ScaleControl(), 'bottom-left' );
-	map.addControl( new maplibregl.FullscreenControl(), 'top-right' );
-	map.addControl(
-		new maplibregl.GeolocateControl( {
-			positionOptions: { enableHighAccuracy: true },
-			trackUserLocation: true,
-		} ),
-		'top-right'
-	);
+	// Neither means anything while laying out a post in the editor.
+	if ( ! preview ) {
+		map.addControl( new maplibregl.FullscreenControl(), 'top-right' );
+		map.addControl(
+			new maplibregl.GeolocateControl( {
+				positionOptions: { enableHighAccuracy: true },
+				trackUserLocation: true,
+			} ),
+			'top-right'
+		);
+	}
 
 	return map;
 }

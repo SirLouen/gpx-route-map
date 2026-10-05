@@ -89,7 +89,15 @@ async function buildEditor() {
 	const code = fs.readFileSync( path.join( OUT, 'index.js' ), 'utf8' );
 	fs.writeFileSync(
 		path.join( OUT, 'index.asset.php' ),
-		assetPhp( wpDependencies( [ 'index.tsx', 'edit.tsx' ] ), code )
+		assetPhp(
+			wpDependencies( [
+				'index.tsx',
+				'edit.tsx',
+				'editor/map-preview.tsx',
+				'editor/use-rendered-markup.ts',
+			] ),
+			code
+		)
 	);
 }
 

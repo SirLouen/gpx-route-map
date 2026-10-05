@@ -42,6 +42,7 @@ import { tileUrlProblem } from './tile-url';
 import { safeGpxUrl } from './gpx-url';
 import { parseGPX } from './view/map-core';
 import { routeStats } from './view/stats';
+import { MapPreview } from './editor/map-preview';
 
 /** Summary stats computed in the browser and stored on the block. */
 export type GpxStats = {
@@ -176,10 +177,12 @@ function sameStats( a: GpxStats | undefined, b: GpxStats ): boolean {
  * @param props               Block props.
  * @param props.attributes    Block attributes.
  * @param props.setAttributes Attribute setter.
+ * @param props.isSelected    Whether the block is selected.
  */
 export default function Edit( {
 	attributes,
 	setAttributes,
+	isSelected,
 }: BlockEditProps< GpxBlockAttributes > ) {
 	const {
 		gpxId,
@@ -196,7 +199,9 @@ export default function Edit( {
 		units,
 	} = attributes;
 	const blockProps = useBlockProps();
-	const hasGpx = !! gpxUrl;
+	// A media file alone is enough, as on the server: a block from a pattern
+	// or written by hand can store just its ID.
+	const hasGpx = !! ( gpxId || gpxUrl );
 
 	// The summary below only labels what this block is set to. A panel left on
 	// "Site default" is listed, since showing is the shipped default.
@@ -235,12 +240,14 @@ export default function Edit( {
 	const siteHeight = site.base;
 	const effectiveHeight = resolved.base;
 
-	const bakeUrl = gpxUrl || mediaUrl || '';
+	// The GPX file the block shows: the selected media file first, as on the
+	// server, then the pasted URL.
+	const bakeUrl = ( gpxId && mediaUrl ) || gpxUrl || '';
 
-	// Only ever an http(s) target: the attribute is free text that survives
-	// saving untouched, so an unchecked value would become an href in the
-	// session of whoever opens the post. Empty means no link is offered.
-	const linkUrl = safeGpxUrl( gpxUrl );
+	// Only ever an http(s) target: the URL attribute is free text that
+	// survives saving untouched, so an unchecked value would become an href in
+	// the session of whoever opens the post. Empty means no link is offered.
+	const linkUrl = safeGpxUrl( bakeUrl );
 
 	// The effect below writes stats, so it must not depend on them: listing
 	// them re-runs it on its own write, which fetches every GPX file twice on
@@ -263,7 +270,10 @@ export default function Edit( {
 
 	useEffect( () => {
 		if ( ! bakeUrl ) {
-			if ( statsRef.current ) {
+			// A selected media file whose URL is still loading is not "no
+			// file": clearing its stats here only to bake them again a moment
+			// later would mark the post as changed just by opening it.
+			if ( statsRef.current && ! gpxId ) {
 				setAttributesRef.current( { stats: undefined } );
 			}
 			return;
@@ -302,7 +312,7 @@ export default function Edit( {
 		return () => {
 			cancelled = true;
 		};
-	}, [ bakeUrl ] );
+	}, [ bakeUrl, gpxId ] );
 
 	const commitUrl = () => {
 		if ( null === urlDraft ) {
@@ -327,7 +337,7 @@ export default function Edit( {
 		setAttributes( { gpxId: media.id, gpxUrl: media.url } );
 	};
 
-	const fileName = gpxUrl ? gpxUrl.split( '/' ).pop() : '';
+	const fileName = bakeUrl ? bakeUrl.split( '/' ).pop() : '';
 
 	const urlHelp = __(
 		'Paste a direct link to a .gpx file. The file must be hosted on this site, or on a host that allows cross-origin (CORS) requests — most external sites do not.',
@@ -344,6 +354,36 @@ export default function Edit( {
 					fileName
 				)
 			: '';
+
+	// Shown wherever there can be no live map.
+	const card = (
+		<div
+			className="gpxrm-editor-card"
+			style={ { minHeight: Math.min( effectiveHeight, 320 ) } }
+		>
+			<span className="gpxrm-editor-icon">🗺️</span>
+			<strong className="gpxrm-editor-title">
+				{ __( 'GPX Route Map', 'gpx-route-map' ) }
+			</strong>
+			<span className="gpxrm-editor-file">{ fileName }</span>
+			<span className="gpxrm-editor-note">
+				{ __(
+					'The interactive map renders on the front end.',
+					'gpx-route-map'
+				) }
+			</span>
+			<span className="gpxrm-editor-meta">
+				{ statsShown && __( 'Stats', 'gpx-route-map' ) }
+				{ statsShown && elevationShown && ' · ' }
+				{ elevationShown && __( 'Elevation profile', 'gpx-route-map' ) }
+			</span>
+			{ !! linkUrl && (
+				<ExternalLink href={ linkUrl } className="gpxrm-editor-link">
+					{ __( 'Open GPX file', 'gpx-route-map' ) }
+				</ExternalLink>
+			) }
+		</div>
+	);
 
 	return (
 		<div { ...blockProps }>
@@ -742,36 +782,11 @@ export default function Edit( {
 					</MediaUploadCheck>
 				</Placeholder>
 			) : (
-				<div
-					className="gpxrm-editor-card"
-					style={ { minHeight: Math.min( effectiveHeight, 320 ) } }
-				>
-					<span className="gpxrm-editor-icon">🗺️</span>
-					<strong className="gpxrm-editor-title">
-						{ __( 'GPX Route Map', 'gpx-route-map' ) }
-					</strong>
-					<span className="gpxrm-editor-file">{ fileName }</span>
-					<span className="gpxrm-editor-note">
-						{ __(
-							'The interactive map renders on the front end.',
-							'gpx-route-map'
-						) }
-					</span>
-					<span className="gpxrm-editor-meta">
-						{ statsShown && __( 'Stats', 'gpx-route-map' ) }
-						{ statsShown && elevationShown && ' · ' }
-						{ elevationShown &&
-							__( 'Elevation profile', 'gpx-route-map' ) }
-					</span>
-					{ !! linkUrl && (
-						<ExternalLink
-							href={ linkUrl }
-							className="gpxrm-editor-link"
-						>
-							{ __( 'Open GPX file', 'gpx-route-map' ) }
-						</ExternalLink>
-					) }
-				</div>
+				<MapPreview
+					attributes={ attributes }
+					isSelected={ isSelected }
+					fallback={ card }
+				/>
 			) }
 		</div>
 	);

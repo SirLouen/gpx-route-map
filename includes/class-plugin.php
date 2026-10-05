@@ -883,6 +883,24 @@ class Plugin {
 	}
 
 	/**
+	 * URL of the front-end view module, versioned as WordPress loads it.
+	 *
+	 * The editor's live preview loads it into the editor canvas itself, which
+	 * WordPress gives no script modules. The version is the one bin/build.mjs
+	 * writes to view.asset.php, the first 20 characters of the file's MD5, so
+	 * the URL is the one WordPress prints and the browser runs the module once.
+	 *
+	 * @return string
+	 */
+	private static function view_module_url(): string {
+		$file = GPXRM_PLUGIN_DIR . 'build/view.js';
+		$url  = plugins_url( 'build/view.js', GPXRM_PLUGIN_DIR . 'gpx-route-map.php' );
+		$hash = is_readable( $file ) ? md5_file( $file ) : false;
+
+		return is_string( $hash ) ? add_query_arg( 'ver', substr( $hash, 0, 20 ), $url ) : $url;
+	}
+
+	/**
 	 * Register the block from its compiled metadata.
 	 *
 	 * @return void
@@ -915,7 +933,10 @@ class Plugin {
 				wp_add_inline_script(
 					$handle,
 					'window.gpxrmDefaults = ' . wp_json_encode(
-						Renderer::default_heights() + array( 'maxZoom' => Renderer::default_max_zoom() )
+						Renderer::default_heights() + array(
+							'maxZoom'    => Renderer::default_max_zoom(),
+							'viewModule' => self::view_module_url(),
+						)
 					) . ';',
 					'before'
 				);
