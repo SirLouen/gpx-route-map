@@ -399,6 +399,34 @@ describe( 'initInstance', () => {
 		);
 	} );
 
+	// MapLibre throws on such a latitude, after taking a WebGL context it
+	// then never gives back, and in the editor the preview would just fail.
+	it( 'reports a file whose points all lie past a pole, building no map', async () => {
+		const swapped = GPX.replace(
+			/lat="([^"]+)" lon="([^"]+)"/g,
+			( _all, lat, lon ) => `lat="${ 100 - lon }" lon="${ lat }"`
+		);
+		vi.stubGlobal(
+			'fetch',
+			vi.fn( () =>
+				Promise.resolve( {
+					ok: true,
+					status: 200,
+					text: () => Promise.resolve( swapped ),
+				} as Response )
+			)
+		);
+		const { lib, maps } = fakeMapLibre();
+		const { mapEl } = mount();
+
+		await initInstance( mapEl, lib );
+
+		expect( maps ).toHaveLength( 0 );
+		expect( mapEl.querySelector( '.gpxrm-error' )?.textContent ).toBe(
+			'No track or route points found in GPX file.'
+		);
+	} );
+
 	it( 'stops quietly when aborted while the file body is downloading', async () => {
 		let bodyStarted: () => void = () => {};
 		const reading = new Promise< void >( ( resolve ) => {

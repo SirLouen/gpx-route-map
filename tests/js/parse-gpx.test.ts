@@ -73,6 +73,49 @@ describe( 'parseGPX', () => {
 		expect( coords ).toHaveLength( 1 );
 	} );
 
+	// MapLibre throws on a latitude past a pole and cannot fit the map to an
+	// infinite coordinate, so one such point would stop the whole map.
+	it.each( [
+		[ 'a latitude past a pole', '139.69', '35.68' ],
+		[ 'an infinite latitude', 'Infinity', '-6.0' ],
+		[ 'an infinite longitude', '43.0', '-Infinity' ],
+		[ 'an absurd longitude', '43.0', '1e300' ],
+	] )( 'skips points and waypoints with %s', ( _label, lat, lon ) => {
+		const { coords, waypoints } = parseGPX(
+			'<gpx>' +
+				`<wpt lat="${ lat }" lon="${ lon }"><name>Bad</name></wpt>` +
+				'<wpt lat="43.3" lon="-5.8"><name>Good</name></wpt>' +
+				'<trk><trkseg>' +
+				`<trkpt lat="${ lat }" lon="${ lon }"><ele>1</ele></trkpt>` +
+				'<trkpt lat="43.0" lon="-6.0"><ele>2</ele></trkpt>' +
+				'</trkseg></trk></gpx>'
+		);
+		expect( coords ).toEqual( [ [ -6.0, 43.0, 2 ] ] );
+		expect( waypoints.map( ( w ) => w.name ) ).toEqual( [ 'Good' ] );
+	} );
+
+	// Some tools write them for a track crossing the antimeridian.
+	it( 'keeps longitudes past ±180', () => {
+		const { coords } = parseGPX(
+			'<trk><trkseg>' +
+				'<trkpt lat="-17" lon="179.9"></trkpt>' +
+				'<trkpt lat="-17" lon="181.2"></trkpt>' +
+				'<trkpt lat="-17" lon="-359.5"></trkpt>' +
+				'</trkseg></trk>'
+		);
+		expect( coords ).toHaveLength( 3 );
+	} );
+
+	it( 'keeps the poles themselves', () => {
+		const { coords } = parseGPX(
+			'<trk><trkseg>' +
+				'<trkpt lat="90" lon="0"></trkpt>' +
+				'<trkpt lat="-90" lon="0"></trkpt>' +
+				'</trkseg></trk>'
+		);
+		expect( coords ).toHaveLength( 2 );
+	} );
+
 	it( 'defaults missing elevation to 0', () => {
 		const { coords } = parseGPX(
 			'<trk><trkseg>' +

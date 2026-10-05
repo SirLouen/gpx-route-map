@@ -20,6 +20,20 @@ export const TRACK_COLOR = '#2e7d32';
 export const TRACK_CASING = '#1b3a1e';
 
 /**
+ * Whether a point can go on the map: MapLibre throws on a latitude past a
+ * pole, and fitting the view to an infinite or absurd longitude overflows.
+ * Longitudes past ±180 are kept, as some tools write them for a track that
+ * crosses the antimeridian; the bound is far beyond any such track.
+ *
+ * @param lat Latitude.
+ * @param lon Longitude.
+ */
+function onMap( lat: number, lon: number ): boolean {
+	// False for NaN as well.
+	return Math.abs( lat ) <= 90 && Math.abs( lon ) <= 1e6;
+}
+
+/**
  * Parse a GPX document string into track coordinates and waypoints.
  *
  * @param xmlText Raw GPX XML.
@@ -45,7 +59,7 @@ export function parseGPX( xmlText: string ): ParsedGpx {
 	points.forEach( ( pt ) => {
 		const lat = parseFloat( pt.getAttribute( 'lat' ) ?? '' );
 		const lon = parseFloat( pt.getAttribute( 'lon' ) ?? '' );
-		if ( Number.isNaN( lat ) || Number.isNaN( lon ) ) {
+		if ( ! onMap( lat, lon ) ) {
 			return;
 		}
 		const segment = pt.closest( 'trkseg, trk, rte' );
@@ -62,7 +76,7 @@ export function parseGPX( xmlText: string ): ParsedGpx {
 	doc.querySelectorAll( 'wpt' ).forEach( ( w ) => {
 		const lat = parseFloat( w.getAttribute( 'lat' ) ?? '' );
 		const lon = parseFloat( w.getAttribute( 'lon' ) ?? '' );
-		if ( Number.isNaN( lat ) || Number.isNaN( lon ) ) {
+		if ( ! onMap( lat, lon ) ) {
 			return;
 		}
 		waypoints.push( {
