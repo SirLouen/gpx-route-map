@@ -9,7 +9,12 @@ import { useSelect } from '@wordpress/data';
 import { PREVIEW_FAILED_EVENT, requestPreview } from '../view/preview-events';
 import { loadViewModule } from './load-view';
 import { guardPreview } from './preview-guards';
-import { needsRebuild, parseRendered, patchPreview } from './preview-markup';
+import {
+	isNotice,
+	needsRebuild,
+	parseRendered,
+	patchPreview,
+} from './preview-markup';
 import { useRenderedMarkup } from './use-rendered-markup';
 
 /**
@@ -115,11 +120,13 @@ export function MapPreview( {
 		};
 	}, [] );
 
-	// Failures that no change of settings undoes: the map could not be built,
-	// or lost its WebGL context.
+	// Failures that no change of settings undoes: the browser could not build
+	// the map - no WebGL, its scripts did not load - or took its WebGL context
+	// back. A file the map cannot draw shows its own error in the map instead.
 	const [ failed, setFailed ] = useState( false );
-	// Past the limit of live maps: the card, until another preview frees a
-	// slot. The canvas it waits on is kept, since the host is gone meanwhile.
+	// Past the limit of live maps: the card, or WordPress's notice if it
+	// rendered one, until another preview frees a slot. The canvas it waits on
+	// is kept, since the host is gone while the card shows.
 	const [ slotWait, setSlotWait ] = useState< Document | null >( null );
 	const src = viewModuleUrl();
 	const live = ! isPreviewMode && ! failed && '' !== src;
@@ -128,7 +135,12 @@ export function MapPreview( {
 	// change renders again.
 	const renderFailed =
 		!! rendered && null === rendered.html && rendered.json === json;
-	const showMap = live && ! renderFailed && ! slotWait;
+	const showMap =
+		live &&
+		! renderFailed &&
+		// A notice needs no slot, so waiting for one does not hide it.
+		( ! slotWait ||
+			( !! rendered?.html && isNotice( rendered.html, document ) ) );
 
 	const hostRef = useRef< HTMLDivElement >( null );
 	const mapRef = useRef< LiveMap | null >( null );
@@ -177,7 +189,8 @@ export function MapPreview( {
 		};
 	}, [ showMap ] );
 
-	// Wait for a slot: try again when another preview gives one back.
+	// Wait for a slot: try again when another preview gives one back, or at
+	// once if one was given back before this preview started waiting.
 	useEffect( () => {
 		if ( ! slotWait ) {
 			return;
@@ -186,6 +199,9 @@ export function MapPreview( {
 		const set = waiting.get( slotWait ) ?? new Set< () => void >();
 		waiting.set( slotWait, set );
 		set.add( retry );
+		if ( ( liveCounts.get( slotWait ) ?? 0 ) < MAX_LIVE_MAPS ) {
+			retry();
+		}
 		return () => {
 			set.delete( retry );
 		};

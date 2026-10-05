@@ -41,6 +41,17 @@ export function extractPreview(
 }
 
 /**
+ * Whether rendered block markup is a notice WordPress shows instead of a map,
+ * such as when the GPX file is missing.
+ *
+ * @param html Markup from /wp/v2/block-renderer.
+ * @param doc  A document to parse it in.
+ */
+export function isNotice( html: string, doc: Document ): boolean {
+	return ! extractPreview( html, doc )?.querySelector( '.gpxrm-map' );
+}
+
+/**
  * What the live map was built from: the map element's settings and which
  * parts surround it.
  *

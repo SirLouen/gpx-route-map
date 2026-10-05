@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
 	extractPreview,
+	isNotice,
 	needsRebuild,
 	patchPreview,
 } from '../../src/editor/preview-markup';
@@ -87,6 +88,22 @@ describe( 'extractPreview', () => {
 				document
 			)
 		).toBeNull();
+	} );
+} );
+
+describe( 'isNotice', () => {
+	it( 'is false for a map', () => {
+		expect( isNotice( rendered(), document ) ).toBe( false );
+	} );
+
+	it.each( [
+		[
+			'the notice',
+			'<div class="gpxrm-notice">No GPX file selected.</div>',
+		],
+		[ 'a preview without a map', '<div class="gpxrm"><dl></dl></div>' ],
+	] )( 'is true for %s', ( _label, html ) => {
+		expect( isNotice( html, document ) ).toBe( true );
 	} );
 } );
 

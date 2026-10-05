@@ -50,8 +50,14 @@ vi.mock( '../../src/editor/use-rendered-markup', () => ( {
 	},
 } ) );
 
+/** Whether loading the view module fails. */
+let loadFails = false;
+
 vi.mock( '../../src/editor/load-view', () => ( {
-	loadViewModule: () => Promise.resolve(),
+	loadViewModule: () =>
+		loadFails
+			? Promise.reject( new Error( 'offline' ) )
+			: Promise.resolve(),
 } ) );
 
 import { MapPreview } from '../../src/editor/map-preview';
@@ -140,6 +146,7 @@ beforeEach( () => {
 	};
 	previewMode = false;
 	postId = undefined;
+	loadFails = false;
 	answers = new Map();
 	lastRendered.clear();
 	renderedFor.length = 0;
@@ -198,6 +205,89 @@ describe( 'MapPreview', () => {
 		expect( cards() ).toBe( 0 );
 	} );
 
+	// The block finds no slot and only then starts waiting; one freed in
+	// between must still reach it.
+	it( 'gives a block a slot freed just as it found none', async () => {
+		const eight = [ 1, 2, 3, 4, 5, 6, 7, 8 ];
+		answerAll( markup(), eight );
+		// Block 0 has no render yet; the others take every slot.
+		show( blocks( 0, ...eight ) );
+		await settle();
+		expect( live() ).toHaveLength( 8 );
+
+		// In one go block 0's map arrives, finding no slot, and block 8
+		// turns into a notice, freeing one.
+		answerAll( markup(), [ 0 ] );
+		const gone = { key: 8, gone: true };
+		answers.set( JSON.stringify( gone ), NOTICE );
+		show( [
+			...blocks( 0, 1, 2, 3, 4, 5, 6, 7 ),
+			{ key: 8, attributes: gone },
+		] );
+		await settle();
+
+		expect( doc.querySelector( '.gpxrm-notice' ) ).not.toBeNull();
+		expect( cards() ).toBe( 0 );
+		expect( live() ).toHaveLength( 8 );
+	} );
+
+	// A notice needs no slot, so waiting for one does not hide it.
+	it( 'shows a notice at once while waiting for a slot', async () => {
+		const nine = [ 0, 1, 2, 3, 4, 5, 6, 7, 8 ];
+		answerAll( markup(), nine );
+		show( blocks( ...nine ) );
+		await settle();
+		expect( cards() ).toBe( 1 );
+
+		const gone = { key: 8, gone: true };
+		answers.set( JSON.stringify( gone ), NOTICE );
+		show( [
+			...blocks( 0, 1, 2, 3, 4, 5, 6, 7 ),
+			{ key: 8, attributes: gone },
+		] );
+		await settle();
+		expect( doc.querySelector( '.gpxrm-notice' ) ).not.toBeNull();
+		expect( cards() ).toBe( 0 );
+		expect( live() ).toHaveLength( 8 );
+
+		// A map again: still no slot for it, so the card, until one is freed.
+		const back = { key: 8, back: true };
+		answers.set( JSON.stringify( back ), markup() );
+		show( [
+			...blocks( 0, 1, 2, 3, 4, 5, 6, 7 ),
+			{ key: 8, attributes: back },
+		] );
+		await settle();
+		expect( doc.querySelector( '.gpxrm-notice' ) ).toBeNull();
+		expect( cards() ).toBe( 1 );
+		expect( live() ).toHaveLength( 8 );
+
+		// A failed render, then new settings not rendered yet: no notice to
+		// show, so still the card rather than an empty preview.
+		const failing = { key: 8, failing: true };
+		answers.set( JSON.stringify( failing ), null );
+		show( [
+			...blocks( 0, 1, 2, 3, 4, 5, 6, 7 ),
+			{ key: 8, attributes: failing },
+		] );
+		await settle();
+		expect( cards() ).toBe( 1 );
+		show( [
+			...blocks( 0, 1, 2, 3, 4, 5, 6, 7 ),
+			{ key: 8, attributes: { key: 8, pending: true } },
+		] );
+		await settle();
+		expect( cards() ).toBe( 1 );
+
+		show( [
+			...blocks( 1, 2, 3, 4, 5, 6, 7 ),
+			{ key: 8, attributes: back },
+		] );
+		await settle();
+		expect( cards() ).toBe( 0 );
+		expect( live() ).toHaveLength( 8 );
+	} );
+
 	it( 'gives the slot back when a block goes', async () => {
 		answerAll( markup(), TEN );
 		show( blocks( 0, 1, 2, 3, 4, 5, 6, 7 ) );
@@ -233,9 +323,40 @@ describe( 'MapPreview', () => {
 		expect( cards() ).toBe( 2 );
 		expect( live() ).toHaveLength( 6 );
 
+		// The failed ones stay cards; the others take the freed slots.
 		show( blocks( ...TEN ) );
 		await settle();
 		expect( live() ).toHaveLength( 8 );
+		expect( cards() ).toBe( 2 );
+	} );
+
+	// What fails here is the browser - WebGL, the scripts - not the
+	// settings: a file the map cannot draw shows its own error in the map.
+	it( 'keeps the card once the map failed, whatever the settings', async () => {
+		answerAll( markup(), [ 0 ] );
+		show( blocks( 0 ) );
+		await settle();
+		live()[ 0 ].target.dispatchEvent(
+			new CustomEvent( PREVIEW_FAILED_EVENT, { bubbles: true } )
+		);
+		await settle();
+		expect( cards() ).toBe( 1 );
+
+		const other = { key: 0, t: 'b' };
+		answers.set( JSON.stringify( other ), markup( 'b' ) );
+		show( [ { key: 0, attributes: other } ] );
+		await settle();
+		expect( cards() ).toBe( 1 );
+		expect( requests ).toHaveLength( 1 );
+	} );
+
+	it( 'falls back to the card when the view module cannot load', async () => {
+		loadFails = true;
+		answerAll( markup(), [ 0 ] );
+		show( blocks( 0 ) );
+		await settle();
+		expect( cards() ).toBe( 1 );
+		expect( requests ).toHaveLength( 0 );
 	} );
 
 	it( 'patches a new height and rebuilds for new tiles, keeping its slot', async () => {
