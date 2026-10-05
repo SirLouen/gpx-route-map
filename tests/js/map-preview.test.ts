@@ -183,6 +183,21 @@ describe( 'MapPreview', () => {
 		expect( live()[ 0 ].target.dataset.gpxrmPreview ).toBe( '' );
 	} );
 
+	it( 'gives a freed slot to a block that was waiting for one', async () => {
+		const nine = [ 0, 1, 2, 3, 4, 5, 6, 7, 8 ];
+		answerAll( markup(), nine );
+		show( blocks( ...nine ) );
+		await settle();
+		expect( live() ).toHaveLength( 8 );
+		expect( cards() ).toBe( 1 );
+
+		show( blocks( 1, 2, 3, 4, 5, 6, 7, 8 ) );
+		await settle();
+
+		expect( live() ).toHaveLength( 8 );
+		expect( cards() ).toBe( 0 );
+	} );
+
 	it( 'gives the slot back when a block goes', async () => {
 		answerAll( markup(), TEN );
 		show( blocks( 0, 1, 2, 3, 4, 5, 6, 7 ) );

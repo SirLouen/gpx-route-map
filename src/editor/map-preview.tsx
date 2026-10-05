@@ -21,6 +21,9 @@ const MAX_LIVE_MAPS = 8;
 
 const liveCounts = new WeakMap< Document, number >();
 
+/** Previews waiting for a free slot, by canvas; each tries again when told. */
+const waiting = new WeakMap< Document, Set< () => void > >();
+
 /**
  * Take one of a canvas's live map slots.
  *
@@ -37,12 +40,14 @@ function claimSlot( doc: Document ): boolean {
 }
 
 /**
- * Give back a live map slot.
+ * Give back a live map slot, and tell the previews waiting for one.
  *
  * @param doc The canvas document.
  */
 function releaseSlot( doc: Document ): void {
 	liveCounts.set( doc, Math.max( 0, ( liveCounts.get( doc ) ?? 1 ) - 1 ) );
+	// All of them try; the first to claim it wins, the rest wait on.
+	[ ...( waiting.get( doc ) ?? [] ) ].forEach( ( retry ) => retry() );
 }
 
 /** The view module's URL, which the server passes to the editor. */
@@ -111,8 +116,11 @@ export function MapPreview( {
 	}, [] );
 
 	// Failures that no change of settings undoes: the map could not be built,
-	// lost its WebGL context, or there was no slot for it.
+	// or lost its WebGL context.
 	const [ failed, setFailed ] = useState( false );
+	// Past the limit of live maps: the card, until another preview frees a
+	// slot. The canvas it waits on is kept, since the host is gone meanwhile.
+	const [ slotWait, setSlotWait ] = useState< Document | null >( null );
 	const src = viewModuleUrl();
 	const live = ! isPreviewMode && ! failed && '' !== src;
 	const { rendered, json } = useRenderedMarkup( attributes, live, postId );
@@ -120,7 +128,7 @@ export function MapPreview( {
 	// change renders again.
 	const renderFailed =
 		!! rendered && null === rendered.html && rendered.json === json;
-	const showMap = live && ! renderFailed;
+	const showMap = live && ! renderFailed && ! slotWait;
 
 	const hostRef = useRef< HTMLDivElement >( null );
 	const mapRef = useRef< LiveMap | null >( null );
@@ -168,6 +176,20 @@ export function MapPreview( {
 			}
 		};
 	}, [ showMap ] );
+
+	// Wait for a slot: try again when another preview gives one back.
+	useEffect( () => {
+		if ( ! slotWait ) {
+			return;
+		}
+		const retry = () => setSlotWait( null );
+		const set = waiting.get( slotWait ) ?? new Set< () => void >();
+		waiting.set( slotWait, set );
+		set.add( retry );
+		return () => {
+			set.delete( retry );
+		};
+	}, [ slotWait ] );
 
 	// Build only once the block comes near the viewport.
 	useEffect( () => {
@@ -232,7 +254,7 @@ export function MapPreview( {
 			return;
 		}
 		if ( ! current && ! claimSlot( doc ) ) {
-			setFailed( true );
+			setSlotWait( doc );
 			return;
 		}
 
