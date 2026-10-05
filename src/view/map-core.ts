@@ -34,25 +34,14 @@ function onMap( lat: number, lon: number ): boolean {
 }
 
 /**
- * Parse a GPX document string into track coordinates and waypoints.
+ * The points of a track or route that can go on the map, and where each of
+ * its segments starts.
  *
- * @param xmlText Raw GPX XML.
+ * @param points Its trkpt or rtept elements.
  */
-export function parseGPX( xmlText: string ): ParsedGpx {
-	const doc = new window.DOMParser().parseFromString(
-		xmlText,
-		'application/xml'
-	);
-
-	if ( doc.querySelector( 'parsererror' ) ) {
-		return { coords: [], waypoints: [], segmentStarts: [], invalid: true };
-	}
-
-	let points = doc.querySelectorAll( 'trkpt' );
-	if ( ! points.length ) {
-		points = doc.querySelectorAll( 'rtept' );
-	}
-
+function readPoints(
+	points: NodeListOf< Element >
+): Pick< ParsedGpx, 'coords' | 'segmentStarts' > {
 	const coords: Coord[] = [];
 	const segmentStarts: number[] = [];
 	let lastSegment: Element | null = null;
@@ -71,6 +60,29 @@ export function parseGPX( xmlText: string ): ParsedGpx {
 		const ele = eleEl ? parseFloat( eleEl.textContent ?? '' ) : 0;
 		coords.push( [ lon, lat, Number.isNaN( ele ) ? 0 : ele ] );
 	} );
+	return { coords, segmentStarts };
+}
+
+/**
+ * Parse a GPX document string into track coordinates and waypoints.
+ *
+ * @param xmlText Raw GPX XML.
+ */
+export function parseGPX( xmlText: string ): ParsedGpx {
+	const doc = new window.DOMParser().parseFromString(
+		xmlText,
+		'application/xml'
+	);
+
+	if ( doc.querySelector( 'parsererror' ) ) {
+		return { coords: [], waypoints: [], segmentStarts: [], invalid: true };
+	}
+
+	// The track's points, or the route's when no track point can be drawn.
+	const track = readPoints( doc.querySelectorAll( 'trkpt' ) );
+	const { coords, segmentStarts } = track.coords.length
+		? track
+		: readPoints( doc.querySelectorAll( 'rtept' ) );
 
 	const waypoints: Waypoint[] = [];
 	doc.querySelectorAll( 'wpt' ).forEach( ( w ) => {

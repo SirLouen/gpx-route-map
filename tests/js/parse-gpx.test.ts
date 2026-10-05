@@ -57,6 +57,38 @@ describe( 'parseGPX', () => {
 		expect( segmentStarts ).toEqual( [ 0, 2 ] );
 	} );
 
+	// A track with no point to draw is no track: the route is drawn instead.
+	it( 'falls back to rtept when no trkpt is usable', () => {
+		const { coords, segmentStarts } = parseGPX(
+			PROLOG +
+				`<gpx ${ NS }><trk><trkseg>` +
+				'<trkpt lat="139.7" lon="35.6"><ele>1</ele></trkpt>' +
+				'<trkpt lat="oops" lon="35.6"><ele>2</ele></trkpt>' +
+				'</trkseg></trk><rte>' +
+				'<rtept lat="43.0" lon="-6.0"><ele>100</ele></rtept>' +
+				'<rtept lat="43.001" lon="-6.0"><ele>101</ele></rtept>' +
+				'</rte></gpx>'
+		);
+		expect( coords ).toEqual( [
+			[ -6.0, 43.0, 100 ],
+			[ -6.0, 43.001, 101 ],
+		] );
+		expect( segmentStarts ).toEqual( [ 0 ] );
+	} );
+
+	it( 'keeps the usable trkpt over a route', () => {
+		const { coords } = parseGPX(
+			PROLOG +
+				`<gpx ${ NS }><trk><trkseg>` +
+				'<trkpt lat="139.7" lon="35.6"><ele>1</ele></trkpt>' +
+				'<trkpt lat="44.0" lon="-7.0"><ele>5</ele></trkpt>' +
+				'</trkseg></trk><rte>' +
+				'<rtept lat="43.0" lon="-6.0"><ele>100</ele></rtept>' +
+				'</rte></gpx>'
+		);
+		expect( coords ).toEqual( [ [ -7.0, 44.0, 5 ] ] );
+	} );
+
 	it( 'flags malformed XML as invalid instead of "no points"', () => {
 		const result = parseGPX( '<trk><trkseg><trkpt lat=' );
 		expect( result.invalid ).toBe( true );
