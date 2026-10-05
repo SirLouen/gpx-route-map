@@ -3,6 +3,7 @@
  */
 
 import { initInstance, viewMessages } from './view/map-instance';
+import { listenForPreviews } from './view/preview';
 import type { MapLibreGl } from './view/types';
 
 // MapLibre 6 is ESM-only and locates its worker from `import.meta.url` with a
@@ -98,6 +99,9 @@ function setup(): void {
 
 	maps.forEach( ( el ) => observer.observe( el ) );
 }
+
+// The block editor loads this module into its canvas for the live preview.
+listenForPreviews( document, loadMapLibre, initInstance );
 
 if ( document.readyState === 'loading' ) {
 	document.addEventListener( 'DOMContentLoaded', setup );

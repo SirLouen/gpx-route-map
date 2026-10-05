@@ -194,6 +194,8 @@ export async function initInstance(
 		bounds,
 		maxZoom,
 		locale: readMapUi( mapEl ),
+		// Set by the block editor on the map it previews.
+		preview: 'gpxrmPreview' in mapEl.dataset,
 	} );
 
 	// The server only sets this attribute when the download button is enabled.
@@ -396,14 +398,22 @@ export async function initInstance(
 
 		window.requestAnimationFrame( () => boundProfile.build() );
 		let resizeTimer: ReturnType< typeof setTimeout >;
-		window.addEventListener(
-			'resize',
-			() => {
-				clearTimeout( resizeTimer );
-				resizeTimer = setTimeout( () => boundProfile.build(), 200 );
-			},
-			{ signal }
-		);
+		const rebuild = () => {
+			clearTimeout( resizeTimer );
+			resizeTimer = setTimeout( () => boundProfile.build(), 200 );
+		};
+		// Redraw when the profile's own width changes: on a window resize,
+		// but also when a theme or the block editor resizes the block, which
+		// the window never hears about.
+		if ( 'function' === typeof window.ResizeObserver ) {
+			const observer = new window.ResizeObserver( rebuild );
+			observer.observe( boundProfile.canvas );
+			signal?.addEventListener( 'abort', () => observer.disconnect(), {
+				once: true,
+			} );
+		} else {
+			window.addEventListener( 'resize', rebuild, { signal } );
+		}
 	}
 
 	// Nothing above awaits once the map exists, so the signal cannot fire

@@ -58,3 +58,25 @@
 		opacity: 0.55;
 	}
 }
+
+// The live preview. Its map, stats and profile are the front end's own
+// markup and styles; this only frames them in the editor.
+// Its own stacking context: the shield sits above the map's controls, while
+// the preview as a whole stays below sticky blocks scrolled over it.
+.gpxrm-preview {
+	position: relative;
+	isolation: isolate;
+}
+
+// Holds space for the map while WordPress renders it.
+.gpxrm-preview-host:empty {
+	min-height: 200px;
+}
+
+// Until the block is selected, clicks select it and scrolling passes the map
+// by, as for core's embeds.
+.gpxrm-preview-shield {
+	position: absolute;
+	inset: 0;
+	z-index: 10;
+}

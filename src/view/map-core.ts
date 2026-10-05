@@ -20,6 +20,50 @@ export const TRACK_COLOR = '#2e7d32';
 export const TRACK_CASING = '#1b3a1e';
 
 /**
+ * Whether a point can go on the map: MapLibre throws on a latitude past a
+ * pole, and fitting the view to an infinite or absurd longitude overflows.
+ * Longitudes past ±180 are kept, as some tools write them for a track that
+ * crosses the antimeridian; the bound is far beyond any such track.
+ *
+ * @param lat Latitude.
+ * @param lon Longitude.
+ */
+function onMap( lat: number, lon: number ): boolean {
+	// False for NaN as well.
+	return Math.abs( lat ) <= 90 && Math.abs( lon ) <= 1e6;
+}
+
+/**
+ * The points of a track or route that can go on the map, and where each of
+ * its segments starts.
+ *
+ * @param points Its trkpt or rtept elements.
+ */
+function readPoints(
+	points: NodeListOf< Element >
+): Pick< ParsedGpx, 'coords' | 'segmentStarts' > {
+	const coords: Coord[] = [];
+	const segmentStarts: number[] = [];
+	let lastSegment: Element | null = null;
+	points.forEach( ( pt ) => {
+		const lat = parseFloat( pt.getAttribute( 'lat' ) ?? '' );
+		const lon = parseFloat( pt.getAttribute( 'lon' ) ?? '' );
+		if ( ! onMap( lat, lon ) ) {
+			return;
+		}
+		const segment = pt.closest( 'trkseg, trk, rte' );
+		if ( ! coords.length || segment !== lastSegment ) {
+			segmentStarts.push( coords.length );
+		}
+		lastSegment = segment;
+		const eleEl = pt.querySelector( 'ele' );
+		const ele = eleEl ? parseFloat( eleEl.textContent ?? '' ) : 0;
+		coords.push( [ lon, lat, Number.isNaN( ele ) ? 0 : ele ] );
+	} );
+	return { coords, segmentStarts };
+}
+
+/**
  * Parse a GPX document string into track coordinates and waypoints.
  *
  * @param xmlText Raw GPX XML.
@@ -34,35 +78,17 @@ export function parseGPX( xmlText: string ): ParsedGpx {
 		return { coords: [], waypoints: [], segmentStarts: [], invalid: true };
 	}
 
-	let points = doc.querySelectorAll( 'trkpt' );
-	if ( ! points.length ) {
-		points = doc.querySelectorAll( 'rtept' );
-	}
-
-	const coords: Coord[] = [];
-	const segmentStarts: number[] = [];
-	let lastSegment: Element | null = null;
-	points.forEach( ( pt ) => {
-		const lat = parseFloat( pt.getAttribute( 'lat' ) ?? '' );
-		const lon = parseFloat( pt.getAttribute( 'lon' ) ?? '' );
-		if ( Number.isNaN( lat ) || Number.isNaN( lon ) ) {
-			return;
-		}
-		const segment = pt.closest( 'trkseg, trk, rte' );
-		if ( ! coords.length || segment !== lastSegment ) {
-			segmentStarts.push( coords.length );
-		}
-		lastSegment = segment;
-		const eleEl = pt.querySelector( 'ele' );
-		const ele = eleEl ? parseFloat( eleEl.textContent ?? '' ) : 0;
-		coords.push( [ lon, lat, Number.isNaN( ele ) ? 0 : ele ] );
-	} );
+	// The track's points, or the route's when no track point can be drawn.
+	const track = readPoints( doc.querySelectorAll( 'trkpt' ) );
+	const { coords, segmentStarts } = track.coords.length
+		? track
+		: readPoints( doc.querySelectorAll( 'rtept' ) );
 
 	const waypoints: Waypoint[] = [];
 	doc.querySelectorAll( 'wpt' ).forEach( ( w ) => {
 		const lat = parseFloat( w.getAttribute( 'lat' ) ?? '' );
 		const lon = parseFloat( w.getAttribute( 'lon' ) ?? '' );
-		if ( Number.isNaN( lat ) || Number.isNaN( lon ) ) {
+		if ( ! onMap( lat, lon ) ) {
 			return;
 		}
 		waypoints.push( {
@@ -145,6 +171,7 @@ export interface CreateMapOptions {
 	bounds: LngLatBoundsLike;
 	maxZoom?: number;
 	locale?: Record< string, string >;
+	preview?: boolean;
 }
 
 /**
@@ -157,6 +184,7 @@ export interface CreateMapOptions {
  * @param options.bounds     Initial bounds.
  * @param options.maxZoom    Max zoom for fitBounds.
  * @param options.locale     Translated MapLibre UI strings (see readMapUi).
+ * @param options.preview    Whether it is the block editor's preview.
  */
 export function createMap( {
 	maplibregl,
@@ -165,6 +193,7 @@ export function createMap( {
 	bounds,
 	maxZoom,
 	locale,
+	preview = false,
 }: CreateMapOptions ): MapLibreMap {
 	const map = new maplibregl.Map( {
 		container,
@@ -182,14 +211,17 @@ export function createMap( {
 
 	map.addControl( new maplibregl.NavigationControl(), 'top-right' );
 	map.addControl( new maplibregl.ScaleControl(), 'bottom-left' );
-	map.addControl( new maplibregl.FullscreenControl(), 'top-right' );
-	map.addControl(
-		new maplibregl.GeolocateControl( {
-			positionOptions: { enableHighAccuracy: true },
-			trackUserLocation: true,
-		} ),
-		'top-right'
-	);
+	// Neither means anything while laying out a post in the editor.
+	if ( ! preview ) {
+		map.addControl( new maplibregl.FullscreenControl(), 'top-right' );
+		map.addControl(
+			new maplibregl.GeolocateControl( {
+				positionOptions: { enableHighAccuracy: true },
+				trackUserLocation: true,
+			} ),
+			'top-right'
+		);
+	}
 
 	return map;
 }
