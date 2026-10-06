@@ -429,17 +429,17 @@ export async function initInstance(
 			clearTimeout( resizeTimer );
 			resizeTimer = setTimeout( () => boundProfile.build(), 200 );
 		};
-		// Redraw when the profile's own width changes: on a window resize,
-		// but also when a theme or the block editor resizes the block, which
-		// the window never hears about.
+		// Redraw on a window resize, which a browser zoom also fires and
+		// which changes the pixel ratio even where the block keeps its
+		// width, and when a theme or the block editor resizes the block,
+		// which the window never hears about.
+		window.addEventListener( 'resize', rebuild, { signal } );
 		if ( 'function' === typeof window.ResizeObserver ) {
 			const observer = new window.ResizeObserver( rebuild );
 			observer.observe( boundProfile.canvas );
 			signal?.addEventListener( 'abort', () => observer.disconnect(), {
 				once: true,
 			} );
-		} else {
-			window.addEventListener( 'resize', rebuild, { signal } );
 		}
 	}
 
