@@ -44,6 +44,43 @@ jobs:
             - name: Unit tests (Pest)
               run: composer test
 
+    php-74:
+        name: PHP 7.4 (syntax)
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        steps:
+            - uses: actions/checkout@v7
+
+            - name: Set up PHP 7.4 (the plugin's minimum)
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '7.4'
+                  coverage: none
+                  tools: none
+
+            - name: Lint every shipped PHP file (php -l)
+              shell: bash
+              run: |
+                  # The files the WordPress.org deploy ships: the tree minus .distignore,
+                  # listed the way 10up/action-wordpress-plugin-deploy copies it (rsync).
+                  mapfile -t files < <(rsync -an --out-format='%n' --exclude-from=.distignore ./ "$RUNNER_TEMP/distignore-probe/" | grep '\.php$')
+                  if [[ " ${files[*]} " != *" gpx-route-map.php "* ]]; then
+                      echo "::error::Could not list the shipped PHP files from .distignore"
+                      exit 1
+                  fi
+                  failed=0
+                  for f in "${files[@]}"; do
+                      if ! out=$(php -d display_errors=1 -d log_errors=0 -d error_reporting=-1 -l "$f" 2>&1); then
+                          failed=$((failed + 1))
+                          echo "$out"
+                          line=$(sed -nE 's/.* on line ([0-9]+)$/\1/p' <<< "$out" | head -n1)
+                          msg=$(grep -m1 'error:' <<< "$out" | sed -E 's/ in [^ ]+ on line [0-9]+$//')
+                          echo "::error file=$f,line=${line:-1}::PHP 7.4: $msg"
+                      fi
+                  done
+                  echo "php -l on PHP $(php -r 'echo PHP_VERSION;'): ${#files[@]} shipped PHP files, $failed with errors."
+                  [ "$failed" -eq 0 ]
+
     js:
         name: JS (typecheck · lint · build · vitest)
         runs-on: ubuntu-latest
