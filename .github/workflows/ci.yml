@@ -66,7 +66,10 @@ jobs:
                   # Only build/ is left out, as the deploy creates it: its render.php
                   # is a copy of src/render.php, linted here, and its *.asset.php a
                   # fixed `return array(...)` template from bin/build.mjs.
-                  mapfile -t files < <(rsync -an --out-format='%n' --exclude-from=.distignore ./ "$RUNNER_TEMP/distignore-probe/" | grep '\.php$')
+                  # To a file first: a failing rsync then fails the step, where a
+                  # process substitution would hide it behind a partial list.
+                  rsync -an --out-format='%n' --exclude-from=.distignore ./ "$RUNNER_TEMP/distignore-probe/" > "$RUNNER_TEMP/shipped.txt"
+                  mapfile -t files < <(grep '\.php$' "$RUNNER_TEMP/shipped.txt")
                   if [[ " ${files[*]} " != *" gpx-route-map.php "* ]]; then
                       echo "::error::Could not list the shipped PHP files from .distignore"
                       exit 1
@@ -78,7 +81,7 @@ jobs:
                           echo "$out"
                           line=$(sed -nE 's/.* on line ([0-9]+)$/\1/p' <<< "$out" | head -n1)
                           msg=$(grep -m1 'error:' <<< "$out" | sed -E 's/ in [^ ]+ on line [0-9]+$//')
-                          echo "::error file=$f,line=${line:-1}::PHP 7.4: $msg"
+                          echo "::error file=$f,line=${line:-1}::PHP 7.4: ${msg:-$(head -n1 <<< "$out")}"
                       fi
                   done
                   echo "php -l on PHP $(php -r 'echo PHP_VERSION;'): ${#files[@]} shipped PHP files, $failed with errors."
