@@ -39,8 +39,11 @@ function fakeMapLibre() {
 		eased = 0;
 		handlers: Record< string, Array< () => void > > = {};
 
+		options: Record< string, unknown >;
+
 		constructor( options: { container: HTMLElement } ) {
 			this.container = options.container;
+			this.options = options;
 			maps.push( this );
 		}
 
@@ -339,6 +342,38 @@ describe( 'initInstance', () => {
 				?.hasAttribute( 'data-gpxrm-from-file' )
 		).toBe( true );
 	} );
+
+	// The server says where the provider's tiles stop; pages cached before it
+	// did, or anything unusable, leave the zoom as it always was.
+	it.each( [
+		[ '17', 16, 17 ],
+		[ '22', 21, 22 ],
+		[ '1', 0, 1 ],
+		[ undefined, undefined, undefined ],
+		[ 'deep', undefined, undefined ],
+		[ '0', undefined, undefined ],
+		[ '23', undefined, undefined ],
+		[ '17.5', undefined, undefined ],
+	] )(
+		'zooms as far as tiles exist, given %s',
+		async ( attribute, mapMax, sourceMax ) => {
+			vi.stubGlobal( 'fetch', answeringFetch() );
+			const { lib, maps } = fakeMapLibre();
+			const { mapEl } = mount();
+			if ( undefined !== attribute ) {
+				mapEl.dataset.gpxrmTileMaxZoom = attribute;
+			}
+
+			await initInstance( mapEl, lib );
+
+			const options = maps[ 0 ].options as {
+				maxZoom?: number;
+				style: { sources: { osm: { maxzoom?: number } } };
+			};
+			expect( options.maxZoom ).toBe( mapMax );
+			expect( options.style.sources.osm.maxzoom ).toBe( sourceMax );
+		}
+	);
 
 	// Without WebGL MapLibre throws, but the figures only need the file.
 	it( 'fills in the stats even when the map cannot be built', async () => {

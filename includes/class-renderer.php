@@ -41,8 +41,9 @@ class Renderer {
 	const DEFAULT_HEIGHT = 480;
 
 	/**
-	 * Zoom bounds. 22 is as far as MapLibre will go; most raster providers
-	 * stop supplying tiles well before that, which is why the default is 17.
+	 * Zoom bounds. 22 is as far as MapLibre will go. The default is how close a
+	 * map opens for a short route; visitors can zoom on to the last level its
+	 * tile provider has tiles for.
 	 */
 	const MIN_ZOOM     = 1;
 	const MAX_ZOOM     = 22;
@@ -57,6 +58,37 @@ class Renderer {
 	 * Attribution for OpenStreetMap's own tiles.
 	 */
 	const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+	/**
+	 * OpenTopoMap's tiles. One host: MapLibre does not expand {s} or {a|b|c},
+	 * and its a/b/c hosts all point at the same server anyway.
+	 */
+	const OPENTOPOMAP_TILE_URL = 'https://tile.opentopomap.org/{z}/{x}/{y}.png';
+
+	/**
+	 * Attribution OpenTopoMap asks for: the OpenStreetMap data, the SRTM
+	 * elevation data and its own CC-BY-SA map style.
+	 */
+	const OPENTOPOMAP_ATTRIBUTION = 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)';
+
+	/**
+	 * Thunderforest's tiles: 1 is the style, 2 the API key. {ratio} is
+	 * MapLibre's retina placeholder and expands to "@2x"; Leaflet's {r} would
+	 * be sent through literally.
+	 */
+	const THUNDERFOREST_TILE_URL = 'https://api.thunderforest.com/%1$s/{z}/{x}/{y}{ratio}.png?apikey=%2$s';
+
+	/**
+	 * The last zoom level each provider has tiles for, by the domain they come
+	 * from. Beyond it OpenStreetMap answers with errors and OpenTopoMap with
+	 * placeholder images.
+	 */
+	const TILE_MAX_ZOOMS = array(
+		'openstreetmap.org' => 19,
+		'osm.org'           => 19,
+		'opentopomap.org'   => 17,
+		'thunderforest.com' => 22,
+	);
 
 	/**
 	 * Attribution Thunderforest requires. Their terms ask for credit to both
@@ -83,13 +115,74 @@ class Renderer {
 	}
 
 	/**
-	 * The configured tile provider.
+	 * The tile providers on offer, keyed by the id the settings store.
 	 *
-	 * @return string 'osm' or 'thunderforest'.
+	 * Thunderforest appears once per style. Which of them a site can use
+	 * depends on its key: see provider_usable().
+	 *
+	 * @return array<string, array{label: string, key_required: bool}>
+	 */
+	public static function tile_providers(): array {
+		$providers = array(
+			'osm'         => array(
+				'label'        => 'OpenStreetMap',
+				'key_required' => false,
+			),
+			'opentopomap' => array(
+				'label'        => 'OpenTopoMap',
+				'key_required' => false,
+			),
+		);
+
+		foreach ( self::thunderforest_styles() as $style => $name ) {
+			$providers[ 'thunderforest-' . $style ] = array(
+				/* translators: %s: Thunderforest map style, e.g. "Outdoors (hiking)". */
+				'label'        => sprintf( __( 'Thunderforest: %s', 'gpx-route-map' ), $name ),
+				'key_required' => true,
+			);
+		}
+
+		return $providers;
+	}
+
+	/**
+	 * A provider id from a stored or submitted value.
+	 *
+	 * Before 2.0 the setting held "thunderforest" and the style was a setting
+	 * of its own; that reads as the provider for that style. Anything unknown
+	 * is OpenStreetMap.
+	 *
+	 * @param mixed $value Stored or submitted value.
+	 * @return string A key of tile_providers().
+	 */
+	public static function resolve_provider( $value ): string {
+		if ( 'thunderforest' === $value ) {
+			return 'thunderforest-' . self::thunderforest_style();
+		}
+
+		return is_string( $value ) && isset( self::tile_providers()[ $value ] ) ? $value : 'osm';
+	}
+
+	/**
+	 * The site's tile provider, as chosen in the settings.
+	 *
+	 * @return string A key of tile_providers().
 	 */
 	public static function tile_provider(): string {
-		$stored = get_option( 'gpxrm_tile_provider', 'osm' );
-		return ( is_string( $stored ) && 'thunderforest' === $stored ) ? 'thunderforest' : 'osm';
+		return self::resolve_provider( get_option( 'gpxrm_tile_provider', 'osm' ) );
+	}
+
+	/**
+	 * Whether a provider can be used: one the plugin offers, whose key, if it
+	 * needs one, is saved.
+	 *
+	 * @param string $id Provider id.
+	 * @return bool
+	 */
+	public static function provider_usable( string $id ): bool {
+		$providers = self::tile_providers();
+
+		return isset( $providers[ $id ] ) && ( ! $providers[ $id ]['key_required'] || '' !== self::thunderforest_key() );
 	}
 
 	/**
@@ -103,7 +196,8 @@ class Renderer {
 	}
 
 	/**
-	 * The stored Thunderforest style slug.
+	 * The Thunderforest style a site chose before 2.0, when it was a setting of
+	 * its own.
 	 *
 	 * @return string
 	 */
@@ -115,43 +209,66 @@ class Renderer {
 	}
 
 	/**
-	 * Default raster tile template. Filterable so site owners can point the
-	 * plugin at their own tile server (see the OpenStreetMap tile usage policy).
+	 * The tile template of a provider.
+	 *
+	 * One that cannot be used - a Thunderforest style without a key would only
+	 * get "API Key Required" tiles - gives OpenStreetMap's, so the map still
+	 * works. Filterable so site owners can point the plugin at their own tile
+	 * server (see the OpenStreetMap tile usage policy).
+	 *
+	 * @param string $id Provider id.
+	 * @return string
+	 */
+	public static function tile_url_for( string $id ): string {
+		if ( ! self::provider_usable( $id ) ) {
+			$id = 'osm';
+		}
+
+		if ( str_starts_with( $id, 'thunderforest-' ) ) {
+			$default = sprintf( self::THUNDERFOREST_TILE_URL, substr( $id, strlen( 'thunderforest-' ) ), rawurlencode( self::thunderforest_key() ) );
+		} elseif ( 'opentopomap' === $id ) {
+			$default = self::OPENTOPOMAP_TILE_URL;
+		} else {
+			$default = self::OSM_TILE_URL;
+		}
+
+		/**
+		 * Filters the tile template a map loads its images from.
+		 *
+		 * @param string $default     Tile URL template.
+		 * @param string $provider_id The provider whose tiles these are, e.g. "osm".
+		 */
+		return self::string_or( apply_filters( 'gpxrm_tile_url', $default, $id ), $default );
+	}
+
+	/**
+	 * The site's tile template.
 	 *
 	 * @return string
 	 */
 	public static function default_tile_url(): string {
-		$default = self::OSM_TILE_URL;
-
-		if ( 'thunderforest' === self::tile_provider() ) {
-			$key = self::thunderforest_key();
-			// Without a key the request would just 401, so fall back to OSM and
-			// leave the site with a working map.
-			if ( '' !== $key ) {
-				$default = sprintf(
-					// {ratio} is MapLibre's retina placeholder and expands to
-					// "@2x"; Leaflet's {r} would be sent through literally.
-					'https://api.thunderforest.com/%1$s/{z}/{x}/{y}{ratio}.png?apikey=%2$s',
-					self::thunderforest_style(),
-					rawurlencode( $key )
-				);
-			}
-		}
-
-		$url = apply_filters( 'gpxrm_tile_url', $default );
-		return is_string( $url ) ? $url : $default;
+		return self::tile_url_for( self::tile_provider() );
 	}
 
 	/**
-	 * Whether a tile template points at Thunderforest.
+	 * The domain of a tile template that the plugin knows, as listed in
+	 * TILE_MAX_ZOOMS, or '' for any other.
+	 *
+	 * Hosts compare as browsers do: in any case, with or without a trailing dot.
 	 *
 	 * @param string $tile_url Tile URL template.
-	 * @return bool
+	 * @return string
 	 */
-	private static function is_thunderforest_url( string $tile_url ): bool {
-		$host = (string) wp_parse_url( $tile_url, PHP_URL_HOST );
+	private static function known_tile_domain( string $tile_url ): string {
+		$host = strtolower( rtrim( (string) wp_parse_url( trim( $tile_url ), PHP_URL_HOST ), '.' ) );
 
-		return '' !== $host && ( 'thunderforest.com' === $host || str_ends_with( $host, '.thunderforest.com' ) );
+		foreach ( array_keys( self::TILE_MAX_ZOOMS ) as $domain ) {
+			if ( $host === $domain || str_ends_with( $host, '.' . $domain ) ) {
+				return $domain;
+			}
+		}
+
+		return '';
 	}
 
 	/**
@@ -164,9 +281,16 @@ class Renderer {
 	 * @return string
 	 */
 	public static function attribution_for( string $tile_url ): string {
-		$default = self::is_thunderforest_url( $tile_url )
-			? self::THUNDERFOREST_ATTRIBUTION
-			: self::OSM_ATTRIBUTION;
+		switch ( self::known_tile_domain( $tile_url ) ) {
+			case 'thunderforest.com':
+				$default = self::THUNDERFOREST_ATTRIBUTION;
+				break;
+			case 'opentopomap.org':
+				$default = self::OPENTOPOMAP_ATTRIBUTION;
+				break;
+			default:
+				$default = self::OSM_ATTRIBUTION;
+		}
 
 		/**
 		 * Filters the attribution HTML shown on the map.
@@ -174,7 +298,58 @@ class Renderer {
 		 * @param string $default  Attribution HTML.
 		 * @param string $tile_url Tile URL template in use.
 		 */
-		return apply_filters( 'gpxrm_tile_attribution', $default, $tile_url );
+		return self::string_or( apply_filters( 'gpxrm_tile_attribution', $default, $tile_url ), $default );
+	}
+
+	/**
+	 * The last zoom level a tile template has tiles for.
+	 *
+	 * Known from the domain for the providers the plugin offers. For any other
+	 * server it is not known, and its maps zoom as far as they always did,
+	 * unless a filter says where its tiles stop.
+	 *
+	 * @param string $tile_url Tile URL template in use.
+	 * @return int Zoom level between MIN_ZOOM and MAX_ZOOM, or 0 when not known.
+	 */
+	public static function tile_max_zoom_for( string $tile_url ): int {
+		$domain  = self::known_tile_domain( $tile_url );
+		$default = '' === $domain ? 0 : self::TILE_MAX_ZOOMS[ $domain ];
+
+		/**
+		 * Filters the last zoom level a tile server has tiles for, such as for
+		 * a server of one's own that stops early.
+		 *
+		 * @param int    $default  Zoom level, or 0 when not known.
+		 * @param string $tile_url Tile URL template in use.
+		 */
+		return self::tile_zoom_or( apply_filters( 'gpxrm_tile_max_zoom', $default, $tile_url ), $default );
+	}
+
+	/**
+	 * A filtered string, or the default when a filter returned something else.
+	 *
+	 * @param mixed  $value    Filtered value.
+	 * @param string $fallback Value before filtering.
+	 * @return string
+	 */
+	private static function string_or( $value, string $fallback ): string {
+		return is_string( $value ) ? $value : $fallback;
+	}
+
+	/**
+	 * A filtered tile zoom level, kept in range, or the default when a filter
+	 * returned no real number. 0 or less means not known.
+	 *
+	 * @param mixed $value    Filtered value.
+	 * @param int   $fallback Value before filtering.
+	 * @return int
+	 */
+	private static function tile_zoom_or( $value, int $fallback ): int {
+		if ( ! is_numeric( $value ) || ! is_finite( (float) $value ) ) {
+			return $fallback;
+		}
+
+		return (int) $value < self::MIN_ZOOM ? 0 : min( self::MAX_ZOOM, (int) $value );
 	}
 
 	/**
@@ -228,10 +403,9 @@ class Renderer {
 	}
 
 	/**
-	 * The site-wide maximum zoom, filterable.
-	 *
-	 * Maps that do not set their own use this, so a site whose tile provider
-	 * stops at zoom 18 can say so once instead of on every map.
+	 * The site-wide maximum zoom, filterable: how close a map opens when it
+	 * frames a short route. Maps that do not set their own use this. Visitors
+	 * can still zoom on to the last level the tile provider has tiles for.
 	 *
 	 * @return int Zoom level between MIN_ZOOM and MAX_ZOOM.
 	 */
@@ -588,17 +762,20 @@ class Renderer {
 			? sprintf( ' data-gpxrm-download="%s"', esc_attr( self::download_filename( $a['gpx_url'] ) ) )
 			: '';
 
-		// Attribution follows whichever tiles this map actually loads, so a
-		// per-map custom provider still gets the credit it requires.
-		$tile_url = '' !== $a['tile_url'] ? $a['tile_url'] : self::default_tile_url();
+		// Attribution and the last tile level follow whichever tiles this map
+		// actually loads, so a per-map custom provider still gets the credit it
+		// requires. With no known last level, the view leaves the zoom open.
+		$tile_url      = '' !== $a['tile_url'] ? $a['tile_url'] : self::default_tile_url();
+		$tile_max_zoom = self::tile_max_zoom_for( $tile_url );
 
 		$map = sprintf(
-			'<div class="gpxrm-map" style="%1$s" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d" data-gpxrm-i18n="%6$s" data-gpxrm-map-ui="%7$s" data-gpxrm-units="%8$s"%9$s role="application" aria-label="%10$s">%11$s</div>',
+			'<div class="gpxrm-map" style="%1$s" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d"%6$s data-gpxrm-i18n="%7$s" data-gpxrm-map-ui="%8$s" data-gpxrm-units="%9$s"%10$s role="application" aria-label="%11$s">%12$s</div>',
 			esc_attr( self::height_style( $a ) ),
 			esc_url( $a['gpx_url'] ),
 			esc_attr( $tile_url ),
 			esc_attr( self::attribution_for( $tile_url ) ),
 			$a['max_zoom'],
+			$tile_max_zoom > 0 ? sprintf( ' data-gpxrm-tile-max-zoom="%d"', $tile_max_zoom ) : '',
 			esc_attr( self::view_messages_json() ),
 			esc_attr( self::map_ui_json() ),
 			esc_attr( self::attr_json( $units ) ),
