@@ -4,7 +4,7 @@
 
 import { haversine } from './map-core';
 import type { Coord } from './types';
-import { METRIC } from './units';
+import { METRIC, roundElevation } from './units';
 import type { UnitConfig } from './units';
 
 const THRESHOLD_M = 9.05;
@@ -179,8 +179,16 @@ export class ElevationProfile {
 		const W = rect.width;
 		const H = rect.height;
 		const elevations = coords.map( ( c ) => c[ 2 ] );
-		const minEle = Math.min( ...elevations ) - 20;
-		const maxEle = Math.max( ...elevations ) + 20;
+		// A loop, not Math.min( ...elevations ): spreading a long recording's
+		// points as arguments overflows the call stack.
+		let lowest = Infinity;
+		let highest = -Infinity;
+		for ( const e of elevations ) {
+			lowest = Math.min( lowest, e );
+			highest = Math.max( highest, e );
+		}
+		const minEle = lowest - 20;
+		const maxEle = highest + 20;
 		const range = maxEle - minEle || 1;
 
 		// Segment gaps contribute zero distance so the x-axis matches the
@@ -429,7 +437,7 @@ export class ElevationProfile {
 			ctx.font = '10px system-ui, sans-serif';
 			ctx.textAlign = 'right';
 			ctx.fillText(
-				`${ Math.round( ev * this.units.eleFactor ) }`,
+				`${ roundElevation( ev, this.units ) }`,
 				padL - 4,
 				yy + 3
 			);
@@ -527,7 +535,7 @@ export class ElevationProfile {
 		ctx.stroke();
 
 		const label =
-			`${ Math.round( elevations[ idx ] * this.units.eleFactor ) } ${
+			`${ roundElevation( elevations[ idx ], this.units ) } ${
 				this.units.eleLabel
 			}` +
 			`  ·  ${ ( dists[ idx ] * this.units.distFactor ).toFixed( 2 ) } ${

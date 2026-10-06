@@ -302,6 +302,69 @@ describe( 'initInstance', () => {
 		expect( buildsOf( build, profile ) ).toBe( builds + 1 );
 	} );
 
+	// The server only has what the editor stored, and stats stored before
+	// 2.0.0 have no min: the map fills it in from the file.
+	it( 'fills in the min elevation, leaving out points without one', async () => {
+		const gpx = GPX.replace( '<ele>100</ele>', '' );
+		vi.stubGlobal(
+			'fetch',
+			vi.fn( () =>
+				Promise.resolve( {
+					ok: true,
+					status: 200,
+					text: () => Promise.resolve( gpx ),
+				} as Response )
+			)
+		);
+		const { lib } = fakeMapLibre();
+		const { mapEl } = mount();
+		const bar = document.createElement( 'dl' );
+		bar.className = 'gpxrm-stats';
+		bar.innerHTML =
+			'<dd data-gpxrm-stat="max">—</dd><dd data-gpxrm-stat="min">—</dd>';
+		mapEl.parentElement?.append( bar );
+
+		await initInstance( mapEl, lib );
+
+		expect(
+			bar.querySelector( '[data-gpxrm-stat="min"]' )?.textContent
+		).toBe( '120 m' );
+		expect(
+			bar.querySelector( '[data-gpxrm-stat="max"]' )?.textContent
+		).toBe( '150 m' );
+		// So the editor preview knows it came from the file.
+		expect(
+			bar
+				.querySelector( '[data-gpxrm-stat="min"]' )
+				?.hasAttribute( 'data-gpxrm-from-file' )
+		).toBe( true );
+	} );
+
+	// Without WebGL MapLibre throws, but the figures only need the file.
+	it( 'fills in the stats even when the map cannot be built', async () => {
+		vi.stubGlobal( 'fetch', answeringFetch() );
+		const { lib } = fakeMapLibre();
+		const noWebGl = {
+			...lib,
+			Map: class {
+				constructor() {
+					throw new Error( 'Failed to initialize WebGL' );
+				}
+			},
+		} as unknown as MapLibreGl;
+		const { mapEl } = mount();
+		const bar = document.createElement( 'dl' );
+		bar.className = 'gpxrm-stats';
+		bar.innerHTML = '<dd data-gpxrm-stat="min">—</dd>';
+		mapEl.parentElement?.append( bar );
+
+		await expect( initInstance( mapEl, noWebGl ) ).rejects.toThrow();
+
+		expect(
+			bar.querySelector( '[data-gpxrm-stat="min"]' )?.textContent
+		).toBe( '100 m' );
+	} );
+
 	it( 'builds nothing and shows no error when aborted before the GPX arrives', async () => {
 		const fetch = pendingFetch();
 		vi.stubGlobal( 'fetch', fetch );

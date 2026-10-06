@@ -185,7 +185,7 @@ class Plugin {
 			'gpxrm_stat_fields',
 			array(
 				'type'              => 'string',
-				'default'           => implode( ',', Renderer::STAT_FIELDS ),
+				'default'           => implode( ',', Renderer::DEFAULT_STAT_FIELDS ),
 				'sanitize_callback' => array( $this, 'sanitize_stat_fields' ),
 				'show_in_rest'      => true,
 			)
@@ -431,6 +431,7 @@ class Plugin {
 			'gain'      => __( 'Elevation gain', 'gpx-route-map' ),
 			'loss'      => __( 'Elevation loss', 'gpx-route-map' ),
 			'max'       => __( 'Max elevation', 'gpx-route-map' ),
+			'min'       => __( 'Min elevation', 'gpx-route-map' ),
 			'waypoints' => __( 'Waypoints', 'gpx-route-map' ),
 		);
 	}
@@ -461,9 +462,10 @@ class Plugin {
 	 */
 	public function render_stat_fields_field(): void {
 		// The stored value, not the filtered one - see render_height_field().
-		$stored = get_option( 'gpxrm_stat_fields', implode( ',', Renderer::STAT_FIELDS ) );
-		// sanitize_stat_fields() always returns a non-empty, valid list.
-		$current = explode( ',', $this->sanitize_stat_fields( $stored ) );
+		$stored    = get_option( 'gpxrm_stat_fields', implode( ',', Renderer::DEFAULT_STAT_FIELDS ) );
+		$sanitized = $this->sanitize_stat_fields( $stored );
+		// Saved with nothing ticked, maps show the defaults, so tick those.
+		$current = '' === $sanitized ? Renderer::DEFAULT_STAT_FIELDS : explode( ',', $sanitized );
 
 		echo '<fieldset>';
 		printf(
@@ -901,6 +903,24 @@ class Plugin {
 	}
 
 	/**
+	 * The site settings the editor needs for a map that follows them.
+	 *
+	 * The editor previews such a map, names its height and zoom in the help
+	 * text, and starts a block that stops following the site from the site's
+	 * list of stats. It cannot read these from /wp/v2/settings: core gates
+	 * that route on manage_options, so an Editor or Author would silently be
+	 * shown the shipped defaults instead of the real settings.
+	 *
+	 * @return array<string, int|array<int, string>>
+	 */
+	public static function editor_defaults(): array {
+		return Renderer::default_heights() + array(
+			'maxZoom'    => Renderer::default_max_zoom(),
+			'statFields' => Renderer::default_stat_fields(),
+		);
+	}
+
+	/**
 	 * Register the block from its compiled metadata.
 	 *
 	 * @return void
@@ -923,20 +943,10 @@ class Plugin {
 				// back to English even though /languages ships a translation.
 				wp_set_script_translations( $handle, 'gpx-route-map', GPXRM_PLUGIN_DIR . 'languages' );
 
-				/*
-				 * The editor needs the site-wide height to preview a map that
-				 * inherits it and to name the figure in its help text. It cannot
-				 * read it from /wp/v2/settings: core gates that route on
-				 * manage_options, so an Editor or Author would silently be shown
-				 * the shipped default instead of the real setting.
-				 */
 				wp_add_inline_script(
 					$handle,
 					'window.gpxrmDefaults = ' . wp_json_encode(
-						Renderer::default_heights() + array(
-							'maxZoom'    => Renderer::default_max_zoom(),
-							'viewModule' => self::view_module_url(),
-						)
+						self::editor_defaults() + array( 'viewModule' => self::view_module_url() )
 					) . ';',
 					'before'
 				);
@@ -991,7 +1001,7 @@ class Plugin {
 	 *   stats     Show the stats bar: "true"/"false" (defaults to the site setting).
 	 *   elevation Show the elevation profile: "true"/"false" (defaults to the site setting).
 	 *   download  Show the GPX download button: "true"/"false" (defaults to the site setting).
-	 *   fields    Which stats to list, e.g. "distance,gain"; "none" hides them all.
+	 *   fields    Which stats to list, e.g. "distance,gain" (defaults to the site setting; use stats="false" to hide the bar).
 	 *   maxzoom   Maximum zoom level (defaults to the site setting).
 	 *   tile      Override raster tile URL template.
 	 *   units     "metric" or "imperial" (defaults to the site setting).

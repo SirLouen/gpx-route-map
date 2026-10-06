@@ -11,21 +11,34 @@ export interface RouteStats {
 	gain: number;
 	loss: number;
 	maxEle: number;
+	minEle: number;
 }
 
 /**
  * Aggregate route statistics from coordinates.
  *
+ * The min elevation leaves out points without one, which read 0; with none
+ * at all it is 0, as the max is.
+ *
  * @param coords    Coordinates.
  * @param segStarts Indices where a new segment begins.
+ * @param hasEle    Whether each point's elevation came from the file; all
+ *                  of them when not given.
  */
 export function routeStats(
 	coords: Coord[],
-	segStarts: Set< number >
+	segStarts: Set< number >,
+	hasEle?: boolean[]
 ): RouteStats {
 	const totals = computeElevationTotals( coords.map( ( c ) => c[ 2 ] ) );
 	let distance = 0;
 	let maxEle = coords[ 0 ]?.[ 2 ] ?? 0;
+	let minEle = Infinity;
+	for ( let i = 0; i < coords.length; i++ ) {
+		if ( ( ! hasEle || hasEle[ i ] ) && coords[ i ][ 2 ] < minEle ) {
+			minEle = coords[ i ][ 2 ];
+		}
+	}
 	for ( let i = 1; i < coords.length; i++ ) {
 		if ( ! segStarts.has( i ) ) {
 			distance += haversine(
@@ -39,7 +52,13 @@ export function routeStats(
 			maxEle = coords[ i ][ 2 ];
 		}
 	}
-	return { distance, gain: totals.gain, loss: totals.loss, maxEle };
+	return {
+		distance,
+		gain: totals.gain,
+		loss: totals.loss,
+		maxEle,
+		minEle: Number.isFinite( minEle ) ? minEle : 0,
+	};
 }
 
 /**

@@ -59,7 +59,7 @@ describe( 'parseGPX', () => {
 
 	// A track with no point to draw is no track: the route is drawn instead.
 	it( 'falls back to rtept when no trkpt is usable', () => {
-		const { coords, segmentStarts } = parseGPX(
+		const { coords, segmentStarts, hasEle } = parseGPX(
 			PROLOG +
 				`<gpx ${ NS }><trk><trkseg>` +
 				'<trkpt lat="139.7" lon="35.6"><ele>1</ele></trkpt>' +
@@ -74,6 +74,7 @@ describe( 'parseGPX', () => {
 			[ -6.0, 43.001, 101 ],
 		] );
 		expect( segmentStarts ).toEqual( [ 0 ] );
+		expect( hasEle ).toEqual( [ true, true ] );
 	} );
 
 	it( 'keeps the usable trkpt over a route', () => {
@@ -93,6 +94,7 @@ describe( 'parseGPX', () => {
 		const result = parseGPX( '<trk><trkseg><trkpt lat=' );
 		expect( result.invalid ).toBe( true );
 		expect( result.coords ).toEqual( [] );
+		expect( result.hasEle ).toEqual( [] );
 	} );
 
 	it( 'skips points with non-numeric coordinates', () => {
@@ -146,6 +148,20 @@ describe( 'parseGPX', () => {
 				'</trkseg></trk>'
 		);
 		expect( coords ).toHaveLength( 2 );
+	} );
+
+	it( 'records which points have an elevation', () => {
+		const { coords, hasEle } = parseGPX(
+			'<trk><trkseg>' +
+				'<trkpt lat="43.0" lon="-6.0"><ele>-3</ele></trkpt>' +
+				'<trkpt lat="43.001" lon="-6.0"></trkpt>' +
+				'<trkpt lat="43.002" lon="-6.0"><ele>n/a</ele></trkpt>' +
+				'<trkpt lat="oops" lon="-6.0"><ele>9</ele></trkpt>' +
+				'<trkpt lat="43.003" lon="-6.0"><ele>0</ele></trkpt>' +
+				'</trkseg></trk>'
+		);
+		expect( coords ).toHaveLength( 4 );
+		expect( hasEle ).toEqual( [ true, false, false, true ] );
 	} );
 
 	it( 'defaults missing elevation to 0', () => {

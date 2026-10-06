@@ -25,11 +25,12 @@ function gpxrm_resolve_fields( $raw ): array {
 beforeEach(
 	function () {
 		$GLOBALS['gpxrm_test_options'] = array();
+		$GLOBALS['gpxrm_test_filters'] = array();
 	}
 );
 
 test(
-	'every stat is listed by default',
+	'every stat but the min elevation is listed by default',
 	function () {
 		expect( Renderer::default_stat_fields() )->toBe(
 			array( 'distance', 'gain', 'loss', 'max', 'waypoints' )
@@ -95,5 +96,92 @@ test(
 
 		expect( gpxrm_resolve_fields( null ) )->toBe( array( 'max' ) );
 		expect( gpxrm_resolve_fields( 42 ) )->toBe( array( 'max' ) );
+	}
+);
+
+test(
+	'the min elevation shows only where it is chosen, after the max',
+	function () {
+		expect( gpxrm_resolve_fields( '' ) )->not->toContain( 'min' );
+		expect( gpxrm_resolve_fields( 'min' ) )->toBe( array( 'min' ) );
+		expect( gpxrm_resolve_fields( 'waypoints,min,max' ) )->toBe( array( 'max', 'min', 'waypoints' ) );
+
+		$GLOBALS['gpxrm_test_options']['gpxrm_stat_fields'] = 'distance,min';
+		expect( Renderer::default_stat_fields() )->toBe( array( 'distance', 'min' ) );
+	}
+);
+
+test(
+	'the settings page offers the min elevation, unticked unless chosen',
+	function () {
+		$plugin = new Gpxrm\Plugin();
+
+		expect( array_keys( Gpxrm\Plugin::stat_field_labels() ) )->toBe(
+			array( 'distance', 'gain', 'loss', 'max', 'min', 'waypoints' )
+		);
+		expect( $plugin->sanitize_stat_fields( array( 'min', 'max' ) ) )->toBe( 'max,min' );
+
+		ob_start();
+		$plugin->render_stat_fields_field();
+		$html = (string) ob_get_clean();
+		expect( $html )->toContain( "value=\"max\" checked='checked'" );
+		expect( $html )->toMatch( '/value="min">/' );
+	}
+);
+
+test(
+	'the settings page ticks what is in use',
+	function ( $stored, array $ticked ) {
+		$GLOBALS['gpxrm_test_options']['gpxrm_stat_fields'] = $stored;
+
+		ob_start();
+		( new Gpxrm\Plugin() )->render_stat_fields_field();
+		preg_match_all( "/value=\"([a-z]+)\" checked='checked'/", (string) ob_get_clean(), $matches );
+
+		expect( $matches[1] )->toBe( $ticked );
+	}
+)->with(
+	array(
+		'the min chosen'                    => array( 'distance,min', array( 'distance', 'min' ) ),
+		// Saved with nothing ticked: the maps show the defaults, so say so.
+		'nothing chosen, so the defaults'   => array( '', array( 'distance', 'gain', 'loss', 'max', 'waypoints' ) ),
+	)
+);
+
+// The editor reads the list on every request, so a slip here must not take
+// the site down.
+test(
+	'a filter that returns something other than a list is ignored',
+	function ( $returned ) {
+		$GLOBALS['gpxrm_test_filters']['gpxrm_stat_fields'] = array(
+			static function () use ( $returned ) {
+				return $returned;
+			},
+		);
+
+		expect( Renderer::default_stat_fields() )->toBe( Renderer::DEFAULT_STAT_FIELDS );
+	}
+)->with(
+	array(
+		'a comma separated string' => array( 'distance,min' ),
+		'nothing'                  => array( null ),
+	)
+);
+
+test(
+	'a stored list that is not a string means the defaults',
+	function () {
+		$GLOBALS['gpxrm_test_options']['gpxrm_stat_fields'] = 42;
+
+		expect( Renderer::default_stat_fields() )->toBe( Renderer::DEFAULT_STAT_FIELDS );
+	}
+);
+
+test(
+	'the editor gets the stats the site shows',
+	function () {
+		$GLOBALS['gpxrm_test_options']['gpxrm_stat_fields'] = 'max,min';
+
+		expect( Gpxrm\Plugin::editor_defaults()['statFields'] )->toBe( array( 'max', 'min' ) );
 	}
 );

@@ -111,6 +111,24 @@ export function patchPreview( live: Element, next: Element ): void {
 
 	const nextStats = next.querySelector( '.gpxrm-stats' );
 	if ( nextStats ) {
+		// The server prints only what the editor stored, a dash where it has
+		// nothing, as for the min of stats stored before 2.0.0. Where the map
+		// has worked that figure out itself, from the file it shows, keep it.
+		nextStats
+			.querySelectorAll< HTMLElement >( '[data-gpxrm-stat]' )
+			.forEach( ( value ) => {
+				const shown = live.querySelector< HTMLElement >(
+					`[data-gpxrm-stat="${ value.dataset.gpxrmStat }"]`
+				);
+				if (
+					'—' === value.textContent &&
+					shown &&
+					'gpxrmFromFile' in shown.dataset
+				) {
+					value.textContent = shown.textContent;
+					value.dataset.gpxrmFromFile = '';
+				}
+			} );
 		live.querySelector( '.gpxrm-stats' )?.replaceWith( nextStats );
 	}
 }
