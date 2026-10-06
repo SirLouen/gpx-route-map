@@ -104,6 +104,22 @@ describe( 'ElevationProfile', () => {
 		windowSpy.mockRestore();
 	} );
 
+	// A long recording at one point a second: spreading that many values
+	// into Math.min/Math.max overflows the call stack.
+	it( 'draws a track of hundreds of thousands of points', () => {
+		const { canvas } = makeCanvas();
+		const coords: Coord[] = Array.from( { length: 200_000 }, ( _, i ) => [
+			-6.0,
+			43.0 + i * 1e-6,
+			100 + ( i % 50 ),
+		] );
+		const profile = new ElevationProfile( canvas, coords );
+
+		profile.build();
+
+		expect( builtState( profile ).dists ).toHaveLength( 200_000 );
+	} );
+
 	it( 'does not count segment gaps in the distance axis', () => {
 		const { canvas } = makeCanvas();
 		const split = new ElevationProfile(

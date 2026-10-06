@@ -9,6 +9,7 @@ import {
 	readUnits,
 	formatDistance,
 	formatElevation,
+	roundElevation,
 } from '../../src/view/units';
 
 const IMPERIAL = {
@@ -53,6 +54,21 @@ describe( 'formatElevation', () => {
 	it( 'converts metres to feet in imperial', () => {
 		// 1000 m = 3280.84 ft -> 3,281 ft
 		expect( formatElevation( 1000, IMPERIAL ) ).toBe( '3,281 ft' );
+	} );
+
+	// A coastal track's lowest point can round to minus zero.
+	it( 'never shows -0', () => {
+		expect( formatElevation( -0.4, METRIC ) ).toBe( '0 m' );
+	} );
+
+	// As PHP's round() does, so the figure does not change when the map
+	// replaces the one the server printed. The profile rounds the same way.
+	it( 'rounds halves away from zero', () => {
+		expect( roundElevation( -2.5, METRIC ) ).toBe( -3 );
+		expect( Object.is( roundElevation( -0.4, METRIC ), 0 ) ).toBe( true );
+		expect( formatElevation( -410.5, METRIC ) ).toBe( '-411 m' );
+		expect( formatElevation( -0.5, METRIC ) ).toBe( '-1 m' );
+		expect( formatElevation( 2.5, METRIC ) ).toBe( '3 m' );
 	} );
 } );
 

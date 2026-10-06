@@ -41,17 +41,10 @@ import { siteDefaultMaxZoom, MIN_ZOOM, MAX_ZOOM } from './zoom';
 import { tileUrlProblem } from './tile-url';
 import { safeGpxUrl } from './gpx-url';
 import { parseGPX } from './view/map-core';
-import { routeStats } from './view/stats';
+import { siteStatFields } from './stat-fields';
+import { bakeStats, shouldStore, statsToStore } from './baked-stats';
+import type { FreshStats, GpxStats } from './baked-stats';
 import { MapPreview } from './editor/map-preview';
-
-/** Summary stats computed in the browser and stored on the block. */
-export type GpxStats = {
-	distance: number;
-	gain: number;
-	loss: number;
-	max: number;
-	waypoints: number;
-};
 
 /**
  * Attributes as declared in block.json. A type alias (not an interface) so it
@@ -81,6 +74,7 @@ const STAT_FIELDS: Array< { key: string; label: string } > = [
 	{ key: 'gain', label: __( 'Elevation gain', 'gpx-route-map' ) },
 	{ key: 'loss', label: __( 'Elevation loss', 'gpx-route-map' ) },
 	{ key: 'max', label: __( 'Max elevation', 'gpx-route-map' ) },
+	{ key: 'min', label: __( 'Min elevation', 'gpx-route-map' ) },
 	{ key: 'waypoints', label: __( 'Waypoints', 'gpx-route-map' ) },
 ];
 
@@ -110,9 +104,7 @@ function serialiseStatFields( keys: string[] ): string {
 	);
 	// Never empty: whether the bar appears is the Stats bar setting's job, so
 	// the last remaining figure cannot be unticked.
-	return ordered.length
-		? ordered.join( ',' )
-		: STAT_FIELDS.map( ( f ) => f.key ).join( ',' );
+	return ordered.length ? ordered.join( ',' ) : siteStatFields().join( ',' );
 }
 
 /** Choices for the panels that can defer to the site setting. */
@@ -151,25 +143,6 @@ interface SelectedMedia {
  * uploaded before activation or imported, are stored as generic XML
  */
 const GPX_TYPES = [ 'application/gpx+xml', 'application/xml', 'text/xml' ];
-
-/**
- * Whether two computed stat sets are identical, so the attribute is only
- * written when the numbers actually change (avoids marking a clean post dirty
- * when a saved block is reopened).
- *
- * @param a Existing stats.
- * @param b Freshly computed stats.
- */
-function sameStats( a: GpxStats | undefined, b: GpxStats ): boolean {
-	return (
-		!! a &&
-		a.distance === b.distance &&
-		a.gain === b.gain &&
-		a.loss === b.loss &&
-		a.max === b.max &&
-		a.waypoints === b.waypoints
-	);
-}
 
 /**
  * Block edit component.
@@ -258,6 +231,11 @@ export default function Edit( {
 	// flight.
 	const statsRef = useRef( attributes.stats );
 	const setAttributesRef = useRef( setAttributes );
+	// The stats last worked out from a file, stored or not.
+	const freshStatsRef = useRef< FreshStats | undefined >( undefined );
+	// Whether the author has chosen to show the min, maybe before the file
+	// has been read.
+	const wantMinRef = useRef( false );
 
 	// Synced in an effect rather than during render: a render that React
 	// throws away must not leave the refs holding a value that never
@@ -269,6 +247,9 @@ export default function Edit( {
 	} );
 
 	useEffect( () => {
+		// What an earlier read found no longer counts: the file has changed, or
+		// is read again and may fail this time.
+		freshStatsRef.current = undefined;
 		if ( ! bakeUrl ) {
 			// A selected media file whose URL is still loading is not "no
 			// file": clearing its stats here only to bake them again a moment
@@ -289,18 +270,14 @@ export default function Edit( {
 				if ( parsed.invalid || parsed.coords.length < 2 ) {
 					throw new Error( 'unparseable' );
 				}
-				const s = routeStats(
-					parsed.coords,
-					new Set( parsed.segmentStarts )
-				);
-				const next: GpxStats = {
-					distance: s.distance,
-					gain: s.gain,
-					loss: s.loss,
-					max: s.maxEle,
-					waypoints: parsed.waypoints.length,
-				};
-				if ( ! cancelled && ! sameStats( statsRef.current, next ) ) {
+				const next = bakeStats( parsed );
+				if ( ! cancelled ) {
+					freshStatsRef.current = { url: bakeUrl, stats: next };
+				}
+				if (
+					! cancelled &&
+					shouldStore( statsRef.current, next, wantMinRef.current )
+				) {
 					setAttributesRef.current( { stats: next } );
 				}
 			} catch {
@@ -313,6 +290,23 @@ export default function Edit( {
 			cancelled = true;
 		};
 	}, [ bakeUrl, gpxId ] );
+
+	// Stats stored before 2.0.0 have no min, and opening a post leaves them
+	// as they are; choosing the min stores the ones just worked out.
+	const chooseStatFields = ( value: string ) => {
+		const fields =
+			'' === value ? siteStatFields() : parseStatFields( value );
+		wantMinRef.current = fields.includes( 'min' );
+		const stats = statsToStore(
+			attributes.stats,
+			freshStatsRef.current,
+			bakeUrl,
+			fields
+		);
+		setAttributes(
+			stats ? { statFields: value, stats } : { statFields: value }
+		);
+	};
 
 	const commitUrl = () => {
 		if ( null === urlDraft ) {
@@ -645,15 +639,13 @@ export default function Edit( {
 							) }
 							checked={ '' === statFields }
 							onChange={ ( useDefault ) =>
-								setAttributes( {
-									statFields: useDefault
+								chooseStatFields(
+									useDefault
 										? ''
 										: serialiseStatFields(
-												STAT_FIELDS.map(
-													( f ) => f.key
-												)
-											),
-								} )
+												siteStatFields()
+											)
+								)
 							}
 						/>
 						{ '' !== statFields &&
@@ -674,8 +666,8 @@ export default function Edit( {
 											isChecked && 1 === selected.length
 										}
 										onChange={ ( checked ) =>
-											setAttributes( {
-												statFields: serialiseStatFields(
+											chooseStatFields(
+												serialiseStatFields(
 													checked
 														? [
 																...selected,
@@ -686,8 +678,8 @@ export default function Edit( {
 																	k !==
 																	field.key
 															)
-												),
-											} )
+												)
+											)
 										}
 									/>
 								);

@@ -71,7 +71,22 @@ export function formatDistance( km: number, units: UnitConfig ): string {
  * @param units  Unit configuration.
  */
 export function formatElevation( metres: number, units: UnitConfig ): string {
-	return `${ Math.round( metres * units.eleFactor ).toLocaleString() } ${
+	return `${ roundElevation( metres, units ).toLocaleString() } ${
 		units.eleLabel
 	}`;
+}
+
+/**
+ * An elevation in display units, to the nearest whole one.
+ *
+ * Halves round away from zero, as PHP's round() does for the figures the
+ * server printed, so a figure does not change when the map replaces it.
+ * Adding 0 turns the -0 of a point just below sea level into 0.
+ *
+ * @param metres Elevation in metres.
+ * @param units  Unit configuration.
+ */
+export function roundElevation( metres: number, units: UnitConfig ): number {
+	const value = metres * units.eleFactor;
+	return Math.sign( value ) * Math.round( Math.abs( value ) ) + 0;
 }

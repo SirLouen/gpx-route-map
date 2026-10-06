@@ -8,7 +8,7 @@ Built with [MapLibre GL JS](https://maplibre.org/) + raster OpenStreetMap tiles 
 
 -   **Block + shortcode**: `gpx-route-map/map` block and `[gpx_route_map]`.
 -   **Interactive map**: track line, start/end markers, waypoint markers with popups, navigation/scale/fullscreen/geolocate controls.
--   **Stats bar**: distance, elevation gain/loss, max elevation, waypoint count. Computed server-side for local files (SSR) and in the browser.
+-   **Stats bar**: distance, elevation gain/loss, max and min elevation (min is opt-in), waypoint count. Computed in the browser from the GPX file; a block also stores them, so its bar shows the figures without JavaScript, while a shortcode's fills in once the map loads.
 -   **Elevation profile**: scrub with mouse/touch; the position syncs onto the map, and clicking the track highlights the profile.
 -   **Lazy loading**: MapLibre loads only when a map scrolls into view; multiple maps per page are supported.
 -   **Configurable tiles**: respects the OSM tile usage policy via a custom tile URL / `gpxrm_tile_url` filter.

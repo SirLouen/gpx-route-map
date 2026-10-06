@@ -41,15 +41,20 @@ function fillStats(
 	units: UnitConfig = METRIC
 ): void {
 	const set = ( key: string, value: string ): void => {
-		const el = root.querySelector( `[data-gpxrm-stat="${ key }"]` );
+		const el = root.querySelector< HTMLElement >(
+			`[data-gpxrm-stat="${ key }"]`
+		);
 		if ( el ) {
 			el.textContent = value;
+			// Worked out from the file, which the editor preview relies on.
+			el.dataset.gpxrmFromFile = '';
 		}
 	};
 	set( 'distance', formatDistance( stats.distance, units ) );
 	set( 'gain', `+${ formatElevation( stats.gain, units ) }` );
 	set( 'loss', `−${ formatElevation( stats.loss, units ) }` );
 	set( 'max', formatElevation( stats.maxEle, units ) );
+	set( 'min', formatElevation( stats.minEle, units ) );
 	set( 'waypoints', `${ waypoints }` );
 }
 
@@ -170,7 +175,8 @@ export async function initInstance(
 	}
 	const msg = viewMessages( mapEl );
 
-	const { coords, waypoints, segmentStarts, invalid } = parseGPX( text );
+	const { coords, waypoints, segmentStarts, hasEle, invalid } =
+		parseGPX( text );
 	if ( invalid ) {
 		showError( mapEl, msg.invalid );
 		return;
@@ -180,6 +186,12 @@ export async function initInstance(
 		return;
 	}
 	const segStarts = new Set( segmentStarts );
+
+	// Before the map: the figures only need the file, and a browser that
+	// cannot build the map still shows them.
+	const units = readUnits( mapEl );
+	const stats = routeStats( coords, segStarts, hasEle );
+	fillStats( root, stats, waypoints.length, units );
 
 	const tileUrl = mapEl.dataset.gpxrmTileUrl || DEFAULT_TILE_URL;
 	const attribution = mapEl.dataset.gpxrmAttribution || DEFAULT_ATTRIBUTION;
@@ -206,10 +218,6 @@ export async function initInstance(
 			'top-right'
 		);
 	}
-
-	const units = readUnits( mapEl );
-	const stats = routeStats( coords, segStarts );
-	fillStats( root, stats, waypoints.length, units );
 
 	let profile: ElevationProfile | null = null;
 	const canvas: HTMLCanvasElement | null = root.querySelector(

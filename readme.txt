@@ -18,7 +18,7 @@ GPX Route Map turns a GPX file into an interactive map on the front end of your 
 * The track drawn as a route line with start and end markers.
 * Support for both GPX tracks (`<trk>`) and GPX routes (`<rte>`), e.g. Garmin Connect course exports.
 * Waypoint markers with popups for any `<wpt>` points in the file.
-* A stats bar: distance, elevation gain, elevation loss and max elevation, in metric or imperial units.
+* A stats bar: distance, elevation gain, elevation loss, max and min elevation, in metric or imperial units.
 * A hand-drawn elevation profile you can scrub with mouse or touch, the position syncs onto the map.
 
 The map loads lazily (only when it scrolls into view) so it never slows down your page, and multiple maps can live on the same page.
@@ -83,7 +83,7 @@ Shortcode attributes:
 * `maxzoom` - Maximum zoom level, from 1 to 22. Default: the site setting.
 * `tile` - Custom raster tile URL template using `{z}/{x}/{y}`. Must be https on an https site: browsers refuse insecure tile requests and the map draws blank. Default: OpenStreetMap.
 * `units` - `metric` (km / m) or `imperial` (mi / ft). Default: the site setting.
-* `fields` - Which stats to list, e.g. `distance,gain`. Default: the site setting. Use `stats="false"` to remove the bar.
+* `fields` - Which stats to list, from `distance`, `gain`, `loss`, `max`, `min` and `waypoints`, e.g. `distance,gain`. Default: the site setting. Use `stats="false"` to remove the bar.
 
 Provide either `id` or `gpx`. The block exposes the same options in its sidebar (Source, Display and Map tiles panels).
 
@@ -98,7 +98,7 @@ Filters (for developers):
 * `gpxrm_show_stats` - change whether the stats bar shows by default (boolean).
 * `gpxrm_show_elevation` - change whether the elevation profile shows by default (boolean).
 * `gpxrm_show_download` - change whether the download button shows by default (boolean).
-* `gpxrm_stat_fields` - change which stats the bar lists by default (array of `distance`, `gain`, `loss`, `max`, `waypoints`).
+* `gpxrm_stat_fields` - change which stats the bar lists by default (array of `distance`, `gain`, `loss`, `max`, `min`, `waypoints`).
 
 == Frequently Asked Questions ==
 
@@ -138,7 +138,7 @@ Yes, either one, for the whole site or for a single map. Go to Settings > GPX Ro
 
 = Can I show only some of the figures in the stats bar? =
 
-Yes. Under Settings > GPX Route Map, "Stats shown" has a checkbox for each of Distance, Elevation gain, Elevation loss, Max elevation and Waypoints, so you can keep just the ones you care about. A single map can differ: open the block's "Stats bar items" panel, turn off "Use site default" and tick what you want, or pass `fields="distance,gain"` to the shortcode. At least one figure always stays ticked; to remove the bar altogether use the separate "Stats bar" setting.
+Yes. Under Settings > GPX Route Map, "Stats shown" has a checkbox for each of Distance, Elevation gain, Elevation loss, Max elevation, Min elevation and Waypoints, so you can keep just the ones you care about. Min elevation is off unless you tick it. A single map can differ: open the block's "Stats bar items" panel, turn off "Use site default" and tick what you want, or pass `fields="distance,gain"` to the shortcode. At least one figure always stays ticked; to remove the bar altogether use the separate "Stats bar" setting.
 
 = Can visitors download the GPX file? =
 

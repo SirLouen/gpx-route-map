@@ -205,6 +205,37 @@ if ( ! function_exists( 'esc_html' ) ) {
 	}
 }
 
+if ( ! function_exists( 'checked' ) ) {
+	/**
+	 * Mark a checkbox as WordPress's checked() does.
+	 *
+	 * @param mixed $checked One value to compare.
+	 * @param mixed $current The other value to compare.
+	 * @param bool  $display Whether to echo the attribute too.
+	 * @return string
+	 */
+	function checked( $checked, $current = true, bool $display = true ): string {
+		$result = (string) $checked === (string) $current ? " checked='checked'" : '';
+		if ( $display ) {
+			echo $result; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+		return $result;
+	}
+}
+
+if ( ! function_exists( 'number_format_i18n' ) ) {
+	/**
+	 * Format a number as WordPress does in an English locale.
+	 *
+	 * @param float|int|string $number   Number to format.
+	 * @param int              $decimals Decimal places.
+	 * @return string
+	 */
+	function number_format_i18n( $number, int $decimals = 0 ): string {
+		return number_format( (float) $number, $decimals );
+	}
+}
+
 if ( ! function_exists( 'esc_url_raw' ) ) {
 	/**
 	 * Stand in for WordPress's non-display URL sanitizer.

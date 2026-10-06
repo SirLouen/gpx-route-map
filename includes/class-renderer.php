@@ -23,7 +23,13 @@ class Renderer {
 	/**
 	 * Every stat the bar can show, in the order they are displayed.
 	 */
-	const STAT_FIELDS = array( 'distance', 'gain', 'loss', 'max', 'waypoints' );
+	const STAT_FIELDS = array( 'distance', 'gain', 'loss', 'max', 'min', 'waypoints' );
+
+	/**
+	 * The stats shown when nothing says otherwise. The min elevation is left
+	 * out: it came later, and maps should not change on their own.
+	 */
+	const DEFAULT_STAT_FIELDS = array( 'distance', 'gain', 'loss', 'max', 'waypoints' );
 
 	/**
 	 * Map height bounds, in pixels. Below the minimum the controls and the
@@ -403,10 +409,15 @@ class Renderer {
 	/**
 	 * Keep only known stat keys, in their canonical display order.
 	 *
-	 * @param array<int, mixed> $keys Candidate keys.
+	 * @param mixed $keys Candidate keys; anything but a list, as a filter may
+	 *                    return, gives none.
 	 * @return array<int, string>
 	 */
-	private static function filter_stat_fields( array $keys ): array {
+	private static function filter_stat_fields( $keys ): array {
+		if ( ! is_array( $keys ) ) {
+			return array();
+		}
+
 		$wanted = array();
 		foreach ( $keys as $key ) {
 			if ( is_string( $key ) ) {
@@ -423,25 +434,30 @@ class Renderer {
 	 * @return array<int, string>
 	 */
 	public static function default_stat_fields(): array {
-		$stored = get_option( 'gpxrm_stat_fields', implode( ',', self::STAT_FIELDS ) );
+		$stored = get_option( 'gpxrm_stat_fields', implode( ',', self::DEFAULT_STAT_FIELDS ) );
 		$fields = is_string( $stored )
 			? self::filter_stat_fields( explode( ',', $stored ) )
-			: self::STAT_FIELDS;
+			: self::DEFAULT_STAT_FIELDS;
 
 		/**
 		 * Filters which stats the bar shows by default.
 		 *
-		 * @param array<int, string> $fields Stat keys, from Renderer::STAT_FIELDS.
+		 * @param array<int, string> $fields Stat keys, from Renderer::STAT_FIELDS. The
+		 *                                   shipped default, Renderer::DEFAULT_STAT_FIELDS,
+		 *                                   leaves out the opt-in 'min'.
 		 */
 		$filtered = apply_filters( 'gpxrm_stat_fields', $fields );
 
 		// Re-filtered so a hook cannot introduce an unknown key or reorder them.
+		// One that returns no list at all gives none, so the defaults below: the
+		// editor reads this on every request, and a slip in a filter must not
+		// take the site down.
 		$filtered = self::filter_stat_fields( $filtered );
 
 		// This list only says which stats appear, never whether the bar does;
 		// hiding it is the separate "Stats bar" setting's job. An empty list
-		// would be a second way to hide it, so it falls back to all.
-		return array() === $filtered ? self::STAT_FIELDS : $filtered;
+		// would be a second way to hide it, so it falls back to the defaults.
+		return array() === $filtered ? self::DEFAULT_STAT_FIELDS : $filtered;
 	}
 
 	/**
@@ -607,7 +623,7 @@ class Renderer {
 	 * Normalize block attributes and shortcode atts into one shape.
 	 *
 	 * @param array<string, mixed> $atts Raw attributes.
-	 * @return array{gpx_url: string, height: int, height_tablet: int, height_mobile: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null, units: string, stat_fields: array<int, string>}
+	 * @return array{gpx_url: string, height: int, height_tablet: int, height_mobile: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, min: float|null, waypoints: int}|null, units: string, stat_fields: array<int, string>}
 	 */
 	private static function normalize( array $atts ): array {
 		$gpx_url = '';
@@ -689,7 +705,7 @@ class Renderer {
 	 * Validate the editor-computed stats stored on the block.
 	 *
 	 * @param mixed $raw Raw `stats` attribute value.
-	 * @return array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null
+	 * @return array{distance: float, gain: float, loss: float, max: float, min: float|null, waypoints: int}|null
 	 */
 	private static function normalize_stats( $raw ): ?array {
 		if ( ! is_array( $raw ) || ! isset( $raw['distance'] ) || ! is_numeric( $raw['distance'] ) ) {
@@ -705,6 +721,8 @@ class Renderer {
 			'gain'      => $to_float( $raw['gain'] ?? 0 ),
 			'loss'      => $to_float( $raw['loss'] ?? 0 ),
 			'max'       => $to_float( $raw['max'] ?? 0 ),
+			// Unknown, not 0, for stats stored before 2.0.0, which have none.
+			'min'       => isset( $raw['min'] ) && is_numeric( $raw['min'] ) ? (float) $raw['min'] : null,
 			'waypoints' => (int) $to_float( $raw['waypoints'] ?? 0 ),
 		);
 	}
@@ -836,9 +854,9 @@ class Renderer {
 	 * Stats bar markup. Values are computed once in the editor and stored on the
 	 * block; the front-end JS refreshes them live after it parses the GPX.
 	 *
-	 * @param array{distance: float, gain: float, loss: float, max: float, waypoints: int}|null $stats  Stored stats or null.
-	 * @param array{distFactor: float, distLabel: string, eleFactor: float, eleLabel: string}   $units  Unit conversion.
-	 * @param array<int, string>                                                                $fields Stats to include.
+	 * @param array{distance: float, gain: float, loss: float, max: float, min: float|null, waypoints: int}|null $stats  Stored stats or null.
+	 * @param array{distFactor: float, distLabel: string, eleFactor: float, eleLabel: string}                    $units  Unit conversion.
+	 * @param array<int, string>                                                                                 $fields Stats to include.
 	 * @return string
 	 */
 	private static function stats_html( ?array $stats, array $units, array $fields ): string {
@@ -854,6 +872,7 @@ class Renderer {
 			'gain'      => array( __( 'Elevation gain', 'gpx-route-map' ), null === $stats ? '—' : '+' . $elevation( $stats['gain'] ) ),
 			'loss'      => array( __( 'Elevation loss', 'gpx-route-map' ), null === $stats ? '—' : '−' . $elevation( $stats['loss'] ) ),
 			'max'       => array( __( 'Max elevation', 'gpx-route-map' ), null === $stats ? '—' : $elevation( $stats['max'] ) ),
+			'min'       => array( __( 'Min elevation', 'gpx-route-map' ), null === $stats || null === $stats['min'] ? '—' : $elevation( $stats['min'] ) ),
 			'waypoints' => array( __( 'Waypoints', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( $stats['waypoints'] ) ),
 		);
 

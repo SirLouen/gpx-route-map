@@ -176,3 +176,64 @@ describe( 'patchPreview', () => {
 		expect( map?.contains( canvas ) ).toBe( true );
 	} );
 } );
+
+// The server prints only what the editor stored, and stats stored before
+// 2.0.0 have no min: its dash must not replace what the map worked out.
+describe( 'patchPreview and the stats the map filled in', () => {
+	const bar = ( min: string, max: string ) =>
+		'<div class="wp-block-gpx-route-map-map"><div class="gpxrm">' +
+		'<div class="gpxrm-map" style="height:480px" data-gpxrm-gpx="x.gpx"></div>' +
+		'<dl class="gpxrm-stats">' +
+		`<dd data-gpxrm-stat="max">${ max }</dd>` +
+		`<dd data-gpxrm-stat="min">${ min }</dd>` +
+		'</dl></div></div>';
+
+	/**
+	 * Mark a figure as the map's own, as the view does when it fills it in.
+	 *
+	 * @param live The preview on screen.
+	 * @param key  The figure.
+	 */
+	const fromFile = ( live: Element, key: string ) =>
+		live
+			.querySelector( `[data-gpxrm-stat="${ key }"]` )
+			?.setAttribute( 'data-gpxrm-from-file', '' );
+
+	it( 'keeps a figure where the new markup only has a dash', () => {
+		const live = preview( bar( '1,035 m', '1,702 m' ) );
+		fromFile( live, 'min' );
+		patchPreview( live, preview( bar( '—', '1,702 m' ) ) );
+		expect(
+			live.querySelector( '[data-gpxrm-stat="min"]' )?.textContent
+		).toBe( '1,035 m' );
+
+		// And through the next patch too.
+		patchPreview( live, preview( bar( '—', '1,702 m' ) ) );
+		expect(
+			live.querySelector( '[data-gpxrm-stat="min"]' )?.textContent
+		).toBe( '1,035 m' );
+	} );
+
+	// Text the server printed earlier, for a file the map could not read,
+	// say: the dash is right.
+	it( 'does not keep a figure the map did not work out', () => {
+		const live = preview( bar( '1,035 m', '1,702 m' ) );
+		patchPreview( live, preview( bar( '—', '—' ) ) );
+
+		expect(
+			live.querySelector( '[data-gpxrm-stat="min"]' )?.textContent
+		).toBe( '—' );
+	} );
+
+	it( 'takes the new figures otherwise', () => {
+		const live = preview( bar( '1,035 m', '1,702 m' ) );
+		patchPreview( live, preview( bar( '1,036 m', '1,703 m' ) ) );
+
+		expect(
+			live.querySelector( '[data-gpxrm-stat="min"]' )?.textContent
+		).toBe( '1,036 m' );
+		expect(
+			live.querySelector( '[data-gpxrm-stat="max"]' )?.textContent
+		).toBe( '1,703 m' );
+	} );
+} );

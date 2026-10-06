@@ -41,9 +41,10 @@ function onMap( lat: number, lon: number ): boolean {
  */
 function readPoints(
 	points: NodeListOf< Element >
-): Pick< ParsedGpx, 'coords' | 'segmentStarts' > {
+): Pick< ParsedGpx, 'coords' | 'segmentStarts' | 'hasEle' > {
 	const coords: Coord[] = [];
 	const segmentStarts: number[] = [];
+	const hasEle: boolean[] = [];
 	let lastSegment: Element | null = null;
 	points.forEach( ( pt ) => {
 		const lat = parseFloat( pt.getAttribute( 'lat' ) ?? '' );
@@ -57,10 +58,11 @@ function readPoints(
 		}
 		lastSegment = segment;
 		const eleEl = pt.querySelector( 'ele' );
-		const ele = eleEl ? parseFloat( eleEl.textContent ?? '' ) : 0;
+		const ele = eleEl ? parseFloat( eleEl.textContent ?? '' ) : NaN;
 		coords.push( [ lon, lat, Number.isNaN( ele ) ? 0 : ele ] );
+		hasEle.push( Number.isFinite( ele ) );
 	} );
-	return { coords, segmentStarts };
+	return { coords, segmentStarts, hasEle };
 }
 
 /**
@@ -75,12 +77,18 @@ export function parseGPX( xmlText: string ): ParsedGpx {
 	);
 
 	if ( doc.querySelector( 'parsererror' ) ) {
-		return { coords: [], waypoints: [], segmentStarts: [], invalid: true };
+		return {
+			coords: [],
+			waypoints: [],
+			segmentStarts: [],
+			hasEle: [],
+			invalid: true,
+		};
 	}
 
 	// The track's points, or the route's when no track point can be drawn.
 	const track = readPoints( doc.querySelectorAll( 'trkpt' ) );
-	const { coords, segmentStarts } = track.coords.length
+	const { coords, segmentStarts, hasEle } = track.coords.length
 		? track
 		: readPoints( doc.querySelectorAll( 'rtept' ) );
 
@@ -103,7 +111,7 @@ export function parseGPX( xmlText: string ): ParsedGpx {
 		} );
 	} );
 
-	return { coords, waypoints, segmentStarts, invalid: false };
+	return { coords, waypoints, segmentStarts, hasEle, invalid: false };
 }
 
 /**

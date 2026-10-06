@@ -27,6 +27,12 @@ export interface ParsedGpx {
 	waypoints: Waypoint[];
 	/** Coord index where each trkseg/trk/rte begins (first is always 0). */
 	segmentStarts: number[];
+	/**
+	 * Whether each coordinate's elevation came from the file. One without
+	 * reads 0, which the profile and the climb figures take as it is but the
+	 * lowest point must not.
+	 */
+	hasEle: boolean[];
 	/** True when the XML failed to parse at all. */
 	invalid: boolean;
 }
