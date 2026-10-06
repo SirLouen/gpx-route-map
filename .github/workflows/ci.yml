@@ -38,7 +38,7 @@ jobs:
             - name: Coding standards (phpcs.xml.dist)
               run: phpcs
 
-            - name: Static analysis (PHPStan, max)
+            - name: Static analysis (PHPStan max, on PHP 8.3 and as PHP 7.4)
               run: composer analyse -- --no-progress
 
             - name: Unit tests (Pest)
@@ -63,6 +63,9 @@ jobs:
               run: |
                   # The files the WordPress.org deploy ships: the tree minus .distignore,
                   # listed the way 10up/action-wordpress-plugin-deploy copies it (rsync).
+                  # Only build/ is left out, as the deploy creates it: its render.php
+                  # is a copy of src/render.php, linted here, and its *.asset.php a
+                  # fixed `return array(...)` template from bin/build.mjs.
                   mapfile -t files < <(rsync -an --out-format='%n' --exclude-from=.distignore ./ "$RUNNER_TEMP/distignore-probe/" | grep '\.php$')
                   if [[ " ${files[*]} " != *" gpx-route-map.php "* ]]; then
                       echo "::error::Could not list the shipped PHP files from .distignore"
