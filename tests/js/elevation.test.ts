@@ -104,6 +104,45 @@ describe( 'ElevationProfile', () => {
 		windowSpy.mockRestore();
 	} );
 
+	// The canvas is sized for the pixel ratio it was built at. Drawing at a
+	// newer one before the next build, after a browser zoom or a move to
+	// another screen, would crop the profile and misplace the marker.
+	it( 'draws at the pixel ratio it was built for', () => {
+		const { canvas } = makeCanvas();
+		const transforms: number[][] = [];
+		const ctx = new Proxy(
+			{},
+			{
+				get: ( _target, prop ) =>
+					prop === 'setTransform'
+						? ( ...args: number[] ) => transforms.push( args )
+						: Reflect.get( ctxStub, prop ),
+				set: () => true,
+			}
+		);
+		canvas.getContext = ( () =>
+			ctx ) as unknown as HTMLCanvasElement[ 'getContext' ];
+		const setRatio = ( value: number ) =>
+			Object.defineProperty( window, 'devicePixelRatio', {
+				value,
+				configurable: true,
+			} );
+		const profile = new ElevationProfile( canvas, SEGMENTED_COORDS );
+
+		try {
+			setRatio( 1 );
+			profile.build();
+			setRatio( 2 );
+			transforms.length = 0;
+			profile.highlight( 1 );
+		} finally {
+			setRatio( 1 );
+		}
+
+		expect( canvas.width ).toBe( 400 );
+		expect( transforms[ 0 ] ).toEqual( [ 1, 0, 0, 1, 0, 0 ] );
+	} );
+
 	// A long recording at one point a second: spreading that many values
 	// into Math.min/Math.max overflows the call stack.
 	it( 'draws a track of hundreds of thousands of points', () => {

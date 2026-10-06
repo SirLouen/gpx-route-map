@@ -657,6 +657,27 @@ describe( 'initInstance', () => {
 			expect( buildsOf( build, profile ) ).toBe( builds + 1 );
 		} );
 
+		// A browser zoom changes the pixel ratio and resizes the window, but
+		// a block whose width the theme caps keeps its size, so the observer
+		// never hears about it.
+		it( 'still redraws the profile when the window is resized', async () => {
+			vi.stubGlobal( 'fetch', answeringFetch() );
+			const { lib, maps } = fakeMapLibre();
+			const { mapEl } = mount();
+			const build = vi.spyOn( ElevationProfile.prototype, 'build' );
+			const controller = new AbortController();
+			await buildFully( mapEl, lib, maps, controller.signal );
+			const profile = lastProfile( build );
+			const builds = buildsOf( build, profile );
+
+			resizeWindow();
+			expect( buildsOf( build, profile ) ).toBe( builds + 1 );
+
+			controller.abort();
+			resizeWindow();
+			expect( buildsOf( build, profile ) ).toBe( builds + 1 );
+		} );
+
 		it( 'stops watching the profile when torn down', async () => {
 			vi.stubGlobal( 'fetch', answeringFetch() );
 			const { lib, maps } = fakeMapLibre();

@@ -36,7 +36,7 @@ pnpm run test:js        # run once
 pnpm run test:js:watch  # watch mode
 ```
 
-PHP unit tests use [Pest](https://pestphp.com/). `GpxStats` is dependency-free, so the suite runs standalone (no WordPress bootstrap):
+PHP unit tests use [Pest](https://pestphp.com/). The suite runs standalone, without WordPress: `tests/bootstrap.php` stubs the WordPress functions the tested code calls.
 
 ```bash
 composer install
@@ -58,7 +58,6 @@ bin/build.mjs              Vite build orchestrator (JS, SCSS, RTL, asset.php)
 includes/
   class-plugin.php         Hooks: block, shortcode, GPX upload MIME
   class-renderer.php       Shared HTML for block + shortcode, SSR stats, asset enqueue
-  class-gpxstats.php      Pure distance/elevation algorithm (ported, dependency-free)
 src/
   block.json               Block metadata
   index.tsx / edit.tsx     Editor

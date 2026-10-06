@@ -111,6 +111,8 @@ interface ProfileState {
 	plotH: number;
 	W: number;
 	H: number;
+	/** The pixel ratio the canvas was sized for. */
+	dpr: number;
 }
 
 export interface ProfileCallbacks {
@@ -228,6 +230,7 @@ export class ElevationProfile {
 			plotH: H - padT - padB,
 			W,
 			H,
+			dpr,
 		};
 
 		this.redraw();
@@ -415,8 +418,10 @@ export class ElevationProfile {
 			plotH,
 			W,
 			H,
+			dpr,
 		} = this.state;
-		const dpr = window.devicePixelRatio || 1;
+		// The ratio the canvas was sized for, not today's: until the next
+		// build, a newer one would draw past the canvas's edges.
 		ctx.setTransform( dpr, 0, 0, dpr, 0, 0 );
 		ctx.clearRect( 0, 0, W, H );
 
