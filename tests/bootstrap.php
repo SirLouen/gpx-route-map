@@ -205,6 +205,26 @@ if ( ! function_exists( 'esc_html' ) ) {
 	}
 }
 
+if ( ! function_exists( 'shortcode_atts' ) ) {
+	/**
+	 * Merge shortcode attributes over their defaults, as WordPress does:
+	 * attributes without a default are dropped.
+	 *
+	 * @param array<string, mixed> $pairs     Defaults.
+	 * @param mixed                $atts      Attributes given.
+	 * @param string               $shortcode Shortcode name.
+	 * @return array<string, mixed>
+	 */
+	function shortcode_atts( array $pairs, $atts, string $shortcode = '' ): array {
+		$atts = (array) $atts;
+		$out  = array();
+		foreach ( $pairs as $name => $default ) {
+			$out[ $name ] = array_key_exists( $name, $atts ) ? $atts[ $name ] : $default;
+		}
+		return $out;
+	}
+}
+
 if ( ! function_exists( 'selected' ) ) {
 	/**
 	 * Mark an option as WordPress's selected() does.

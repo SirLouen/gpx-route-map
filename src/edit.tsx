@@ -27,7 +27,6 @@ import {
 	SelectControl,
 	ToggleControl,
 	CheckboxControl,
-	Notice,
 } from '@wordpress/components';
 
 import {
@@ -38,7 +37,7 @@ import {
 	DEFAULT_HEIGHT,
 } from './heights';
 import { siteDefaultMaxZoom, MIN_ZOOM, MAX_ZOOM } from './zoom';
-import { tileUrlProblem } from './tile-url';
+import { providerChoices, readTileProviders } from './tile-providers';
 import { safeGpxUrl } from './gpx-url';
 import { parseGPX } from './view/map-core';
 import { siteStatFields } from './stat-fields';
@@ -61,7 +60,7 @@ export type GpxBlockAttributes = {
 	showDownload: string;
 	statFields: string;
 	maxZoom: number;
-	tileUrl: string;
+	provider: string;
 	units: string;
 	stats?: GpxStats;
 };
@@ -168,7 +167,7 @@ export default function Edit( {
 		showDownload,
 		statFields,
 		maxZoom,
-		tileUrl,
+		provider,
 		units,
 	} = attributes;
 	const blockProps = useBlockProps();
@@ -205,6 +204,8 @@ export default function Edit( {
 	);
 	const site = siteHeights();
 	const siteMaxZoom = siteDefaultMaxZoom();
+	const tiles = readTileProviders();
+	const tileChoices = providerChoices( provider, tiles );
 	const usesSiteHeight = ! height && ! heightTablet && ! heightMobile;
 	const resolved = resolveHeights(
 		{ base: height, tablet: heightTablet, mobile: heightMobile },
@@ -691,44 +692,55 @@ export default function Edit( {
 					title={ __( 'Map tiles', 'gpx-route-map' ) }
 					initialOpen={ false }
 				>
-					<TextControl
+					<SelectControl
 						__nextHasNoMarginBottom
 						__next40pxDefaultSize
-						label={ __( 'Custom tile URL', 'gpx-route-map' ) }
-						help={ __(
-							'Raster tile template with {z}/{x}/{y}, over https. Add {ratio} where the provider expects a retina suffix, for example {z}/{x}/{y}{ratio}.png. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited — use your own provider for busy sites.',
-							'gpx-route-map'
-						) }
-						value={ tileUrl }
+						label={ __( 'Tile provider', 'gpx-route-map' ) }
+						help={
+							tiles.providers.some( ( p ) => ! p.usable )
+								? __(
+										'Thunderforest styles appear here once an API key is saved under Settings → GPX Route Map.',
+										'gpx-route-map'
+									)
+								: undefined
+						}
+						value={ tileChoices.value }
+						options={ [
+							{
+								label: sprintf(
+									/* translators: %s: the tile provider the site uses, e.g. "OpenTopoMap". */
+									__( 'Site default — %s', 'gpx-route-map' ),
+									tileChoices.site.label
+								),
+								value: '',
+							},
+							...tileChoices.usable.map( ( p ) => ( {
+								label: p.label,
+								value: p.id,
+							} ) ),
+							// Chosen before its key was removed: maps use the
+							// site's provider meanwhile.
+							...( tileChoices.locked
+								? [
+										{
+											label: sprintf(
+												/* translators: %s: a tile provider, e.g. "Thunderforest: Outdoors (hiking)". */
+												__(
+													'%s — needs an API key',
+													'gpx-route-map'
+												),
+												tileChoices.locked.label
+											),
+											value: tileChoices.locked.id,
+											disabled: true,
+										},
+									]
+								: [] ),
+						] }
 						onChange={ ( value ) =>
-							setAttributes( { tileUrl: value } )
+							setAttributes( { provider: value } )
 						}
-						placeholder="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 					/>
-					{ ( () => {
-						const problem = tileUrlProblem(
-							tileUrl,
-							window.location.protocol
-						);
-
-						if ( ! problem ) {
-							return null;
-						}
-
-						return (
-							<Notice status="warning" isDismissible={ false }>
-								{ 'insecure' === problem
-									? __(
-											'This address is not secure, so visitors\u2019 browsers will refuse to load the tiles and the map will appear blank. Use an https address, unless the tile server runs on the same machine as the browser.',
-											'gpx-route-map'
-										)
-									: __(
-											'This address is missing http:// or https://, so it will be ignored and the map will fall back to OpenStreetMap.',
-											'gpx-route-map'
-										) }
-							</Notice>
-						);
-					} )() }
 				</PanelBody>
 			</InspectorControls>
 

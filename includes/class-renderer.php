@@ -274,8 +274,8 @@ class Renderer {
 	/**
 	 * Attribution HTML for the tiles actually in use.
 	 *
-	 * Derived from the URL rather than the site setting so that a map pointed at
-	 * Thunderforest by hand still carries the credit their terms require.
+	 * Derived from the URL rather than the provider, so a map whose tiles a
+	 * gpxrm_tile_url filter sends elsewhere is credited for what it shows.
 	 *
 	 * @param string $tile_url Tile URL template in use.
 	 * @return string
@@ -763,9 +763,9 @@ class Renderer {
 			: '';
 
 		// Attribution and the last tile level follow whichever tiles this map
-		// actually loads, so a per-map custom provider still gets the credit it
-		// requires. With no known last level, the view leaves the zoom open.
-		$tile_url      = '' !== $a['tile_url'] ? $a['tile_url'] : self::default_tile_url();
+		// actually loads, after any gpxrm_tile_url filter. With no known last
+		// level, the view leaves the zoom open.
+		$tile_url      = self::tile_url_for( $a['provider'] );
 		$tile_max_zoom = self::tile_max_zoom_for( $tile_url );
 
 		$map = sprintf(
@@ -800,7 +800,7 @@ class Renderer {
 	 * Normalize block attributes and shortcode atts into one shape.
 	 *
 	 * @param array<string, mixed> $atts Raw attributes.
-	 * @return array{gpx_url: string, height: int, height_tablet: int, height_mobile: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, tile_url: string, stats: array{distance: float, gain: float, loss: float, max: float, min: float|null, waypoints: int}|null, units: string, stat_fields: array<int, string>}
+	 * @return array{gpx_url: string, height: int, height_tablet: int, height_mobile: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, provider: string, stats: array{distance: float, gain: float, loss: float, max: float, min: float|null, waypoints: int}|null, units: string, stat_fields: array<int, string>}
 	 */
 	private static function normalize( array $atts ): array {
 		$gpx_url = '';
@@ -839,7 +839,6 @@ class Renderer {
 		$max_zoom = ( isset( $atts['maxZoom'] ) && is_numeric( $atts['maxZoom'] ) && (int) $atts['maxZoom'] > 0 )
 			? (int) $atts['maxZoom']
 			: self::default_max_zoom();
-		$tile_url = self::sanitize_tile_url( $atts['tileUrl'] ?? '' );
 
 		return array(
 			'gpx_url'        => $gpx_url,
@@ -851,31 +850,35 @@ class Renderer {
 			'show_download'  => self::normalize_visibility( $atts['showDownload'] ?? '', self::default_show_download() ),
 			'stat_fields'    => self::normalize_stat_fields( $atts['statFields'] ?? '', self::default_stat_fields() ),
 			'max_zoom'       => self::clamp( $max_zoom, self::MIN_ZOOM, self::MAX_ZOOM ),
-			'tile_url'       => $tile_url,
+			'provider'       => self::map_provider( $atts['provider'] ?? '' ),
 			'stats'          => self::normalize_stats( $atts['stats'] ?? null ),
 			'units'          => self::normalize_units( $atts['units'] ?? '' ),
 		);
 	}
 
 	/**
-	 * Validate a custom tile URL template.
+	 * The provider one map uses: its own choice, when it is one the site can
+	 * use, otherwise the site's. '' - the attribute's default - follows the
+	 * site, and so does a Thunderforest style that lost its key, so the map
+	 * keeps the look the site chose rather than drop to OpenStreetMap.
 	 *
-	 * @param mixed $raw Raw attribute value.
-	 * @return string The unmodified template, or '' when invalid.
+	 * @param mixed $raw Raw `provider` attribute value.
+	 * @return string A key of tile_providers().
 	 */
-	public static function sanitize_tile_url( $raw ): string {
-		if ( ! is_string( $raw ) ) {
-			return '';
-		}
-		$raw = trim( $raw );
-		if ( '' === $raw || ! preg_match( '#^https?://#i', $raw ) ) {
-			return '';
-		}
-		$probe = str_replace( array( '{z}', '{x}', '{y}', '{r}', '{s}' ), '0', $raw );
-		if ( false === filter_var( $probe, FILTER_VALIDATE_URL ) ) {
-			return '';
-		}
-		return $raw;
+	private static function map_provider( $raw ): string {
+		return is_string( $raw ) && self::provider_usable( $raw ) ? $raw : self::tile_provider();
+	}
+
+	/**
+	 * The provider maps following the site actually use: the site's, or
+	 * OpenStreetMap when it cannot be used.
+	 *
+	 * @return string A key of tile_providers().
+	 */
+	public static function site_provider_in_use(): string {
+		$provider = self::tile_provider();
+
+		return self::provider_usable( $provider ) ? $provider : 'osm';
 	}
 
 	/**
@@ -1007,11 +1010,22 @@ class Renderer {
 	private static function attr_json( array $value ): string {
 		foreach ( $value as $key => $item ) {
 			if ( is_string( $item ) ) {
-				$value[ $key ] = html_entity_decode( esc_html( $item ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+				$value[ $key ] = self::plain_text( $item );
 			}
 		}
 
 		return (string) wp_json_encode( $value, JSON_HEX_AMP );
+	}
+
+	/**
+	 * Text for a script to show as text, as WordPress would print it: escaped,
+	 * then decoded once, as the browser does. See attr_json().
+	 *
+	 * @param string $text Text, such as a translation.
+	 * @return string
+	 */
+	public static function plain_text( string $text ): string {
+		return html_entity_decode( esc_html( $text ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 	}
 
 	/**

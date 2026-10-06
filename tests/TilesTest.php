@@ -253,16 +253,23 @@ test(
 	)
 );
 
-// A map's own tile address, not the site's provider, decides.
+// A map's own tiles, not the site's provider, decide.
 test(
 	'a map tells the view where its tiles stop, when that is known',
-	function ( $tile_url, $expected, $credit ) {
+	function ( $provider, $filtered, $expected, $credit ) {
 		gpxrm_use_provider( 'opentopomap' );
+		if ( null !== $filtered ) {
+			$GLOBALS['gpxrm_test_filters']['gpxrm_tile_url'] = array(
+				static function () use ( $filtered ) {
+					return $filtered;
+				},
+			);
+		}
 
 		$html = Renderer::render(
 			array(
-				'gpxUrl'  => 'https://example.test/route.gpx',
-				'tileUrl' => $tile_url,
+				'gpxUrl'   => 'https://example.test/route.gpx',
+				'provider' => $provider,
 			)
 		);
 		preg_match( '/data-gpxrm-tile-max-zoom="(\d+)"/', $html, $level );
@@ -273,9 +280,9 @@ test(
 	}
 )->with(
 	array(
-		'the site provider'      => array( '', '17', Renderer::OPENTOPOMAP_ATTRIBUTION ),
-		'a map on OpenStreetMap' => array( 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', '19', Renderer::OSM_ATTRIBUTION ),
-		'a server of its own'    => array( 'https://tiles.example.com/{z}/{x}/{y}.png', null, Renderer::OSM_ATTRIBUTION ),
+		'the site provider'      => array( '', null, '17', Renderer::OPENTOPOMAP_ATTRIBUTION ),
+		'a map on OpenStreetMap' => array( 'osm', null, '19', Renderer::OSM_ATTRIBUTION ),
+		'a server of one\'s own' => array( '', 'https://tiles.example.com/{z}/{x}/{y}.png', null, Renderer::OSM_ATTRIBUTION ),
 	)
 );
 

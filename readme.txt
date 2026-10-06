@@ -43,7 +43,7 @@ The public OSM tile server is rate-limited and is not intended for high-traffic 
 
 = Thunderforest (optional) =
 
-If you choose a Thunderforest style under Settings > GPX Route Map and enter an API key, tiles are loaded from `api.thunderforest.com` instead, and your API key is included in each tile request. This only happens once you have selected a Thunderforest style and supplied a key; the plugin never contacts them otherwise.
+If you choose a Thunderforest style under Settings > GPX Route Map, or for a single map in its block or with the shortcode's `provider` attribute, and enter an API key under Settings, tiles are loaded from `api.thunderforest.com` instead, and your API key is included in each tile request. This only happens once a Thunderforest style is chosen and a key supplied; the plugin never contacts them otherwise.
 
 Because visitors' browsers load the tiles, the key is visible in your pages' source. Thunderforest does not offer a way to restrict a key to your domain, so treat the key as public and keep an eye on your usage.
 
@@ -51,7 +51,7 @@ Service: [Thunderforest](https://www.thunderforest.com/). Terms: [Thunderforest 
 
 = OpenTopoMap (optional) =
 
-If you choose OpenTopoMap under Settings > GPX Route Map, tiles are loaded from `tile.opentopomap.org` instead. No account or key is needed. This only happens once you have selected OpenTopoMap; the plugin never contacts it otherwise.
+If you choose OpenTopoMap under Settings > GPX Route Map, or for a single map in its block or with the shortcode's `provider` attribute, tiles are loaded from `tile.opentopomap.org` instead. No account or key is needed. This only happens once OpenTopoMap is chosen; the plugin never contacts it otherwise.
 
 OpenTopoMap is run by volunteers, with no guarantee that it stays available, and its maps have less detail close in than OpenStreetMap's.
 
@@ -59,7 +59,7 @@ Service: [OpenTopoMap](https://opentopomap.org/). Terms: [Usage terms](https://o
 
 = Any other provider =
 
-If you set a custom tile URL of your own, the same applies to whichever server that URL points at.
+If a developer points the plugin at another tile server with the `gpxrm_tile_url` filter, the same applies to whichever server that is.
 
 == Installation ==
 
@@ -89,7 +89,7 @@ Shortcode attributes:
 * `elevation` - Show the interactive elevation profile. `true` or `false`. Default: the site setting.
 * `download` - Show the GPX download button on the map. `true` or `false`. Default: the site setting (off).
 * `maxzoom` - How close the map opens when it frames a short route, from 1 to 22, though never closer than its tile provider has tiles. Visitors can zoom in as far as those tiles go. Default: the site setting.
-* `tile` - Custom raster tile URL template using `{z}/{x}/{y}`. Must be https on an https site: browsers refuse insecure tile requests and the map draws blank. Default: OpenStreetMap.
+* `provider` - The map tiles: `osm` (OpenStreetMap), `opentopomap`, or a Thunderforest style once its API key is saved: `thunderforest-outdoors`, `thunderforest-cycle`, `thunderforest-landscape` or `thunderforest-atlas`. A Thunderforest style without a saved key shows the site's provider. Default: the site setting.
 * `units` - `metric` (km / m) or `imperial` (mi / ft). Default: the site setting.
 * `fields` - Which stats to list, from `distance`, `gain`, `loss`, `max`, `min` and `waypoints`, e.g. `distance,gain`. Default: the site setting. Use `stats="false"` to remove the bar.
 
@@ -97,7 +97,7 @@ Provide either `id` or `gpx`. The block exposes the same options in its sidebar 
 
 Filters (for developers):
 
-* `gpxrm_tile_url` - change the default raster tile URL template, the one maps without a custom tile URL load; the second argument is the provider whose tiles it is, such as `osm`, `opentopomap` or `thunderforest-outdoors`.
+* `gpxrm_tile_url` - change the raster tile URL template a map loads. It runs for every map, whether its provider comes from the block, the shortcode or the site setting. The second argument is the provider that map uses, such as `osm`, `opentopomap` or `thunderforest-outdoors`: its own choice, else the site's, else `osm` while a Thunderforest style has no key. A callback that ignores the second argument replaces the tiles of every map, whatever was chosen for it.
 * `gpxrm_tile_max_zoom` - change the last zoom level a tile server has tiles for (integer, 0 for not known), such as for a tile server of your own; the second argument is the tile URL template.
 * `gpxrm_tile_attribution` - change the attribution HTML.
 * `gpxrm_height` - change the site-wide map height in pixels (integer).
@@ -117,7 +117,7 @@ No. It has no plugin dependencies and works with core WordPress.
 
 = Where do the maps and elevation come from? =
 
-Map rendering uses MapLibre GL JS (BSD-3-Clause) with raster tiles from OpenStreetMap, OpenTopoMap or Thunderforest, as chosen under Settings > GPX Route Map. The track, elevation profile and the distance/elevation stats are all computed from your GPX file in the browser. When you add the block, those stats are saved with it so the summary still shows without JavaScript.
+Map rendering uses MapLibre GL JS (BSD-3-Clause) with raster tiles from OpenStreetMap, OpenTopoMap or Thunderforest, as chosen under Settings > GPX Route Map or for a single map. The track, elevation profile and the distance/elevation stats are all computed from your GPX file in the browser. When you add the block, those stats are saved with it so the summary still shows without JavaScript.
 
 = Can I show miles and feet instead of kilometres and metres? =
 
@@ -127,11 +127,9 @@ Yes. Go to Settings > GPX Route Map and set "Units" to Imperial, and every map o
 
 Yes, for the whole site or for a single map. Go to Settings > GPX Route Map and set "Map height" to size every map that does not set its own. To change just one map, turn off "Use site default height" in the block's Display panel and pick a height, or add `height="600"` to the shortcode. Heights run from 200 to 1200 pixels.
 
-= My custom tile URL shows a blank map =
+= Can one map use different tiles from the rest? =
 
-Browsers refuse to load tiles requested over `http` on a site served over `https`, and the map ends up blank even though the track, markers and stats still draw. Use an `https` tile address. A tile server running on the same machine as the browser, such as `http://localhost:8080`, is exempt and keeps working.
-
-An address without `http://` or `https://` in front of it, including one starting with `//`, is ignored altogether and the map falls back to OpenStreetMap. The block warns about both cases in the Map tiles panel while you are editing.
+Yes. In the block's Map tiles panel, pick a tile provider instead of "Site default". Thunderforest styles appear there once an API key is saved under Settings > GPX Route Map. The shortcode takes `provider="opentopomap"` and the like.
 
 = Visitors can zoom in past where my tiles stop =
 
@@ -157,17 +155,17 @@ Yes, if you switch the download button on. It is off by default. Go to Settings 
 
 = Can I show contour lines and hill shading? =
 
-Yes. Go to Settings > GPX Route Map and set the tile provider to OpenTopoMap. It needs no account. It is run by volunteers, with no guarantee that it stays available, and has less detail close in.
+Yes. Go to Settings > GPX Route Map and set the tile provider to OpenTopoMap. It needs no account. A single map can differ: pick it in the block's Map tiles panel, or add `provider="opentopomap"` to the shortcode. It is run by volunteers, with no guarantee that it stays available, and has less detail close in.
 
 = Can I use Thunderforest's outdoor and cycling maps? =
 
-Yes. Sign up at [thunderforest.com](https://www.thunderforest.com/pricing/), then go to Settings > GPX Route Map, set the tile provider to the Thunderforest style you want (Outdoors, OpenCycleMap, Landscape or Atlas) and paste your API key. Their free plan covers 150,000 tiles a month, which is roughly 8,000 map views; busier sites need a paid plan.
+Yes. Sign up at [thunderforest.com](https://www.thunderforest.com/pricing/), then go to Settings > GPX Route Map, set the tile provider to the Thunderforest style you want (Outdoors, OpenCycleMap, Landscape or Atlas) and paste your API key. With the key saved, a single map can use a different style: pick it in the block's Map tiles panel, or add `provider="thunderforest-cycle"` and the like to the shortcode. Their free plan covers 150,000 tiles a month, which is roughly 8,000 map views; busier sites need a paid plan.
 
 Two things worth knowing. The key appears in your pages' source, because visitors' browsers fetch the tiles, and Thunderforest cannot lock a key to one domain, so watch your usage. And the map credits both Thunderforest and OpenStreetMap automatically, which their terms require and do not allow you to remove.
 
 = Can I use my own map tiles? =
 
-Yes, set a custom tile URL in the block's Map tiles panel or with the `gpxrm_tile_url` filter.
+Not from the editor: the block offers the providers above. A developer can point maps at another tile server with the `gpxrm_tile_url` filter, and say where its tiles stop with `gpxrm_tile_max_zoom`. Tile addresses set on a map before 2.0 are no longer used; those maps follow the site's provider.
 
 = Can I link a GPX file hosted on another site? =
 

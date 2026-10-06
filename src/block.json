@@ -67,7 +67,7 @@
 			"type": "number",
 			"default": 0
 		},
-		"tileUrl": {
+		"provider": {
 			"type": "string",
 			"default": ""
 		},

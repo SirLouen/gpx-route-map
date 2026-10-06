@@ -169,12 +169,15 @@ describe( 'useRenderedMarkup', () => {
 		expect( last().rendered?.json ).not.toBe( last().json );
 	} );
 
-	// The endpoint rejects any attribute it does not know, and the block
-	// wrapper's own attributes do not change the map.
+	// The endpoint rejects any attribute it does not know, as one a plugin
+	// may add to every block, and the block wrapper's own attributes do not
+	// change the map. (A 1.x tile address is already dropped when the editor
+	// parses the post.)
 	it( 'sends only the block’s own attributes', () => {
 		show( {
 			height: 400,
-			tileUrl: '',
+			provider: 'osm',
+			tileUrl: 'https://tiles.example.test/{z}/{x}/{y}.png',
 			className: 'is-style-x',
 			align: 'wide',
 			lock: { move: true },
@@ -183,7 +186,7 @@ describe( 'useRenderedMarkup', () => {
 
 		expect( calls[ 0 ].options.data.attributes ).toEqual( {
 			height: 400,
-			tileUrl: '',
+			provider: 'osm',
 		} );
 	} );
 

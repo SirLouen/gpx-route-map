@@ -164,6 +164,7 @@ test(
 		'download'  => 'download',
 		'fields'    => 'fields',
 		'units'     => 'units',
+		'provider'  => 'provider',
 	)
 );
 
