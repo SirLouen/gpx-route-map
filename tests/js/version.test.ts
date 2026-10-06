@@ -40,6 +40,16 @@ describe( 'version', () => {
 		expect( JSON.parse( read( 'src/block.json' ) ).version ).toBe( plugin );
 	} );
 
+	// The file WordPress registers. Checked where there is a build, as in CI.
+	it.skipIf( ! fs.existsSync( path.join( ROOT, 'build', 'block.json' ) ) )(
+		'reaches the built block.json',
+		() => {
+			expect( JSON.parse( read( 'build/block.json' ) ).version ).toBe(
+				plugin
+			);
+		}
+	);
+
 	it( 'matches the readme stable tag and package.json', () => {
 		expect(
 			/^Stable tag:\s*(\S+)/m.exec( read( 'readme.txt' ) )?.[ 1 ]
