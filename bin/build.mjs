@@ -51,10 +51,33 @@ function assetPhp( dependencies, versionSource ) {
 	return `<?php return array('dependencies' => array(${ deps }), 'version' => '${ version }');\n`;
 }
 
+/**
+ * Keep the editor's translator comments, so make-pot - here and on
+ * translate.wordpress.org, which reads build/index.js - shows translators what
+ * a placeholder stands for.
+ *
+ * The bundler drops every comment but "legal" ones, which start with /*!. So
+ * they are made legal on the way in, here, and plain again on the way out, in
+ * keepTranslatorComments.restore(): make-pot only reads comments that start
+ * with "translators:".
+ */
+const keepTranslatorComments = {
+	name: 'gpxrm-keep-translator-comments',
+	enforce: 'pre',
+	transform( code, id ) {
+		return /\.tsx?$/.test( id ) && code.includes( '/* translators:' )
+			? code.replaceAll( '/* translators:', '/*! translators:' )
+			: null;
+	},
+	restore: ( code ) =>
+		code.replaceAll( '/*! translators:', '/* translators:' ),
+};
+
 async function buildEditor() {
 	await build( {
 		configFile: false,
 		logLevel: 'warn',
+		plugins: [ keepTranslatorComments ],
 		build: {
 			outDir: OUT,
 			emptyOutDir: false,
@@ -86,7 +109,10 @@ async function buildEditor() {
 		},
 	} );
 
-	const code = fs.readFileSync( path.join( OUT, 'index.js' ), 'utf8' );
+	const code = keepTranslatorComments.restore(
+		fs.readFileSync( path.join( OUT, 'index.js' ), 'utf8' )
+	);
+	fs.writeFileSync( path.join( OUT, 'index.js' ), code );
 	fs.writeFileSync(
 		path.join( OUT, 'index.asset.php' ),
 		assetPhp(

@@ -58,9 +58,6 @@
             "Map tiles": [
                 "Teselas del mapa"
             ],
-            "Custom tile URL": [
-                "URL de teselas personalizada"
-            ],
             "Replace GPX": [
                 "Reemplazar GPX"
             ],
@@ -112,11 +109,11 @@
             "Use site default": [
                 "Usar el ajuste del sitio"
             ],
+            "Tile provider": [
+                "Proveedor de teselas"
+            ],
             "Follow the stats chosen under Settings \u2192 GPX Route Map.": [
                 "Sigue las estad\u00edsticas que hayas elegido en Ajustes \u2192 GPX Route Map."
-            ],
-            "Raster tile template with {z}\/{x}\/{y}, over https. Add {ratio} where the provider expects a retina suffix, for example {z}\/{x}\/{y}{ratio}.png. Leave blank to use OpenStreetMap. Public OSM tiles are rate-limited \u2014 use your own provider for busy sites.": [
-                "Plantilla de teselas r\u00e1ster con {z}\/{x}\/{y}, sobre https. A\u00f1ade {ratio} donde el proveedor espere un sufijo retina, por ejemplo {z}\/{x}\/{y}{ratio}.png. D\u00e9jalo en blanco para usar OpenStreetMap. Las teselas p\u00fablicas de OSM tienen un l\u00edmite de uso; usa tu propio proveedor en sitios con mucho tr\u00e1fico."
             ],
             "Use site default height": [
                 "Usar la altura del sitio"
@@ -139,14 +136,20 @@
             "Applies at 480px and below. Reset to follow the site setting, or the tablet height when the site has none.": [
                 "Se aplica a 480px o menos. Restabl\u00e9celo para seguir el ajuste del sitio, o la altura de tableta si el sitio no define ninguna."
             ],
-            "This address is not secure, so visitors\u2019 browsers will refuse to load the tiles and the map will appear blank. Use an https address, unless the tile server runs on the same machine as the browser.": [
-                "Esta direcci\u00f3n no es segura, as\u00ed que los navegadores de los visitantes se negar\u00e1n a cargar las teselas y el mapa aparecer\u00e1 en blanco. Usa una direcci\u00f3n https, salvo que el servidor de teselas est\u00e9 en la misma m\u00e1quina que el navegador."
+            "Min elevation": [
+                "Altitud m\u00ednima"
             ],
-            "This address is missing http:\/\/ or https:\/\/, so it will be ignored and the map will fall back to OpenStreetMap.": [
-                "A esta direcci\u00f3n le falta http:\/\/ o https:\/\/, as\u00ed que se ignorar\u00e1 y el mapa usar\u00e1 OpenStreetMap."
+            "How close this map opens when it frames a short route, though never closer than its tile provider has tiles. Reset to follow the site setting (%d).": [
+                "Cu\u00e1nto se acerca este mapa al abrirse si encuadra una ruta corta, aunque nunca m\u00e1s de lo que permiten las teselas de su proveedor. Restabl\u00e9celo para seguir el ajuste del sitio (%d)."
             ],
-            "Reset to follow the site setting (%d).": [
-                "Restabl\u00e9celo para seguir el ajuste del sitio (%d)."
+            "Thunderforest styles appear here once an API key is saved under Settings \u2192 GPX Route Map.": [
+                "Los estilos de Thunderforest aparecer\u00e1n aqu\u00ed cuando se guarde una clave de API en Ajustes \u2192 GPX Route Map."
+            ],
+            "Site default \u2014 %s": [
+                "Ajuste del sitio \u2014 %s"
+            ],
+            "%s \u2014 needs an API key": [
+                "%s \u2014 necesita una clave de API"
             ]
         }
     }

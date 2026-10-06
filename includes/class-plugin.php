@@ -528,7 +528,7 @@ class Plugin {
 			);
 		}
 		echo '</select>';
-		echo '<p class="description">' . esc_html__( 'OpenStreetMap works with no setup. Thunderforest offers outdoor and cycling styles, and needs an account.', 'gpx-route-map' ) . ' ' . esc_html__( 'OpenTopoMap shows contour lines and hill shading, also with no setup. It is run by volunteers, with no guarantee it stays available, and has less detail close in.', 'gpx-route-map' ) . ' ' . esc_html__( 'Individual maps can override it.', 'gpx-route-map' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'OpenStreetMap works with no setup. Thunderforest offers outdoor and cycling styles, and needs an account.', 'gpx-route-map' ) . ' ' . esc_html__( 'OpenTopoMap shows contour lines and hill shading, also with no setup. It is run by volunteers, with no guarantee it stays available, and has less detail close in.', 'gpx-route-map' ) . ' ' . esc_html__( 'Individual maps can choose their own provider.', 'gpx-route-map' ) . '</p>';
 
 		// Its maps quietly show OpenStreetMap meanwhile, so say why.
 		if ( ! Renderer::provider_usable( $current ) ) {
