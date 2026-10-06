@@ -3,5 +3,6 @@ parameters:
 	paths:
 		- gpx-route-map.php
 		- includes
+		- src/render.php
 	bootstrapFiles:
 		- tests/phpstan-bootstrap.php

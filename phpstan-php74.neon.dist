@@ -1,0 +1,12 @@
+# A second PHPStan pass, as the oldest PHP the plugin supports ("Requires
+# PHP: 7.4"), so that a PHP 8 function, class or syntax fails. It does not
+# replace phpstan.neon.dist, which checks the code against the PHP running the
+# analysis: as PHP 7.4, the functions PHP 8 removed still exist. CI also lints
+# the shipped files on PHP 7.4 itself (the php-74 job), which catches the
+# syntax PHPStan lets through, such as ?-> and static return types.
+includes:
+	- phpstan.neon.dist
+parameters:
+	phpVersion: 70400
+	scanFiles:
+		- tests/phpstan-wp-polyfills.php
