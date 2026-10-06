@@ -36,8 +36,9 @@
 	</rule>
 
 	<config name="minimum_supported_wp_version" value="6.4"/>
-	<!-- PHP 7.4 compatibility is checked by PHPStan (phpVersion) and by CI's
-	     php-74 job, which lints the shipped files on PHP 7.4, not by phpcs. -->
+	<!-- PHP 7.4 compatibility is checked by PHPStan's PHP 7.4 pass
+	     (phpstan-php74.neon.dist) and by CI's php-74 job, which lints the
+	     shipped files on PHP 7.4, not by phpcs. -->
 
 	<rule ref="WordPress.WP.I18n">
 		<properties>

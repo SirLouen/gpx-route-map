@@ -1,14 +1,8 @@
 parameters:
 	level: max
-	# Analyse as the oldest PHP the plugin supports ("Requires PHP: 7.4"), so a
-	# PHP 8 function, class or syntax fails here. CI also lints the shipped
-	# files on PHP 7.4 itself (the php-74 job), which sees the syntax PHPStan
-	# lets through, such as ?-> and static return types.
-	phpVersion: 70400
 	paths:
 		- gpx-route-map.php
 		- includes
+		- src/render.php
 	bootstrapFiles:
 		- tests/phpstan-bootstrap.php
-	scanFiles:
-		- tests/phpstan-wp-polyfills.php

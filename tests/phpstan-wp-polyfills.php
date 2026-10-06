@@ -2,10 +2,10 @@
 /**
  * The PHP 8 functions WordPress defines on PHP 7.4, in wp-includes/compat.php.
  *
- * PHPStan analyses the plugin as PHP 7.4, whose own functions these are not,
- * but WordPress 6.8, the plugin's minimum, always provides them. Listed in
- * scanFiles, so PHPStan reads this file and never runs it: on PHP 8 these
- * declarations would clash with PHP's own functions.
+ * PHPStan's PHP 7.4 pass (phpstan-php74.neon.dist) does not know them, since
+ * PHP 7.4 has none of them, but WordPress 6.8, the plugin's minimum, always
+ * provides them. Listed in scanFiles, so PHPStan reads this file and never
+ * runs it: on PHP 8 these declarations would clash with PHP's own functions.
  *
  * @package GpxRouteMap
  */

@@ -22,7 +22,10 @@
 	},
 	"scripts": {
 		"test": "pest",
-		"analyse": "phpstan analyse",
+		"analyse": [
+			"phpstan analyse",
+			"phpstan analyse -c phpstan-php74.neon.dist"
+		],
 		"seed": "pnpm exec wp-env run cli wp --require=wp-content/plugins/gpx-route-map/tools/seeder.php gpxrm seed",
 		"seed:fresh": "pnpm exec wp-env run cli wp --require=wp-content/plugins/gpx-route-map/tools/seeder.php gpxrm seed --fresh"
 	}

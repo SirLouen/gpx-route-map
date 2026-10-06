@@ -17,9 +17,10 @@ if ( ! class_exists( '\Gpxrm\Renderer' ) ) {
 }
 
 /**
- * Block attributes injected by WordPress at render time.
+ * Block attributes injected by WordPress at render time; null if this file is
+ * ever included without them.
  *
- * @var array<string, mixed> $attributes
+ * @var array<string, mixed>|null $attributes
  */
 $gpxrm_markup = \Gpxrm\Renderer::render(
 	is_array( $attributes ) ? $attributes : array(),

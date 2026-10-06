@@ -28,6 +28,7 @@
 /composer.lock
 /phpcs.xml.dist
 /phpstan.neon.dist
+/phpstan-php74.neon.dist
 /phpunit.xml.dist
 /.phpunit.cache
 
