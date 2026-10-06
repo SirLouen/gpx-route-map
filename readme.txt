@@ -169,7 +169,7 @@ Not from the editor: the block offers the providers above. A developer can point
 
 = Can I link a GPX file hosted on another site? =
 
-Only if that host allows cross-origin (CORS) requests, because the visitor's browser fetches the file directly, and most external sites don't send the required header. The front end then shows "Could not load GPX file: its host does not allow cross-origin (CORS) requests." even though the link opens fine in a browser tab. Uploading the file to your Media Library is the reliable option.
+Only if that host allows cross-origin (CORS) requests, because the visitor's browser fetches the file directly, and most external sites don't send the required header. The front end then shows "Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead." even though the link opens fine in a browser tab. Uploading the file to your Media Library is the reliable option.
 
 = Why don't my existing GPX files appear in the media picker? =
 
@@ -198,7 +198,7 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Fixed: the editor now works out a map's figures from its selected Media Library file, as the front end does, and shows the map, rather than the file picker, for a block that only stores a media file.
 * Fixed: the elevation profile now draws on very long tracks, where it stayed blank: from about 125,000 points in Chrome and Edge, or about 500,000 in Firefox and Safari.
 * Fixed: a GPX file with points no map can place, such as a latitude beyond 90°, no longer fails to load. Those points are left out; a file with none left shows "No track or route points found in GPX file.", and one whose track points are all unusable shows its route instead. A post saved before 2.0.0 with such a file gets corrected figures when it is opened in the editor, so the editor shows it as changed; update the post to keep them.
-* Fixed: the elevation profile now redraws whenever its width changes, such as when a theme resizes the block, not only when the window is resized.
+* Fixed: the elevation profile now redraws whenever its width changes, such as when a theme resizes the block, not only when the window is resized. Hovering it after the window moves to a screen with a different scale no longer crops it.
 * Fixed: a browser without WebGL2, which cannot show the map, still fills in the stats bar from the GPX file.
 * Fixed: after an update, browsers and caches could keep using the block's old stylesheets, because their address only changed when WordPress itself was updated. It now changes with each release of the plugin.
 * The Spanish translation now matches the reviewed one on translate.wordpress.org, with the strings new in 2.0.0 translated here until they are reviewed there, and also ships as a PHP translation file, which WordPress loads faster.

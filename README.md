@@ -36,7 +36,7 @@ pnpm run test:js        # run once
 pnpm run test:js:watch  # watch mode
 ```
 
-PHP unit tests use [Pest](https://pestphp.com/). The suite runs standalone, without WordPress: `tests/bootstrap.php` stubs the WordPress functions the plugin calls.
+PHP unit tests use [Pest](https://pestphp.com/). The suite runs standalone, without WordPress: `tests/bootstrap.php` stubs the WordPress functions the tested code calls.
 
 ```bash
 composer install
