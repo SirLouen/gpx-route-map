@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -31,7 +31,7 @@ The front-end JavaScript in `build/` is minified (the block editor script is not
 
 == External services ==
 
-This plugin renders maps using map images (tiles) served by a third party. Tiles are loaded directly by each visitor's browser when a page containing a map is viewed, so the tile provider receives that visitor's IP address, browser User-Agent, and the coordinates of the map area being viewed. No data is sent when a page has no map on it, and the plugin never sends your GPX files anywhere.
+This plugin renders maps using map images (tiles) served by a third party. Tiles are loaded directly by each visitor's browser when a page containing a map is viewed, so the tile provider receives that visitor's IP address, browser User-Agent, and the coordinates of the map area being viewed. The block editor's map preview loads tiles the same way, from the browser of whoever is editing the post. No data is sent when a page has no map on it, and the plugin never sends your GPX files anywhere.
 
 = OpenStreetMap (default) =
 
@@ -186,6 +186,23 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 
 == Changelog ==
 
+= 2.0.0 =
+* Removed: custom tile URLs. This is a breaking change, and the reason this release is 2.0.0. The block's "Custom tile URL" field and the shortcode's `tile` attribute are gone, and a map that used one now shows the site's tile provider instead. The old address is not kept: it is dropped from a post the next time the post is saved, though older revisions still have it, so going back to 1.8 does not bring it back for posts edited in 2.0. To give a single map different tiles, choose OpenStreetMap, OpenTopoMap or a Thunderforest style in its Map tiles panel, or with the shortcode's new `provider` attribute. Developers who serve tiles from their own server can keep doing so with the `gpxrm_tile_url` filter, which applies to every map, or to every map using a given provider; a single map can no longer have a tile address of its own.
+* New: choose the map tiles for each map. The block's Map tiles panel offers the site default, OpenStreetMap, OpenTopoMap and, once an API key is saved under Settings > GPX Route Map, each Thunderforest style. The shortcode takes the same choice, for example `provider="opentopomap"`.
+* New: OpenTopoMap, a topographic map with contour lines and hill shading, with no account needed. It is run by volunteers, with no guarantee that it stays available.
+* The site's tile provider is now a single list in which each Thunderforest style is its own entry, replacing the separate "Thunderforest style" setting. A site's current choice carries over.
+* Maps no longer zoom in past the last level their tile provider has tiles for, where OpenStreetMap went blank and OpenTopoMap showed placeholder images. "Max zoom" is now described as what it is: how close a map opens when it frames a short route.
+* New: the block editor shows the map itself, as visitors will see it, instead of a placeholder card, and updates it as you change the settings. Up to 8 maps are live at once; any others show the card until one of those is removed. The preview loads the map tiles like any visitor would, so editing posts with maps now counts toward a Thunderforest plan's tiles.
+* New: an optional Min elevation figure for the stats bar, off unless you tick it. Maps added before 2.0.0 show a dash for it until the map has loaded, and updating the post does not change that; to store it with such a map, tick Min elevation in that map's Stats bar items panel.
+* Turning off "Use site default" in a map's Stats bar items panel now starts from the figures the site shows, rather than from all of them.
+* Fixed: the editor now works out a map's figures from its selected Media Library file, as the front end does, and shows the map, rather than the file picker, for a block that only stores a media file.
+* Fixed: the elevation profile now draws on very long tracks, where it stayed blank: from about 125,000 points in Chrome and Edge, or about 500,000 in Firefox and Safari.
+* Fixed: a GPX file with points no map can place, such as a latitude beyond 90°, no longer fails to load. Those points are left out; a file with none left shows "No track or route points found in GPX file.", and one whose track points are all unusable shows its route instead. A post saved before 2.0.0 with such a file gets corrected figures when it is opened in the editor, so the editor shows it as changed; update the post to keep them.
+* The Spanish translation now matches the reviewed one on translate.wordpress.org, with the strings new in 2.0.0 translated here until they are reviewed there, and also ships as a PHP translation file, which WordPress loads faster.
+* Going back to 1.8: once Settings > GPX Route Map has been saved in 2.0, for any change, a site on Thunderforest shows OpenStreetMap until Thunderforest is chosen again there.
+* For developers: `gpxrm_tile_url` now runs for every map and gets the provider that map uses as a second argument, so a callback that ignores it replaces every map's tiles. New `gpxrm_tile_max_zoom` filter. `Renderer::tile_provider()` returns provider ids such as `thunderforest-outdoors`, and `Renderer::STAT_FIELDS` includes the opt-in `min` (the shipped default list is `Renderer::DEFAULT_STAT_FIELDS`). Removed: `Renderer::sanitize_tile_url()`, `Plugin::sanitize_thunderforest_style()` and `Plugin::render_thunderforest_style_field()`. The `gpxrm_thunderforest_style` option is only read to carry a 1.x choice over.
+
+
 = 1.8.0 =
 * Now requires WordPress 6.8 or newer. WordPress loads plugin translations by itself from 6.8 on, so the plugin no longer does it. Sites on 6.6 or 6.7 keep the version they already have.
 * New: set the maximum zoom once for the whole site under Settings > GPX Route Map, instead of repeating it on every map.
@@ -249,6 +266,10 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 2.0.0 =
+Breaking change: custom tile URLs are removed, which is why this is 2.0.0. Maps and shortcodes that used one now show the site's tile provider; choose OpenStreetMap, OpenTopoMap or a Thunderforest style for a single map instead. Also adds a live editor preview and an optional Min elevation.
+
 
 = 1.8.0 =
 Needs WordPress 6.8 or newer. Adds a site-wide maximum zoom setting, fixes waypoint popups that some themes made unreadable, and warns in the editor about a tile URL that will not work. Sites on 6.6 or 6.7 are not offered this update and keep the version they have.

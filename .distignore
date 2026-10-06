@@ -16,7 +16,7 @@
 /.vscode
 /.editorconfig
 /.eslintignore
-/.eslintrc.js
+/eslint.config.js
 /.npmrc
 /.wp-env.json
 /.wp-env.override.json
