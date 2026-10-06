@@ -601,7 +601,7 @@ export default function Edit( {
 						help={ sprintf(
 							/* translators: %d: zoom level. */
 							__(
-								'Reset to follow the site setting (%d).',
+								'How close this map opens when it frames a short route, though never closer than its tile provider has tiles. Reset to follow the site setting (%d).',
 								'gpx-route-map'
 							),
 							siteMaxZoom
