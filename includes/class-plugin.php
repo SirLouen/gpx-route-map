@@ -321,16 +321,10 @@ class Plugin {
 			)
 		);
 
-		register_setting(
-			self::OPTION_GROUP,
-			'gpxrm_thunderforest_style',
-			array(
-				'type'              => 'string',
-				'default'           => 'outdoors',
-				'sanitize_callback' => array( $this, 'sanitize_thunderforest_style' ),
-				'show_in_rest'      => false,
-			)
-		);
+		// gpxrm_thunderforest_style is no longer registered: the style is part
+		// of the provider now, and the old setting is only read to carry a 1.x
+		// choice over (Renderer::resolve_provider). Registered, it would be
+		// reset by every save of the settings page.
 	}
 
 	/**
@@ -355,28 +349,14 @@ class Plugin {
 			array( 'label_for' => 'gpxrm_tile_provider' )
 		);
 
+		// Always shown: a saved key is what makes Thunderforest available.
 		add_settings_field(
 			'gpxrm_thunderforest_key',
 			__( 'Thunderforest API key', 'gpx-route-map' ),
 			array( $this, 'render_thunderforest_key_field' ),
 			self::SETTINGS_PAGE,
 			'gpxrm_tiles',
-			array(
-				'label_for' => 'gpxrm_thunderforest_key',
-				'class'     => 'gpxrm-thunderforest-row',
-			)
-		);
-
-		add_settings_field(
-			'gpxrm_thunderforest_style',
-			__( 'Thunderforest style', 'gpx-route-map' ),
-			array( $this, 'render_thunderforest_style_field' ),
-			self::SETTINGS_PAGE,
-			'gpxrm_tiles',
-			array(
-				'label_for' => 'gpxrm_thunderforest_style',
-				'class'     => 'gpxrm-thunderforest-row',
-			)
+			array( 'label_for' => 'gpxrm_thunderforest_key' )
 		);
 	}
 
@@ -411,10 +391,6 @@ class Plugin {
 					return 'hide' === value;
 				} );
 
-				// The key and style only apply to Thunderforest.
-				bind( 'gpxrm_tile_provider', '.gpxrm-thunderforest-row', function ( value ) {
-					return 'thunderforest' !== value;
-				} );
 			}() );
 		</script>
 		<?php
@@ -496,13 +472,15 @@ class Plugin {
 	}
 
 	/**
-	 * Keep the provider to one the plugin knows about.
+	 * Keep the provider to one the plugin offers.
 	 *
 	 * @param mixed $value Submitted value.
 	 * @return string
 	 */
 	public function sanitize_tile_provider( $value ): string {
-		return ( is_string( $value ) && 'thunderforest' === $value ) ? 'thunderforest' : 'osm';
+		// The 1.x value stays as it is: a script written for 1.x may set the
+		// style after it, and reading resolves it with whatever style is set.
+		return 'thunderforest' === $value ? $value : Renderer::resolve_provider( $value );
 	}
 
 	/**
@@ -533,40 +511,29 @@ class Plugin {
 	}
 
 	/**
-	 * Keep the style to one the plugin offers.
-	 *
-	 * @param mixed $value Submitted value.
-	 * @return string
-	 */
-	public function sanitize_thunderforest_style( $value ): string {
-		$styles = Renderer::thunderforest_styles();
-
-		return ( is_string( $value ) && isset( $styles[ $value ] ) ) ? $value : 'outdoors';
-	}
-
-	/**
 	 * Output the tile provider control.
 	 *
 	 * @return void
 	 */
 	public function render_tile_provider_field(): void {
 		$current = Renderer::tile_provider();
-		$choices = array(
-			'osm'           => __( 'OpenStreetMap (no account needed)', 'gpx-route-map' ),
-			'thunderforest' => __( 'Thunderforest (API key required)', 'gpx-route-map' ),
-		);
 
 		echo '<select name="gpxrm_tile_provider" id="gpxrm_tile_provider">';
-		foreach ( $choices as $value => $label ) {
+		foreach ( Renderer::tile_providers() as $value => $provider ) {
 			printf(
 				'<option value="%1$s"%2$s>%3$s</option>',
 				esc_attr( $value ),
 				selected( $current, $value, false ),
-				esc_html( $label )
+				esc_html( $provider['label'] )
 			);
 		}
 		echo '</select>';
-		echo '<p class="description">' . esc_html__( 'OpenStreetMap works with no setup. Thunderforest offers outdoor and cycling styles, and needs an account.', 'gpx-route-map' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'OpenStreetMap works with no setup. Thunderforest offers outdoor and cycling styles, and needs an account.', 'gpx-route-map' ) . ' ' . esc_html__( 'OpenTopoMap shows contour lines and hill shading, also with no setup. It is run by volunteers, with no guarantee it stays available, and has less detail close in.', 'gpx-route-map' ) . '</p>';
+
+		// Its maps quietly show OpenStreetMap meanwhile, so say why.
+		if ( ! Renderer::provider_usable( $current ) ) {
+			echo '<p class="description"><strong>' . esc_html__( 'No Thunderforest API key is saved, so maps use OpenStreetMap until you add one.', 'gpx-route-map' ) . '</strong></p>';
+		}
 	}
 
 	/**
@@ -592,26 +559,6 @@ class Plugin {
 		echo '<br>';
 		esc_html_e( 'The key is visible in your pages, because visitors\' browsers load the tiles. Thunderforest cannot restrict a key to your domain, so keep an eye on your usage.', 'gpx-route-map' );
 		echo '</p>';
-	}
-
-	/**
-	 * Output the Thunderforest style control.
-	 *
-	 * @return void
-	 */
-	public function render_thunderforest_style_field(): void {
-		$current = Renderer::thunderforest_style();
-
-		echo '<select name="gpxrm_thunderforest_style" id="gpxrm_thunderforest_style">';
-		foreach ( Renderer::thunderforest_styles() as $value => $label ) {
-			printf(
-				'<option value="%1$s"%2$s>%3$s</option>',
-				esc_attr( $value ),
-				selected( $current, $value, false ),
-				esc_html( $label )
-			);
-		}
-		echo '</select>';
 	}
 
 	/**
@@ -780,7 +727,7 @@ class Plugin {
 		echo '<p class="description">';
 		printf(
 			/* translators: 1: lowest zoom level, 2: highest zoom level. */
-			esc_html__( 'How far visitors can zoom in, from %1$d to %2$d. Lower this if your tile provider stops supplying tiles before the map stops zooming. Individual maps can override it.', 'gpx-route-map' ),
+			esc_html__( 'How close a map opens when it frames a short route, from %1$d to %2$d, though never closer than its tile provider has tiles. Visitors can zoom in as far as those tiles go. Individual maps can override it.', 'gpx-route-map' ),
 			(int) Renderer::MIN_ZOOM,
 			(int) Renderer::MAX_ZOOM
 		);
@@ -1002,7 +949,7 @@ class Plugin {
 	 *   elevation Show the elevation profile: "true"/"false" (defaults to the site setting).
 	 *   download  Show the GPX download button: "true"/"false" (defaults to the site setting).
 	 *   fields    Which stats to list, e.g. "distance,gain" (defaults to the site setting; use stats="false" to hide the bar).
-	 *   maxzoom   Maximum zoom level (defaults to the site setting).
+	 *   maxzoom   How close the map opens for a short route (defaults to the site setting).
 	 *   tile      Override raster tile URL template.
 	 *   units     "metric" or "imperial" (defaults to the site setting).
 	 *

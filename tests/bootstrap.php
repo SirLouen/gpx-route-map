@@ -205,6 +205,24 @@ if ( ! function_exists( 'esc_html' ) ) {
 	}
 }
 
+if ( ! function_exists( 'selected' ) ) {
+	/**
+	 * Mark an option as WordPress's selected() does.
+	 *
+	 * @param mixed $selected One value to compare.
+	 * @param mixed $current  The other value to compare.
+	 * @param bool  $display  Whether to echo the attribute too.
+	 * @return string
+	 */
+	function selected( $selected, $current = true, bool $display = true ): string {
+		$result = (string) $selected === (string) $current ? " selected='selected'" : '';
+		if ( $display ) {
+			echo $result; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+		return $result;
+	}
+}
+
 if ( ! function_exists( 'checked' ) ) {
 	/**
 	 * Mark a checkbox as WordPress's checked() does.

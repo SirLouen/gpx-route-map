@@ -59,6 +59,23 @@ function fillStats(
 }
 
 /**
+ * The last tile level the map's provider has, as the server says.
+ *
+ * Absent from pages cached before it was sent, and never trusted unless it is
+ * a whole zoom level MapLibre can use: otherwise the zoom stays as open as it
+ * always was.
+ *
+ * @param mapEl Map element.
+ * @return The level, from 1 to 22, or undefined.
+ */
+function readTileMaxZoom( mapEl: HTMLElement ): number | undefined {
+	const level = Number( mapEl.dataset.gpxrmTileMaxZoom );
+	return Number.isInteger( level ) && level >= 1 && level <= 22
+		? level
+		: undefined;
+}
+
+/**
  * Show an inline error inside the map element.
  *
  * @param mapEl Map element.
@@ -196,8 +213,9 @@ export async function initInstance(
 	const tileUrl = mapEl.dataset.gpxrmTileUrl || DEFAULT_TILE_URL;
 	const attribution = mapEl.dataset.gpxrmAttribution || DEFAULT_ATTRIBUTION;
 	const maxZoom = parseInt( mapEl.dataset.gpxrmMaxZoom || '17', 10 );
+	const tileMaxZoom = readTileMaxZoom( mapEl );
 
-	const style = buildRasterStyle( tileUrl, attribution );
+	const style = buildRasterStyle( tileUrl, attribution, tileMaxZoom );
 	const bounds = computeBoundsFromCoords( coords );
 	const map = createMap( {
 		maplibregl,
@@ -205,6 +223,7 @@ export async function initInstance(
 		style,
 		bounds,
 		maxZoom,
+		tileMaxZoom,
 		locale: readMapUi( mapEl ),
 		// Set by the block editor on the map it previews.
 		preview: 'gpxrmPreview' in mapEl.dataset,

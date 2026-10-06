@@ -2,7 +2,7 @@
 
 A WordPress plugin that renders a GPX track as an interactive OpenStreetMap map with waypoints, distance and an elevation profile, as a Gutenberg block or a shortcode.
 
-Built with [MapLibre GL JS](https://maplibre.org/) + raster OpenStreetMap tiles and a hand-rolled `<canvas>` elevation profile.
+Built with [MapLibre GL JS](https://maplibre.org/) + raster tiles (OpenStreetMap, OpenTopoMap or Thunderforest) and a hand-rolled `<canvas>` elevation profile.
 
 ## Features
 
@@ -11,7 +11,7 @@ Built with [MapLibre GL JS](https://maplibre.org/) + raster OpenStreetMap tiles 
 -   **Stats bar**: distance, elevation gain/loss, max and min elevation (min is opt-in), waypoint count. Computed in the browser from the GPX file; a block also stores them, so its bar shows the figures without JavaScript, while a shortcode's fills in once the map loads.
 -   **Elevation profile**: scrub with mouse/touch; the position syncs onto the map, and clicking the track highlights the profile.
 -   **Lazy loading**: MapLibre loads only when a map scrolls into view; multiple maps per page are supported.
--   **Configurable tiles**: respects the OSM tile usage policy via a custom tile URL / `gpxrm_tile_url` filter.
+-   **Configurable tiles**: OpenStreetMap, OpenTopoMap or a Thunderforest style site-wide, each credited and zoomed only as far as it has tiles; a custom tile URL / `gpxrm_tile_url` filter keeps to the OSM tile usage policy.
 
 ## Development
 

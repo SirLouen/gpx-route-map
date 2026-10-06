@@ -153,10 +153,14 @@ export function computeBoundsFromCoords( coords: Coord[] ): Bounds {
  *
  * @param tileUrl     Tile URL template ({z}/{x}/{y}).
  * @param attribution Attribution HTML.
+ * @param tileMaxZoom The last tile level the provider has, if known: past it
+ *                    MapLibre draws those tiles larger instead of asking for
+ *                    tiles that do not exist.
  */
 export function buildRasterStyle(
 	tileUrl: string,
-	attribution: string
+	attribution: string,
+	tileMaxZoom?: number
 ): StyleSpecification {
 	return {
 		version: 8,
@@ -166,6 +170,9 @@ export function buildRasterStyle(
 				tiles: [ tileUrl || DEFAULT_TILE_URL ],
 				tileSize: 256,
 				attribution: attribution || DEFAULT_ATTRIBUTION,
+				...( Number.isFinite( tileMaxZoom ) && {
+					maxzoom: tileMaxZoom,
+				} ),
 			},
 		},
 		layers: [ { id: 'osm', type: 'raster', source: 'osm' } ],
@@ -178,6 +185,7 @@ export interface CreateMapOptions {
 	style: StyleSpecification;
 	bounds: LngLatBoundsLike;
 	maxZoom?: number;
+	tileMaxZoom?: number;
 	locale?: Record< string, string >;
 	preview?: boolean;
 }
@@ -185,14 +193,18 @@ export interface CreateMapOptions {
 /**
  * Create a MapLibre map with the standard control set.
  *
- * @param options            Options.
- * @param options.maplibregl MapLibre GL module.
- * @param options.container  Map container element.
- * @param options.style      Style spec.
- * @param options.bounds     Initial bounds.
- * @param options.maxZoom    Max zoom for fitBounds.
- * @param options.locale     Translated MapLibre UI strings (see readMapUi).
- * @param options.preview    Whether it is the block editor's preview.
+ * @param options             Options.
+ * @param options.maplibregl  MapLibre GL module.
+ * @param options.container   Map container element.
+ * @param options.style       Style spec.
+ * @param options.bounds      Initial bounds.
+ * @param options.maxZoom     How close the map opens: max zoom for fitBounds.
+ * @param options.tileMaxZoom The last tile level the provider has, if known.
+ *                            The 256 pixel tiles of that level show at their
+ *                            own size one map zoom earlier, so that is as far
+ *                            as visitors can zoom in.
+ * @param options.locale      Translated MapLibre UI strings (see readMapUi).
+ * @param options.preview     Whether it is the block editor's preview.
  */
 export function createMap( {
 	maplibregl,
@@ -200,6 +212,7 @@ export function createMap( {
 	style,
 	bounds,
 	maxZoom,
+	tileMaxZoom,
 	locale,
 	preview = false,
 }: CreateMapOptions ): MapLibreMap {
@@ -211,6 +224,9 @@ export function createMap( {
 			padding: 48,
 			...( Number.isFinite( maxZoom ) && { maxZoom } ),
 		},
+		...( Number.isFinite( tileMaxZoom ) && {
+			maxZoom: Number( tileMaxZoom ) - 1,
+		} ),
 		pitch: 0,
 		attributionControl: { compact: true },
 		// Only accepted here: MapLibre has no way to change it afterwards.
