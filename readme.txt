@@ -93,7 +93,7 @@ Shortcode attributes:
 * `units` - `metric` (km / m) or `imperial` (mi / ft). Default: the site setting.
 * `fields` - Which stats to list, from `distance`, `gain`, `loss`, `max`, `min` and `waypoints`, e.g. `distance,gain`. Default: the site setting. Use `stats="false"` to remove the bar.
 
-Provide either `id` or `gpx`. The block exposes the same options in its sidebar (Source, Display and Map tiles panels).
+Provide either `id` or `gpx`. The block exposes the same options in its sidebar (Source, Display, Stats bar items and Map tiles panels).
 
 Filters (for developers):
 
@@ -169,7 +169,7 @@ Not from the editor: the block offers the providers above. A developer can point
 
 = Can I link a GPX file hosted on another site? =
 
-Only if that host allows cross-origin (CORS) requests, because the visitor's browser fetches the file directly, and most external sites don't send the required header. The front end then shows "Could not load GPX file." even though the link opens fine in a browser tab. Uploading the file to your Media Library is the reliable option.
+Only if that host allows cross-origin (CORS) requests, because the visitor's browser fetches the file directly, and most external sites don't send the required header. The front end then shows "Could not load GPX file: its host does not allow cross-origin (CORS) requests." even though the link opens fine in a browser tab. Uploading the file to your Media Library is the reliable option.
 
 = Why don't my existing GPX files appear in the media picker? =
 
@@ -192,12 +192,15 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * New: OpenTopoMap, a topographic map with contour lines and hill shading, with no account needed. It is run by volunteers, with no guarantee that it stays available.
 * The site's tile provider is now a single list in which each Thunderforest style is its own entry, replacing the separate "Thunderforest style" setting. A site's current choice carries over.
 * Maps no longer zoom in past the last level their tile provider has tiles for, where OpenStreetMap went blank and OpenTopoMap showed placeholder images. "Max zoom" is now described as what it is: how close a map opens when it frames a short route.
-* New: the block editor shows the map itself, as visitors will see it, instead of a placeholder card, and updates it as you change the settings. Up to 8 maps are live at once; any others show the card until one of those is removed. The preview loads the map tiles like any visitor would, so editing posts with maps now counts toward a Thunderforest plan's tiles.
+* New: the block editor shows the map itself instead of a placeholder card, and updates it as you change the settings. Up to 8 maps are live at once; any others show the card until one of those is removed. The preview loads the map tiles like any visitor would, so editing posts with maps now counts toward a Thunderforest plan's tiles.
 * New: an optional Min elevation figure for the stats bar, off unless you tick it. Maps added before 2.0.0 show a dash for it until the map has loaded, and updating the post does not change that; to store it with such a map, tick Min elevation in that map's Stats bar items panel.
 * Turning off "Use site default" in a map's Stats bar items panel now starts from the figures the site shows, rather than from all of them.
 * Fixed: the editor now works out a map's figures from its selected Media Library file, as the front end does, and shows the map, rather than the file picker, for a block that only stores a media file.
 * Fixed: the elevation profile now draws on very long tracks, where it stayed blank: from about 125,000 points in Chrome and Edge, or about 500,000 in Firefox and Safari.
 * Fixed: a GPX file with points no map can place, such as a latitude beyond 90°, no longer fails to load. Those points are left out; a file with none left shows "No track or route points found in GPX file.", and one whose track points are all unusable shows its route instead. A post saved before 2.0.0 with such a file gets corrected figures when it is opened in the editor, so the editor shows it as changed; update the post to keep them.
+* Fixed: the elevation profile now redraws whenever its width changes, such as when a theme resizes the block, not only when the window is resized.
+* Fixed: a browser without WebGL2, which cannot show the map, still fills in the stats bar from the GPX file.
+* Fixed: after an update, browsers and caches could keep using the block's old stylesheets, because their address only changed when WordPress itself was updated. It now changes with each release of the plugin.
 * The Spanish translation now matches the reviewed one on translate.wordpress.org, with the strings new in 2.0.0 translated here until they are reviewed there, and also ships as a PHP translation file, which WordPress loads faster.
 * Going back to 1.8: once Settings > GPX Route Map has been saved in 2.0, for any change, a site on Thunderforest shows OpenStreetMap until Thunderforest is chosen again there.
 * For developers: `gpxrm_tile_url` now runs for every map and gets the provider that map uses as a second argument, so a callback that ignores it replaces every map's tiles. New `gpxrm_tile_max_zoom` filter. `Renderer::tile_provider()` returns provider ids such as `thunderforest-outdoors`, and `Renderer::STAT_FIELDS` includes the opt-in `min` (the shipped default list is `Renderer::DEFAULT_STAT_FIELDS`). Removed: `Renderer::sanitize_tile_url()`, `Plugin::sanitize_thunderforest_style()` and `Plugin::render_thunderforest_style_field()`. The `gpxrm_thunderforest_style` option is only read to carry a 1.x choice over.
