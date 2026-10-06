@@ -11,7 +11,7 @@ Built with [MapLibre GL JS](https://maplibre.org/) + raster tiles (OpenStreetMap
 -   **Stats bar**: distance, elevation gain/loss, max and min elevation (min is opt-in), waypoint count. Computed in the browser from the GPX file; a block also stores them, so its bar shows the figures without JavaScript, while a shortcode's fills in once the map loads.
 -   **Elevation profile**: scrub with mouse/touch; the position syncs onto the map, and clicking the track highlights the profile.
 -   **Lazy loading**: MapLibre loads only when a map scrolls into view; multiple maps per page are supported.
--   **Configurable tiles**: OpenStreetMap, OpenTopoMap or a Thunderforest style site-wide, each credited and zoomed only as far as it has tiles; a custom tile URL / `gpxrm_tile_url` filter keeps to the OSM tile usage policy.
+-   **Configurable tiles**: OpenStreetMap, OpenTopoMap or a Thunderforest style, for the whole site or a single map, each credited and zoomed only as far as it has tiles; busy sites can point maps at their own tile server with the `gpxrm_tile_url` filter, as the OSM tile usage policy asks.
 
 ## Development
 

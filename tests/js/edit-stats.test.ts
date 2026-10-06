@@ -102,7 +102,7 @@ const ATTRIBUTES = {
 	showDownload: '',
 	statFields: 'distance,max',
 	maxZoom: 0,
-	tileUrl: '',
+	provider: '',
 	units: '',
 	stats: OLD,
 };

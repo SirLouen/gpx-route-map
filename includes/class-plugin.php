@@ -528,11 +528,11 @@ class Plugin {
 			);
 		}
 		echo '</select>';
-		echo '<p class="description">' . esc_html__( 'OpenStreetMap works with no setup. Thunderforest offers outdoor and cycling styles, and needs an account.', 'gpx-route-map' ) . ' ' . esc_html__( 'OpenTopoMap shows contour lines and hill shading, also with no setup. It is run by volunteers, with no guarantee it stays available, and has less detail close in.', 'gpx-route-map' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'OpenStreetMap works with no setup. Thunderforest offers outdoor and cycling styles, and needs an account.', 'gpx-route-map' ) . ' ' . esc_html__( 'OpenTopoMap shows contour lines and hill shading, also with no setup. It is run by volunteers, with no guarantee it stays available, and has less detail close in.', 'gpx-route-map' ) . ' ' . esc_html__( 'Individual maps can override it.', 'gpx-route-map' ) . '</p>';
 
 		// Its maps quietly show OpenStreetMap meanwhile, so say why.
 		if ( ! Renderer::provider_usable( $current ) ) {
-			echo '<p class="description"><strong>' . esc_html__( 'No Thunderforest API key is saved, so maps use OpenStreetMap until you add one.', 'gpx-route-map' ) . '</strong></p>';
+			echo '<p class="description"><strong>' . esc_html__( 'No Thunderforest API key is saved, so maps that follow the site use OpenStreetMap until you add one.', 'gpx-route-map' ) . '</strong></p>';
 		}
 	}
 
@@ -558,6 +558,8 @@ class Plugin {
 		);
 		echo '<br>';
 		esc_html_e( 'The key is visible in your pages, because visitors\' browsers load the tiles. Thunderforest cannot restrict a key to your domain, so keep an eye on your usage.', 'gpx-route-map' );
+		echo '<br>';
+		esc_html_e( 'The key also makes the Thunderforest styles available for single maps. Maps set to one use the site\'s provider while no key is saved.', 'gpx-route-map' );
 		echo '</p>';
 	}
 
@@ -853,17 +855,33 @@ class Plugin {
 	 * The site settings the editor needs for a map that follows them.
 	 *
 	 * The editor previews such a map, names its height and zoom in the help
-	 * text, and starts a block that stops following the site from the site's
-	 * list of stats. It cannot read these from /wp/v2/settings: core gates
+	 * text, starts a block that stops following the site from the site's list
+	 * of stats, and offers the tile providers a map can use, naming the site's.
+	 * It cannot read these from /wp/v2/settings: core gates
 	 * that route on manage_options, so an Editor or Author would silently be
 	 * shown the shipped defaults instead of the real settings.
 	 *
-	 * @return array<string, int|array<int, string>>
+	 * @return array<string, int|string|array<int, string>|array<int, array{id: string, label: string, usable: bool}>>
 	 */
 	public static function editor_defaults(): array {
+		// Built on every request, so in one pass rather than asking
+		// Renderer::provider_usable() per provider, by the same rule.
+		$key_saved = '' !== Renderer::thunderforest_key();
+		$providers = array();
+		foreach ( Renderer::tile_providers() as $id => $provider ) {
+			// Never the tile address: a Thunderforest one carries the key.
+			$providers[] = array(
+				'id'     => $id,
+				'label'  => Renderer::plain_text( $provider['label'] ),
+				'usable' => ! $provider['key_required'] || $key_saved,
+			);
+		}
+
 		return Renderer::default_heights() + array(
-			'maxZoom'    => Renderer::default_max_zoom(),
-			'statFields' => Renderer::default_stat_fields(),
+			'maxZoom'       => Renderer::default_max_zoom(),
+			'statFields'    => Renderer::default_stat_fields(),
+			'tileProviders' => $providers,
+			'tileProvider'  => Renderer::site_provider_in_use(),
 		);
 	}
 
@@ -933,7 +951,7 @@ class Plugin {
 			'download'      => '',
 			'fields'        => '',
 			'maxzoom'       => 0,
-			'tile'          => '',
+			'provider'      => '',
 			'units'         => '',
 		);
 	}
@@ -950,7 +968,7 @@ class Plugin {
 	 *   download  Show the GPX download button: "true"/"false" (defaults to the site setting).
 	 *   fields    Which stats to list, e.g. "distance,gain" (defaults to the site setting; use stats="false" to hide the bar).
 	 *   maxzoom   How close the map opens for a short route (defaults to the site setting).
-	 *   tile      Override raster tile URL template.
+	 *   provider  Map provider, e.g. "opentopomap" (defaults to the site setting).
 	 *   units     "metric" or "imperial" (defaults to the site setting).
 	 *
 	 * @param array<int|string, string>|string $atts Shortcode attributes.
@@ -972,7 +990,7 @@ class Plugin {
 			'showDownload'  => $atts['download'],
 			'statFields'    => $atts['fields'],
 			'maxZoom'       => (int) $atts['maxzoom'],
-			'tileUrl'       => (string) $atts['tile'],
+			'provider'      => strtolower( trim( (string) $atts['provider'] ) ),
 			'units'         => (string) $atts['units'],
 		);
 
