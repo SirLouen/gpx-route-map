@@ -8,9 +8,10 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createElement, createRoot, flushSync } from '@wordpress/element';
+import { createElement, createRoot } from '@wordpress/element';
 
 import type { RenderedMarkup } from '../../src/editor/use-rendered-markup';
+import { act, settle } from './react-act';
 
 let previewMode = false;
 let postId: number | undefined;
@@ -90,7 +91,7 @@ let requests: { target: HTMLElement; signal: AbortSignal }[];
  *               component across renders.
  */
 function show( blocks: Array< { key: number; attributes?: object } > ) {
-	flushSync( () =>
+	act( () =>
 		root.render(
 			createElement(
 				'div',
@@ -118,14 +119,6 @@ function show( blocks: Array< { key: number; attributes?: object } > ) {
  * @param {...any} keys
  */
 const blocks = ( ...keys: number[] ) => keys.map( ( key ) => ( { key } ) );
-
-/** Let the module load resolve and React apply what follows. */
-const settle = async () => {
-	for ( let i = 0; i < 3; i++ ) {
-		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
-	}
-	flushSync( () => {} );
-};
 
 const cards = () => doc.querySelectorAll( '.card' ).length;
 const live = () => requests.filter( ( r ) => ! r.signal.aborted );
@@ -166,7 +159,7 @@ beforeEach( () => {
 } );
 
 afterEach( () => {
-	flushSync( () => root.unmount() );
+	act( () => root.unmount() );
 	frame.remove();
 } );
 
@@ -309,16 +302,20 @@ describe( 'MapPreview', () => {
 		show( blocks( 0, 1, 2, 3, 4, 5, 6, 7 ) );
 		await settle();
 
-		live()[ 0 ].target.dispatchEvent(
-			new CustomEvent( PREVIEW_FAILED_EVENT, { bubbles: true } )
-		);
+		act( () => {
+			live()[ 0 ].target.dispatchEvent(
+				new CustomEvent( PREVIEW_FAILED_EVENT, { bubbles: true } )
+			);
+		} );
 		await settle();
 		expect( cards() ).toBe( 1 );
 		expect( live() ).toHaveLength( 7 );
 
-		live()[ 0 ]
-			.target.querySelector( 'canvas' )
-			?.dispatchEvent( new Event( 'webglcontextlost' ) );
+		act( () => {
+			live()[ 0 ]
+				.target.querySelector( 'canvas' )
+				?.dispatchEvent( new Event( 'webglcontextlost' ) );
+		} );
 		await settle();
 		expect( cards() ).toBe( 2 );
 		expect( live() ).toHaveLength( 6 );
@@ -336,9 +333,11 @@ describe( 'MapPreview', () => {
 		answerAll( markup(), [ 0 ] );
 		show( blocks( 0 ) );
 		await settle();
-		live()[ 0 ].target.dispatchEvent(
-			new CustomEvent( PREVIEW_FAILED_EVENT, { bubbles: true } )
-		);
+		act( () => {
+			live()[ 0 ].target.dispatchEvent(
+				new CustomEvent( PREVIEW_FAILED_EVENT, { bubbles: true } )
+			);
+		} );
 		await settle();
 		expect( cards() ).toBe( 1 );
 
