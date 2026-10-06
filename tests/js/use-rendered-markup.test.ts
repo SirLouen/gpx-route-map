@@ -9,10 +9,11 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createElement, createRoot, flushSync } from '@wordpress/element';
+import { createElement, createRoot } from '@wordpress/element';
 
 import { useRenderedMarkup } from '../../src/editor/use-rendered-markup';
 import type { RenderedMarkup } from '../../src/editor/use-rendered-markup';
+import { act, settle } from './react-act';
 
 interface Call {
 	options: {
@@ -70,22 +71,13 @@ function show(
 	enabled = true,
 	postId?: number
 ) {
-	flushSync( () =>
+	act( () =>
 		root.render( createElement( Probe, { attributes, enabled, postId } ) )
 	);
 }
 
 /** What the hook returned last. */
 const last = () => seen[ seen.length - 1 ];
-
-/**
- * Let settled promises run their callbacks and React apply what they set.
- * React schedules those updates on its own queue, which runs on the faked
- * timers.
- */
-const settle = async () => {
-	await vi.advanceTimersByTimeAsync( 0 );
-};
 
 beforeEach( () => {
 	vi.useFakeTimers();
@@ -95,7 +87,7 @@ beforeEach( () => {
 } );
 
 afterEach( () => {
-	flushSync( () => root.unmount() );
+	act( () => root.unmount() );
 	vi.useRealTimers();
 } );
 
