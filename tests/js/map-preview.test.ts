@@ -115,8 +115,9 @@ function show( blocks: Array< { key: number; attributes?: object } > ) {
 }
 
 /**
- * Blocks 0..n-1 with default settings.
- * @param {...any} keys
+ * Blocks with these keys and default settings.
+ *
+ * @param keys Block keys.
  */
 const blocks = ( ...keys: number[] ) => keys.map( ( key ) => ( { key } ) );
 
