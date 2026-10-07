@@ -182,7 +182,8 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 == Screenshots ==
 
 1. An interactive route map with waypoints and an elevation profile.
-2. Selecting a GPX file in the block editor.
+2. The block editor shows the map itself, live, here in a browser set to dark mode. Choose its GPX file, size and stats in the sidebar.
+3. Choose each map's tiles: OpenStreetMap, OpenTopoMap or, once an API key is saved, a Thunderforest style.
 
 == Changelog ==
 
