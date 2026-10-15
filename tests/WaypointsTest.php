@@ -145,9 +145,26 @@ test(
 				'marker'      => 'icon',
 				'icon'        => 'flag',
 				'color'       => '#ff0000',
-				'background'  => '#00f',
+				'background'  => '#0000ff',
 			)
 		);
+	}
+);
+
+// So a map draws its own colours, which may one day follow the site or theme.
+test(
+	'a waypoint keeps a colour left at its default as none',
+	function () {
+		$fields = Waypoints::sanitize_fields(
+			array(
+				'marker'     => 'icon',
+				'icon'       => 'flag',
+				'color'      => '#FFF',
+				'background' => strtoupper( Waypoints::DEFAULT_BACKGROUND ),
+			)
+		);
+		expect( $fields['color'] )->toBe( '' );
+		expect( $fields['background'] )->toBe( '' );
 	}
 );
 
@@ -211,9 +228,9 @@ test(
 	}
 )->with(
 	array(
-		'short'          => array( '#ABC', '#abc' ),
+		'short'          => array( '#ABC', '#aabbcc' ),
 		'long'           => array( '#A1B2C3', '#a1b2c3' ),
-		'padded'         => array( " #fff\n", '#fff' ),
+		'padded'         => array( " #fff\n", '#ffffff' ),
 		'no hash'        => array( 'ffffff', 'fallback' ),
 		'four digits'    => array( '#ffff', 'fallback' ),
 		'a name'         => array( 'red', 'fallback' ),
@@ -440,7 +457,7 @@ test(
 );
 
 test(
-	'an icon marker gets an icon and both colours',
+	'an icon marker gets an icon, and the colours chosen for it',
 	function () {
 		expect(
 			Waypoints::entry(
@@ -454,10 +471,9 @@ test(
 			)
 		)->toBe(
 			array(
-				'marker'     => 'icon',
-				'icon'       => 'flag',
-				'color'      => '#ff0000',
-				'background' => Waypoints::DEFAULT_BACKGROUND,
+				'marker' => 'icon',
+				'icon'   => 'flag',
+				'color'  => '#ff0000',
 			)
 		);
 
@@ -469,8 +485,12 @@ test(
 				)
 			)
 		);
-		expect( $entry['icon'] ?? '' )->toBe( Waypoints::DEFAULT_ICON );
-		expect( $entry['color'] ?? '' )->toBe( Waypoints::DEFAULT_COLOR );
+		expect( $entry )->toBe(
+			array(
+				'marker' => 'icon',
+				'icon'   => Waypoints::DEFAULT_ICON,
+			)
+		);
 	}
 );
 

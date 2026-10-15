@@ -65,7 +65,12 @@ class Waypoints {
 	 */
 	const MARKERS = array( 'image', 'icon' );
 
-	const DEFAULT_ICON       = 'location';
+	const DEFAULT_ICON = 'location';
+
+	/**
+	 * An icon marker's colours when none is chosen, as the map draws it:
+	 * white on the track's colour (TRACK_COLOR in src/view/map-core.ts).
+	 */
 	const DEFAULT_COLOR      = '#ffffff';
 	const DEFAULT_BACKGROUND = '#2e7d32';
 
@@ -421,7 +426,10 @@ class Waypoints {
 	 * Keep a waypoint's settings to values the map can use.
 	 *
 	 * The icon and colours are kept even while another marker is chosen, so
-	 * switching back finds them as they were.
+	 * switching back finds them as they were. A colour left at its default
+	 * is kept as none, so the map draws its own (white on the track's
+	 * colour), which can follow the site or theme if the track's colour
+	 * ever does.
 	 *
 	 * @param array<string, mixed> $raw Submitted settings.
 	 * @return array{description: string, marker: string, icon: string, color: string, background: string}
@@ -435,9 +443,23 @@ class Waypoints {
 			'description' => is_string( $description ) ? trim( $description ) : '',
 			'marker'      => $marker,
 			'icon'        => is_string( $icon ) && Dashicons::exists( $icon ) ? $icon : ( 'icon' === $marker ? self::DEFAULT_ICON : '' ),
-			'color'       => self::hex_color( $raw['color'] ?? '', '' ),
-			'background'  => self::hex_color( $raw['background'] ?? '', '' ),
+			'color'       => self::chosen_color( $raw['color'] ?? '', self::DEFAULT_COLOR ),
+			'background'  => self::chosen_color( $raw['background'] ?? '', self::DEFAULT_BACKGROUND ),
 		);
+	}
+
+	/**
+	 * A colour the author chose, or '' for one that is not a colour or is
+	 * the default.
+	 *
+	 * @param mixed  $value   Submitted value.
+	 * @param string $default_color The default colour.
+	 * @return string
+	 */
+	private static function chosen_color( $value, string $default_color ): string {
+		$color = self::hex_color( $value, '' );
+
+		return $default_color === $color ? '' : $color;
 	}
 
 	/**
@@ -451,7 +473,8 @@ class Waypoints {
 	}
 
 	/**
-	 * A colour as #rgb or #rrggbb, in lower case, or the fallback.
+	 * A colour as #rrggbb in lower case, with #rgb written out, or the
+	 * fallback.
 	 *
 	 * The test sanitize_hex_color() makes, written out because that function
 	 * takes only strings, and returns nothing at all for anything else.
@@ -465,9 +488,12 @@ class Waypoints {
 			return $fallback;
 		}
 
-		$value = trim( $value );
+		$value = strtolower( trim( $value ) );
+		if ( 1 === preg_match( '/^#([0-9a-f])([0-9a-f])([0-9a-f])$/', $value, $short ) ) {
+			$value = '#' . $short[1] . $short[1] . $short[2] . $short[2] . $short[3] . $short[3];
+		}
 
-		return preg_match( '/^#(?:[0-9a-fA-F]{3}){1,2}$/', $value ) ? strtolower( $value ) : $fallback;
+		return 1 === preg_match( '/^#[0-9a-f]{6}$/', $value ) ? $value : $fallback;
 	}
 
 	/**
@@ -980,7 +1006,8 @@ JS;
 	 * differs from the waypoint in the GPX file.
 	 *
 	 * A photo marker needs a photo, else the waypoint keeps its usual one. An
-	 * icon marker always gets an icon and both colours.
+	 * icon marker always gets an icon, and its colours when chosen; without
+	 * them the map draws its own.
 	 *
 	 * @param array{name: string, desc: string, marker: mixed, icon: mixed, color: mixed, background: mixed, photo: array{src: string, width: int, height: int, alt: string, srcset: string}|null, thumb: string} $raw Post settings.
 	 * @return array<string, mixed>
@@ -1016,10 +1043,17 @@ JS;
 			$entry['marker'] = 'image';
 			$entry['thumb']  = $raw['thumb'];
 		} elseif ( 'icon' === $marker ) {
-			$entry['marker']     = 'icon';
-			$entry['icon']       = is_string( $raw['icon'] ) && Dashicons::exists( $raw['icon'] ) ? $raw['icon'] : self::DEFAULT_ICON;
-			$entry['color']      = self::hex_color( $raw['color'], self::DEFAULT_COLOR );
-			$entry['background'] = self::hex_color( $raw['background'], self::DEFAULT_BACKGROUND );
+			$entry['marker'] = 'icon';
+			$entry['icon']   = is_string( $raw['icon'] ) && Dashicons::exists( $raw['icon'] ) ? $raw['icon'] : self::DEFAULT_ICON;
+
+			$color = self::hex_color( $raw['color'], '' );
+			if ( '' !== $color ) {
+				$entry['color'] = $color;
+			}
+			$background = self::hex_color( $raw['background'], '' );
+			if ( '' !== $background ) {
+				$entry['background'] = $background;
+			}
 		}
 
 		return $entry;
