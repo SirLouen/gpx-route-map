@@ -307,24 +307,35 @@ describe( 'The Waypoints panel', () => {
 		).toBeUndefined();
 	} );
 
-	it( 'lists again what was added in another tab', async () => {
+	it( 'lists again what was added in another tab, while it is open', async () => {
 		await open();
 		refreshed = [];
 		Object.defineProperty( document, 'visibilityState', {
 			configurable: true,
 			get: () => 'visible',
 		} );
-		document.dispatchEvent( new Event( 'visibilitychange' ) );
-		flushSync( () => togglePanel?.( true ) );
-		flushSync( () => togglePanel?.( false ) );
-		delete ( document as unknown as { visibilityState?: string } )
-			.visibilityState;
+		const comeBack = () =>
+			document.dispatchEvent( new Event( 'visibilitychange' ) );
 
+		// Closed, it lists nothing, so there is nothing to read again.
+		comeBack();
+		expect( refreshed ).toHaveLength( 0 );
+
+		flushSync( () => togglePanel?.( true ) );
+		await settle();
+		comeBack();
 		expect( refreshed ).toHaveLength( 2 );
 		expect( refreshed[ 0 ] ).toEqual( [
 			'getEntityRecords',
 			...( queries.at( -1 ) ?? [] ),
 		] );
+
+		flushSync( () => togglePanel?.( false ) );
+		await settle();
+		comeBack();
+		delete ( document as unknown as { visibilityState?: string } )
+			.visibilityState;
+		expect( refreshed ).toHaveLength( 2 );
 	} );
 
 	// Maps read the links in a file only from the Media Library.
@@ -344,6 +355,21 @@ describe( 'The Waypoints panel', () => {
 		);
 		expect( selects.get( '2. Refuge' )?.options[ 0 ].label ).toBe(
 			'As in the GPX file: Refuge post'
+		);
+		expect( container.textContent ).not.toContain( 'Media Library' );
+	} );
+
+	// Its PHP lacks XMLReader, so the server reads no links from any file.
+	it( 'says when the site cannot read what a file links', async () => {
+		( window as unknown as { gpxrmDefaults?: object } ).gpxrmDefaults = {
+			waypoints: true,
+			waypointFiles: false,
+		};
+		media[ 7 ] = 'https://example.test/a.gpx';
+		await open( { gpxId: 7 } );
+		expect( selects.get( '2. Refuge' )?.options[ 0 ].label ).toBe( 'None' );
+		expect( container.textContent ).toContain(
+			'its PHP lacks the XMLReader extension'
 		);
 		expect( container.textContent ).not.toContain( 'Media Library' );
 	} );

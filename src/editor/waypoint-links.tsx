@@ -4,7 +4,7 @@
  */
 
 import { __, sprintf } from '@wordpress/i18n';
-import { useEffect } from '@wordpress/element';
+import { useCallback, useEffect, useState } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { ExternalLink, PanelBody, SelectControl } from '@wordpress/components';
 
@@ -50,17 +50,51 @@ interface WaypointRecord {
 }
 
 /**
+ * What the server says about Waypoint posts on this site.
+ */
+function siteDefaults(): { waypoints?: unknown; waypointFiles?: unknown } {
+	return (
+		(
+			window as unknown as {
+				gpxrmDefaults?: {
+					waypoints?: unknown;
+					waypointFiles?: unknown;
+				};
+			}
+		 ).gpxrmDefaults ?? {}
+	);
+}
+
+/**
  * Whether the site has turned Waypoint posts on, as the server says.
  */
 export function waypointsEnabled(): boolean {
-	return (
-		true ===
-		(
-			window as unknown as {
-				gpxrmDefaults?: { waypoints?: unknown };
-			}
-		 ).gpxrmDefaults?.waypoints
-	);
+	return true === siteDefaults().waypoints;
+}
+
+/**
+ * Whether the server can read the links a GPX file holds, which takes PHP's
+ * XMLReader extension. Taken as yes unless the server says no.
+ */
+function siteReadsFiles(): boolean {
+	return false !== siteDefaults().waypointFiles;
+}
+
+/**
+ * Why maps leave out the links a GPX file holds.
+ *
+ * @param fromLibrary Whether the file is in the Media Library.
+ */
+function unreadLinksNote( fromLibrary: boolean ): string {
+	return fromLibrary
+		? __(
+				'This GPX file links waypoints to Waypoint posts itself, but this site cannot read those links, as its PHP lacks the XMLReader extension. Link them here instead.',
+				'gpx-route-map'
+			)
+		: __(
+				'This GPX file links waypoints to Waypoint posts itself, but maps only read those links from files in the Media Library. Link them here instead, or choose the file from the Media Library.',
+				'gpx-route-map'
+			);
 }
 
 /**
@@ -216,15 +250,22 @@ export function WaypointLinks( {
 	const { invalidateResolution } = useDispatch( 'core' ) as {
 		invalidateResolution: ( selector: string, args: unknown[] ) => void;
 	};
-	// "Add a waypoint" opens a tab of its own; coming back, or opening the
-	// panel, lists what was added there.
-	const refresh = () =>
-		invalidateResolution( 'getEntityRecords', [
-			'postType',
-			WAYPOINT_POST_TYPE,
-			QUERY,
-		] );
+	// "Add a waypoint" opens a tab of its own; opening the panel, or coming
+	// back to the tab while it is open, lists what was added there.
+	const [ open, setOpen ] = useState( false );
+	const refresh = useCallback(
+		() =>
+			invalidateResolution( 'getEntityRecords', [
+				'postType',
+				WAYPOINT_POST_TYPE,
+				QUERY,
+			] ),
+		[ invalidateResolution ]
+	);
 	useEffect( () => {
+		if ( ! open ) {
+			return undefined;
+		}
 		const onVisible = () => {
 			if ( 'visible' === document.visibilityState ) {
 				refresh();
@@ -233,7 +274,7 @@ export function WaypointLinks( {
 		document.addEventListener( 'visibilitychange', onVisible );
 		return () =>
 			document.removeEventListener( 'visibilitychange', onVisible );
-	} );
+	}, [ open, refresh ] );
 
 	const byId = new Map(
 		( posts ?? [] ).map( ( post ) => [ post.id, post ] )
@@ -243,10 +284,12 @@ export function WaypointLinks( {
 		value: String( post.id ),
 	} ) );
 
-	// Links in a file elsewhere are never read, so those waypoints are
-	// unlinked as far as the map goes.
+	// Links in a file elsewhere, or in any file on a site that cannot read
+	// them, are never read, so those waypoints are unlinked as far as the map
+	// goes.
+	const readsFile = fromLibrary && siteReadsFiles();
 	const ignoredLinks =
-		! fromLibrary &&
+		! readsFile &&
 		( waypoints ?? [] ).some( ( waypoint ) => waypoint.postId );
 
 	/**
@@ -255,7 +298,7 @@ export function WaypointLinks( {
 	 * @param waypoint The waypoint.
 	 */
 	const fromFile = ( waypoint: Waypoint ): string => {
-		if ( ! fromLibrary || ! waypoint.postId ) {
+		if ( ! readsFile || ! waypoint.postId ) {
 			return __( 'None', 'gpx-route-map' );
 		}
 		const post = byId.get( waypoint.postId );
@@ -271,6 +314,7 @@ export function WaypointLinks( {
 			title={ __( 'Waypoints', 'gpx-route-map' ) }
 			initialOpen={ false }
 			onToggle={ ( opened: boolean ) => {
+				setOpen( opened );
 				if ( opened ) {
 					refresh();
 				}
@@ -282,14 +326,7 @@ export function WaypointLinks( {
 					'gpx-route-map'
 				) }
 			</p>
-			{ ignoredLinks && (
-				<p>
-					{ __(
-						'This GPX file links waypoints to Waypoint posts itself, but maps only read those links from files in the Media Library. Link them here instead, or choose the file from the Media Library.',
-						'gpx-route-map'
-					) }
-				</p>
-			) }
+			{ ignoredLinks && <p>{ unreadLinksNote( fromLibrary ) }</p> }
 			{ undefined !== waypoints && ! waypoints.length && (
 				<p>
 					{ __( 'This GPX file has no waypoints.', 'gpx-route-map' ) }

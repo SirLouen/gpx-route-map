@@ -455,8 +455,9 @@ function fitPopup( map: MapLibreMap, popup: MapLibreNs.Popup ): void {
 	if ( ! box ) {
 		return;
 	}
-	// It opens above or below its waypoint, whichever side has more room,
-	// less its offset and tip.
+	// With no anchor set, MapLibre opens it above its waypoint, or below when
+	// it does not fit above. Kept to the larger side's room, less its offset
+	// and tip, it fits on whichever side MapLibre then picks for it.
 	const height = map.getContainer().clientHeight;
 	const { y } = map.project( popup.getLngLat() );
 	const room = Math.round( Math.max( y, height - y ) ) - 32;

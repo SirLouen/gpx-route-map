@@ -129,6 +129,46 @@ describe( 'readWaypointPosts', () => {
 		} );
 	} );
 
+	/**
+	 * The srcset a popup photo keeps of the one the server sent.
+	 *
+	 * @param set The srcset sent.
+	 */
+	const keptSrcset = ( set: string ) =>
+		readWaypointPosts(
+			mapWith( {
+				0: {
+					photo: {
+						src: 'https://example.com/a.jpg',
+						width: 10,
+						height: 10,
+						alt: '',
+						srcset: set,
+					},
+				},
+			} )
+		)[ 0 ].photo?.srcset;
+
+	// However its candidates are separated, none may slip an address past
+	// the check.
+	it.each( [
+		[
+			'no space after a comma',
+			'https://example.com/a.jpg 300w,javascript:x 600w',
+		],
+		[
+			'an address that ends its candidate',
+			'https://example.com/a.jpg, javascript:x 2x',
+		],
+		[
+			'a comma after parentheses',
+			'https://example.com/a.jpg 1x (y),javascript:x 2x',
+		],
+		[ 'no candidate at all', ' , , ' ],
+	] )( 'drops a srcset with %s', ( _label, set ) => {
+		expect( keptSrcset( set ) ).toBeUndefined();
+	} );
+
 	it( 'reads no size that is not a whole number of pixels', () => {
 		const posts = readWaypointPosts(
 			mapWith( {

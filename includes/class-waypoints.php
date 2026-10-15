@@ -825,6 +825,17 @@ JS;
 	}
 
 	/**
+	 * Whether this site can read the links a GPX file holds, which takes
+	 * PHP's XMLReader extension. PHP builds it in by default, but a host can
+	 * leave it out. Links made in a block or shortcode work without it.
+	 *
+	 * @return bool
+	 */
+	public static function reads_files(): bool {
+		return class_exists( '\XMLReader' );
+	}
+
+	/**
 	 * The posts a GPX file links its waypoints to, by each waypoint's
 	 * position among the file's <wpt> elements, as the map counts them.
 	 *
@@ -832,57 +843,78 @@ JS;
 	 * and network access stay off.
 	 *
 	 * @param string $path GPX file.
-	 * @return array<int, int> Post IDs by waypoint position, in order.
+	 * @return array<int, int>|null Post IDs by waypoint position, in order,
+	 *                              or null when the file could not be read.
 	 */
-	public static function links_in_gpx( string $path ): array {
-		if ( ! class_exists( '\XMLReader' ) || ! is_readable( $path ) ) {
-			return array();
+	public static function links_in_gpx( string $path ): ?array {
+		if ( ! self::reads_files() || ! is_readable( $path ) ) {
+			return null;
 		}
 
 		$internal = libxml_use_internal_errors( true );
 		$reader   = new \XMLReader();
-		$links    = array();
 
 		try {
-			if ( ! $reader->open( $path, null, LIBXML_NONET ) ) {
-				return array();
-			}
-
-			// The open waypoint's position and depth; -1 between waypoints.
-			$index = -1;
-			$depth = -1;
-
-			// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- XMLReader's own properties.
-			while ( $reader->read() ) {
-				if ( \XMLReader::ELEMENT !== $reader->nodeType ) {
-					continue;
-				}
-
-				if ( $depth >= 0 && $reader->depth <= $depth ) {
-					$depth = -1;
-				}
-
-				if ( 'wpt' === $reader->localName ) {
-					++$index;
-					$depth = $reader->depth;
-					continue;
-				}
-
-				if ( $depth >= 0 && self::GPX_ELEMENT === $reader->localName && self::GPX_NAMESPACE === $reader->namespaceURI && ! isset( $links[ $index ] ) ) {
-					$id = self::post_id( $reader->readString() );
-					if ( $id > 0 ) {
-						$links[ $index ] = $id;
-					}
-				}
-			}
-			// phpcs:enable
+			return $reader->open( $path, null, LIBXML_NONET ) ? self::read_links( $reader ) : null;
 		} finally {
 			$reader->close();
 			libxml_clear_errors();
 			libxml_use_internal_errors( $internal );
 		}
+	}
+
+	/**
+	 * The links in an opened GPX file, read up to its end or its first error.
+	 *
+	 * @param \XMLReader $reader The file.
+	 * @return array<int, int> Post IDs by waypoint position, in order.
+	 */
+	private static function read_links( \XMLReader $reader ): array {
+		$links = array();
+
+		// The open waypoint's position and depth; depth -1 between waypoints.
+		$index = -1;
+		$depth = -1;
+
+		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- XMLReader's own properties.
+		while ( $reader->read() ) {
+			if ( \XMLReader::ELEMENT !== $reader->nodeType ) {
+				continue;
+			}
+
+			if ( $reader->depth <= $depth ) {
+				$depth = -1;
+			}
+
+			if ( 'wpt' === $reader->localName ) {
+				++$index;
+				$depth = $reader->depth;
+			} elseif ( $depth >= 0 && ! isset( $links[ $index ] ) ) {
+				$id = self::linked_post( $reader );
+				if ( $id > 0 ) {
+					$links[ $index ] = $id;
+				}
+			}
+		}
+		// phpcs:enable
 
 		return array_slice( $links, 0, self::MAX_LINKS, true );
+	}
+
+	/**
+	 * The post ID in the link element the reader is on, or 0 on any other
+	 * element.
+	 *
+	 * @param \XMLReader $reader The file, on an element.
+	 * @return int
+	 */
+	private static function linked_post( \XMLReader $reader ): int {
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- XMLReader's own properties.
+		if ( self::GPX_ELEMENT !== $reader->localName || self::GPX_NAMESPACE !== $reader->namespaceURI ) {
+			return 0;
+		}
+
+		return self::post_id( $reader->readString() );
 	}
 
 	/**
@@ -895,24 +927,25 @@ JS;
 	 * @return array<int, int> Post IDs by waypoint position, in order.
 	 */
 	public static function file_links( int $attachment_id ): array {
-		$path = get_attached_file( $attachment_id );
-		if ( ! is_string( $path ) || '' === $path || ! Plugin::looks_like_gpx( $path ) ) {
+		$path    = get_attached_file( $attachment_id );
+		$version = is_string( $path ) ? self::file_version( $path ) : '';
+		if ( '' === $version ) {
 			return array();
 		}
 
-		$size     = filesize( $path );
-		$modified = filemtime( $path );
-		if ( false === $size || false === $modified ) {
-			return array();
-		}
-
-		$version = $size . ':' . $modified;
-		$stored  = get_post_meta( $attachment_id, self::META_FILE_LINKS, true );
+		$stored = get_post_meta( $attachment_id, self::META_FILE_LINKS, true );
 		if ( is_array( $stored ) && isset( $stored['file'], $stored['links'] ) && $version === $stored['file'] ) {
 			return self::links_from_attribute( $stored['links'] );
 		}
 
-		$links = self::links_in_gpx( $path );
+		// A read that could not run is not kept, so the file is read again
+		// once it can be, such as after the host adds XMLReader. static::,
+		// so a test can stand in for such a site.
+		$links = static::links_in_gpx( (string) $path );
+		if ( null === $links ) {
+			return array();
+		}
+
 		update_post_meta(
 			$attachment_id,
 			self::META_FILE_LINKS,
@@ -923,6 +956,24 @@ JS;
 		);
 
 		return $links;
+	}
+
+	/**
+	 * What tells a GPX file from an earlier one at the same path: its size and
+	 * when it was last written. '' for a path that is not a readable GPX file.
+	 *
+	 * @param string $path File path.
+	 * @return string
+	 */
+	private static function file_version( string $path ): string {
+		if ( '' === $path || ! Plugin::looks_like_gpx( $path ) ) {
+			return '';
+		}
+
+		$size     = filesize( $path );
+		$modified = filemtime( $path );
+
+		return false === $size || false === $modified ? '' : $size . ':' . $modified;
 	}
 
 	/**

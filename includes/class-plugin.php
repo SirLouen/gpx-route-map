@@ -451,6 +451,10 @@ class Plugin {
 			esc_html__( 'Enable Waypoint posts', 'gpx-route-map' )
 		);
 		echo '<p class="description">' . esc_html__( 'Adds a Waypoints menu. Each waypoint post can have its own description, a photo or an icon, and maps show them on the waypoints of their GPX files that link to it.', 'gpx-route-map' ) . ' ' . esc_html__( 'A map\'s block links its GPX file\'s waypoints in its Waypoints panel, or a GPX file can name the post itself.', 'gpx-route-map' ) . '</p>';
+
+		if ( ! Waypoints::reads_files() ) {
+			echo '<p class="description"><strong>' . esc_html__( 'This site cannot read the links a GPX file names itself, as its PHP lacks the XMLReader extension. Links made in a map\'s block or shortcode still work.', 'gpx-route-map' ) . '</strong></p>';
+		}
 	}
 
 	/**
@@ -914,7 +918,8 @@ class Plugin {
 	 * The editor previews such a map, names its height and zoom in the help
 	 * text, starts a block that stops following the site from the site's list
 	 * of stats, offers the tile providers a map can use, naming the site's, and
-	 * offers its Waypoints panel only while the site has turned it on.
+	 * offers its Waypoints panel only while the site has turned it on, saying
+	 * when the site cannot read the links in GPX files.
 	 * It cannot read these from /wp/v2/settings: core gates
 	 * that route on manage_options, so an Editor or Author would silently be
 	 * shown the shipped defaults instead of the real settings.
@@ -941,6 +946,7 @@ class Plugin {
 			'tileProviders' => $providers,
 			'tileProvider'  => Renderer::site_provider_in_use(),
 			'waypoints'     => Waypoints::enabled(),
+			'waypointFiles' => Waypoints::reads_files(),
 		);
 	}
 

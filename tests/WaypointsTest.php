@@ -17,6 +17,8 @@ beforeEach(
 	function () {
 		$GLOBALS['gpxrm_test_options'] = array();
 		$GLOBALS['gpxrm_test_filters'] = array();
+		$GLOBALS['gpxrm_test_files']   = array();
+		$GLOBALS['gpxrm_test_meta']    = array();
 	}
 );
 
@@ -396,8 +398,68 @@ test(
 
 		// What was read before the break still counts.
 		expect( $links )->toBe( array( 0 => 5 ) );
-		expect( Waypoints::links_in_gpx( $path ) )->toBe( array() );
+		// Not read at all, which is not the same as a file without links.
+		expect( Waypoints::links_in_gpx( $path ) )->toBeNull();
 		expect( libxml_get_errors() )->toBe( array() );
+	}
+);
+
+test(
+	'a GPX attachment is read once, and again only once its file changes',
+	function () {
+		$path                           = gpxrm_waypoint_gpx( '<wpt lat="43.0" lon="-6.0"><extensions><gpxrm:waypoint>12</gpxrm:waypoint></extensions></wpt>' );
+		$GLOBALS['gpxrm_test_files'][5] = $path;
+
+		expect( Waypoints::file_links( 5 ) )->toBe( array( 0 => 12 ) );
+
+		// The next view takes what was kept, without reading the file.
+		$GLOBALS['gpxrm_test_meta'][5][ Waypoints::META_FILE_LINKS ]['links'] = array( 0 => 30 );
+		expect( Waypoints::file_links( 5 ) )->toBe( array( 0 => 30 ) );
+
+		// Another file in its place, of another size.
+		rename( gpxrm_waypoint_gpx( '<wpt lat="43.0" lon="-6.0"/><wpt lat="43.1" lon="-6.0"><extensions><gpxrm:waypoint>40</gpxrm:waypoint></extensions></wpt>' ), $path );
+		clearstatcache();
+		expect( Waypoints::file_links( 5 ) )->toBe( array( 1 => 40 ) );
+
+		unlink( $path );
+	}
+);
+
+test(
+	'a GPX attachment the site could not read is read again on the next view',
+	function () {
+		$path                           = gpxrm_waypoint_gpx( '<wpt lat="43.0" lon="-6.0"><extensions><gpxrm:waypoint>12</gpxrm:waypoint></extensions></wpt>' );
+		$GLOBALS['gpxrm_test_files'][5] = $path;
+
+		// As on a site whose PHP lacks XMLReader.
+		$unreadable = new class() extends Waypoints {
+			/**
+			 * No file can be read.
+			 *
+			 * @param string $path GPX file.
+			 * @return array<int, int>|null
+			 */
+			public static function links_in_gpx( string $path ): ?array {
+				unset( $path );
+				return null;
+			}
+		};
+
+		expect( $unreadable::file_links( 5 ) )->toBe( array() );
+		expect( $GLOBALS['gpxrm_test_meta'] )->toBe( array() );
+
+		// Once it can, such as after the host adds XMLReader.
+		expect( Waypoints::file_links( 5 ) )->toBe( array( 0 => 12 ) );
+
+		unlink( $path );
+	}
+);
+
+test(
+	'the editor is told whether the site reads the links in GPX files',
+	function () {
+		expect( Plugin::editor_defaults()['waypointFiles'] )->toBe( Waypoints::reads_files() );
+		expect( Waypoints::reads_files() )->toBeTrue();
 	}
 );
 

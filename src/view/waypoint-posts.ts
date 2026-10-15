@@ -66,6 +66,69 @@ function pixels( value: unknown ): number {
 }
 
 /**
+ * A popup photo, or undefined for one without an http(s) address.
+ *
+ * @param raw Photo as decoded from JSON.
+ */
+function readPhoto( raw: unknown ): WaypointPhoto | undefined {
+	if ( ! raw || 'object' !== typeof raw ) {
+		return undefined;
+	}
+	const photo = raw as Record< string, unknown >;
+	const src = httpUrl( photo.src );
+	if ( ! src ) {
+		return undefined;
+	}
+	const read: WaypointPhoto = {
+		src,
+		width: pixels( photo.width ),
+		height: pixels( photo.height ),
+		alt: text( photo.alt ),
+	};
+	const set = srcset( photo.srcset );
+	if ( set ) {
+		read.srcset = set;
+	}
+	return read;
+}
+
+/**
+ * An icon marker, or {} for one without a well formed icon. A malformed
+ * colour is left out, for the marker's own default.
+ *
+ * @param entry Entry as decoded from JSON.
+ */
+function readIcon( entry: Record< string, unknown > ): WaypointPost {
+	const icon = text( entry.icon );
+	if ( ! ICON.test( icon ) ) {
+		return {};
+	}
+	const post: WaypointPost = { marker: 'icon', icon };
+	const color = text( entry.color );
+	if ( COLOR.test( color ) ) {
+		post.color = color;
+	}
+	const background = text( entry.background );
+	if ( COLOR.test( background ) ) {
+		post.background = background;
+	}
+	return post;
+}
+
+/**
+ * The marker an entry asks for, or {} for the usual one.
+ *
+ * @param entry Entry as decoded from JSON.
+ */
+function readMarker( entry: Record< string, unknown > ): WaypointPost {
+	if ( 'icon' === entry.marker ) {
+		return readIcon( entry );
+	}
+	const thumb = httpUrl( entry.thumb );
+	return 'image' === entry.marker && thumb ? { marker: 'image', thumb } : {};
+}
+
+/**
  * One waypoint's entry, keeping only what is well formed.
  *
  * @param raw Entry as decoded from JSON.
@@ -85,44 +148,12 @@ function readPost( raw: unknown ): WaypointPost | null {
 	if ( desc ) {
 		post.desc = desc;
 	}
-
-	if ( entry.photo && 'object' === typeof entry.photo ) {
-		const photo = entry.photo as Record< string, unknown >;
-		const src = httpUrl( photo.src );
-		if ( src ) {
-			const read: WaypointPhoto = {
-				src,
-				width: pixels( photo.width ),
-				height: pixels( photo.height ),
-				alt: text( photo.alt ),
-			};
-			const set = srcset( photo.srcset );
-			if ( set ) {
-				read.srcset = set;
-			}
-			post.photo = read;
-		}
+	const photo = readPhoto( entry.photo );
+	if ( photo ) {
+		post.photo = photo;
 	}
 
-	const thumb = httpUrl( entry.thumb );
-	if ( 'image' === entry.marker && thumb ) {
-		post.marker = 'image';
-		post.thumb = thumb;
-	} else if ( 'icon' === entry.marker && ICON.test( text( entry.icon ) ) ) {
-		post.marker = 'icon';
-		post.icon = text( entry.icon );
-		// Left out when malformed, for the marker's own defaults.
-		const color = text( entry.color );
-		if ( COLOR.test( color ) ) {
-			post.color = color;
-		}
-		const background = text( entry.background );
-		if ( COLOR.test( background ) ) {
-			post.background = background;
-		}
-	}
-
-	return post;
+	return { ...post, ...readMarker( entry ) };
 }
 
 /**
