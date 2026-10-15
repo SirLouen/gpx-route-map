@@ -78,6 +78,9 @@
 		},
 		"stats": {
 			"type": "object"
+		},
+		"waypointPosts": {
+			"type": "object"
 		}
 	},
 	"editorScript": "file:./index.js",

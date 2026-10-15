@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { parseGPX } from '../../src/view/map-core';
+import { parseGPX, WAYPOINT_NAMESPACE } from '../../src/view/map-core';
 
 const PROLOG = '<?xml version="1.0" encoding="UTF-8"?>\n';
 const NS = 'xmlns="http://www.topografix.com/GPX/1/1"';
@@ -192,8 +192,91 @@ describe( 'parseGPX', () => {
 				desc: 'Cold water',
 				type: 'fountain',
 				link: 'https://example.com/x',
+				index: 0,
+				postId: 0,
 			},
 		] );
+	} );
+
+	// A <link> can carry its own <type> and <text> (the MIME type and label of
+	// the linked file), which must not stand in for the waypoint's.
+	it( "reads a waypoint's own fields, not its link's", () => {
+		const { waypoints } = parseGPX(
+			PROLOG +
+				`<gpx ${ NS }>` +
+				'<wpt lat="43.3" lon="-5.8">' +
+				'<link href="https://example.com/x.jpg">' +
+				'<text>Photo</text><type>image/jpeg</type></link>' +
+				'<name>Fountain</name></wpt>' +
+				'<trk><trkseg>' +
+				'<trkpt lat="43.0" lon="-6.0"><ele>1</ele></trkpt>' +
+				'</trkseg></trk></gpx>'
+		);
+		expect( waypoints[ 0 ].type ).toBe( '' );
+		expect( waypoints[ 0 ].name ).toBe( 'Fountain' );
+		expect( waypoints[ 0 ].link ).toBe( 'https://example.com/x.jpg' );
+	} );
+
+	// The index is what links a waypoint to a post, and the server counts
+	// every <wpt> the same way, so one skipped for its coordinates still
+	// takes its place.
+	it( 'numbers waypoints by their place in the file', () => {
+		const { waypoints } = parseGPX(
+			PROLOG +
+				`<gpx ${ NS }>` +
+				'<wpt lat="43.1" lon="-5.8"><name>A</name></wpt>' +
+				'<wpt lat="x" lon="-5.8"><name>Broken</name></wpt>' +
+				'<wpt lat="43.3" lon="-5.8"><name>C</name></wpt>' +
+				'<trk><trkseg>' +
+				'<trkpt lat="43.0" lon="-6.0"><ele>1</ele></trkpt>' +
+				'</trkseg></trk></gpx>'
+		);
+		expect(
+			waypoints.map( ( { name, index } ) => [ name, index ] )
+		).toEqual( [
+			[ 'A', 0 ],
+			[ 'C', 2 ],
+		] );
+	} );
+
+	it.each( [
+		[ 'an ID', '1234', 1234 ],
+		[ 'a padded ID', '\n  42\n', 42 ],
+		[ 'no number', 'abc', 0 ],
+		[ 'a negative number', '-5', 0 ],
+		[ 'a fraction', '4.5', 0 ],
+		[ 'a number too long', '1234567890123456', 0 ],
+	] )(
+		'reads the Waypoint post a waypoint links to, given %s',
+		( _label, value, want ) => {
+			const { waypoints } = parseGPX(
+				PROLOG +
+					`<gpx ${ NS } xmlns:gpxrm="${ WAYPOINT_NAMESPACE }">` +
+					'<wpt lat="43.3" lon="-5.8"><extensions>' +
+					`<gpxrm:waypoint>${ value }</gpxrm:waypoint>` +
+					'</extensions></wpt>' +
+					'<trk><trkseg>' +
+					'<trkpt lat="43.0" lon="-6.0"><ele>1</ele></trkpt>' +
+					'</trkseg></trk></gpx>'
+			);
+			expect( waypoints[ 0 ].postId ).toBe( want );
+		}
+	);
+
+	// Only the plugin's namespace counts: another tool's <waypoint> element
+	// means something else.
+	it( 'ignores a waypoint element from another namespace', () => {
+		const { waypoints } = parseGPX(
+			PROLOG +
+				`<gpx ${ NS } xmlns:other="https://example.com/ns">` +
+				'<wpt lat="43.3" lon="-5.8"><extensions>' +
+				'<other:waypoint>1234</other:waypoint>' +
+				'</extensions></wpt>' +
+				'<trk><trkseg>' +
+				'<trkpt lat="43.0" lon="-6.0"><ele>1</ele></trkpt>' +
+				'</trkseg></trk></gpx>'
+		);
+		expect( waypoints[ 0 ].postId ).toBe( 0 );
 	} );
 
 	// The name becomes the marker's accessible name, so whitespace alone must

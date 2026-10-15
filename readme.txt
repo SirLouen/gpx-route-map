@@ -18,6 +18,7 @@ GPX Route Map turns a GPX file into an interactive map on the front end of your 
 * The track drawn as a route line with start and end markers.
 * Support for both GPX tracks (`<trk>`) and GPX routes (`<rte>`), e.g. Garmin Connect course exports.
 * Waypoint markers with popups for any `<wpt>` points in the file.
+* Optional Waypoint posts, to give a waypoint its own description, a photo shown as its marker, or an icon in your own colors.
 * A stats bar: distance, elevation gain, elevation loss, max and min elevation, in metric or imperial units.
 * A hand-drawn elevation profile you can scrub with mouse or touch, the position syncs onto the map.
 
@@ -92,8 +93,9 @@ Shortcode attributes:
 * `provider` - The map tiles: `osm` (OpenStreetMap), `opentopomap`, or a Thunderforest style once its API key is saved: `thunderforest-outdoors`, `thunderforest-cycle`, `thunderforest-landscape` or `thunderforest-atlas`. A Thunderforest style without a saved key shows the site's provider. Default: the site setting.
 * `units` - `metric` (km / m) or `imperial` (mi / ft). Default: the site setting.
 * `fields` - Which stats to list, from `distance`, `gain`, `loss`, `max`, `min` and `waypoints`, e.g. `distance,gain`. Default: the site setting. Use `stats="false"` to remove the bar.
+* `waypoints` - Link the file's waypoints to Waypoint posts, as `number:post ID` pairs that number the waypoints from 1 in the order of the file, e.g. `1:12, 3:40`. Needs Waypoint posts turned on. Default: only the links the GPX file holds.
 
-Provide either `id` or `gpx`. The block exposes the same options in its sidebar (Source, Display, Stats bar items and Map tiles panels).
+Provide either `id` or `gpx`. The block exposes the same options in its sidebar (Source, Display, Stats bar items and Map tiles panels, and Waypoints once Waypoint posts are on).
 
 Filters (for developers):
 
@@ -166,6 +168,12 @@ Two things worth knowing. The key appears in your pages' source, because visitor
 = Can I use my own map tiles? =
 
 Not from the editor: the block offers the providers above. A developer can point maps at another tile server with the `gpxrm_tile_url` filter, and say where its tiles stop with `gpxrm_tile_max_zoom`. Tile addresses set on a map before 2.0 are no longer used; those maps follow the site's provider.
+
+= Can I give a waypoint its own description, photo or icon? =
+
+Yes, with Waypoint posts. They are off by default: go to Settings > GPX Route Map and tick "Enable Waypoint posts" under General, and a Waypoints menu appears. Each Waypoint post has a description that replaces the one in the GPX file, a photo (set in its Photo box) shown at the top of the popup, and a marker: the usual one, the photo as a thumbnail, or any Dashicon in an icon color and background color of your choice. The post's title replaces the waypoint's name.
+
+Then link a map's waypoints to them, in either of two ways. In the block's Waypoints panel, choose a Waypoint post for each waypoint of the file. Or put the post's ID in the GPX file itself, inside the waypoint's `<extensions>`: each Waypoint post's screen shows the exact lines to copy, and maps then pick the link up on their own. When both link the same waypoint, the block's choice wins. With the shortcode, use the `waypoints` attribute. Only published Waypoint posts without a password show on maps, and turning the setting off puts every map back to the waypoints of its file.
 
 = Can I link a GPX file hosted on another site? =
 

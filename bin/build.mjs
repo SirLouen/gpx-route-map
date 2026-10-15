@@ -121,6 +121,7 @@ async function buildEditor() {
 				'edit.tsx',
 				'editor/map-preview.tsx',
 				'editor/use-rendered-markup.ts',
+				'editor/waypoint-links.tsx',
 			] ),
 			code
 		)

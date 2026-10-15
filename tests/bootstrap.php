@@ -350,5 +350,20 @@ if ( ! function_exists( 'generate_block_asset_handle' ) ) {
 	}
 }
 
+if ( ! function_exists( 'attachment_url_to_postid' ) ) {
+	/**
+	 * No Media Library here: no address is one of its files.
+	 *
+	 * @param string $url File address.
+	 * @return int
+	 */
+	function attachment_url_to_postid( string $url ): int {
+		unset( $url );
+		return 0;
+	}
+}
+
 require_once dirname( __DIR__ ) . '/includes/class-renderer.php';
+require_once dirname( __DIR__ ) . '/includes/class-dashicons.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoints.php';
 require_once dirname( __DIR__ ) . '/includes/class-plugin.php';

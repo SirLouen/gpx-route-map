@@ -44,6 +44,9 @@ import { siteStatFields } from './stat-fields';
 import { bakeStats, shouldStore, statsToStore } from './baked-stats';
 import type { FreshStats, GpxStats } from './baked-stats';
 import { MapPreview } from './editor/map-preview';
+import { WaypointLinks, waypointsEnabled } from './editor/waypoint-links';
+import type { WaypointLinkMap } from './editor/waypoint-links';
+import type { Waypoint } from './view/types';
 
 /**
  * Attributes as declared in block.json. A type alias (not an interface) so it
@@ -63,6 +66,7 @@ export type GpxBlockAttributes = {
 	provider: string;
 	units: string;
 	stats?: GpxStats;
+	waypointPosts?: WaypointLinkMap;
 };
 
 /**
@@ -185,6 +189,11 @@ export default function Edit( {
 	const [ urlDraft, setUrlDraft ] = useState< string | null >( null );
 	const committedUrl = gpxId ? '' : gpxUrl;
 
+	// The file's waypoints, for the Waypoints panel; undefined until read.
+	const [ waypoints, setWaypoints ] = useState< Waypoint[] | undefined >(
+		undefined
+	);
+
 	const mediaUrl = useSelect(
 		( select ): string | undefined => {
 			if ( ! gpxId ) {
@@ -251,6 +260,7 @@ export default function Edit( {
 		// What an earlier read found no longer counts: the file has changed, or
 		// is read again and may fail this time.
 		freshStatsRef.current = undefined;
+		setWaypoints( undefined );
 		if ( ! bakeUrl ) {
 			// A selected media file whose URL is still loading is not "no
 			// file": clearing its stats here only to bake them again a moment
@@ -274,6 +284,7 @@ export default function Edit( {
 				const next = bakeStats( parsed );
 				if ( ! cancelled ) {
 					freshStatsRef.current = { url: bakeUrl, stats: next };
+					setWaypoints( parsed.waypoints );
 				}
 				if (
 					! cancelled &&
@@ -309,6 +320,12 @@ export default function Edit( {
 		);
 	};
 
+	// Links go by each waypoint's position in the file, so another file
+	// drops them.
+	const dropLinks = attributes.waypointPosts
+		? { waypointPosts: undefined }
+		: {};
+
 	const commitUrl = () => {
 		if ( null === urlDraft ) {
 			return;
@@ -318,18 +335,22 @@ export default function Edit( {
 		if ( '' === value ) {
 			// An emptied field never discards a selected media file.
 			if ( ! gpxId && gpxUrl ) {
-				setAttributes( { gpxUrl: '' } );
+				setAttributes( { gpxUrl: '', ...dropLinks } );
 			}
 			return;
 		}
 		if ( value !== committedUrl ) {
-			setAttributes( { gpxUrl: value, gpxId: undefined } );
+			setAttributes( { gpxUrl: value, gpxId: undefined, ...dropLinks } );
 		}
 	};
 
 	const onSelect = ( media: SelectedMedia ) => {
 		setUrlDraft( null );
-		setAttributes( { gpxId: media.id, gpxUrl: media.url } );
+		setAttributes( {
+			gpxId: media.id,
+			gpxUrl: media.url,
+			...( media.id === gpxId ? {} : dropLinks ),
+		} );
 	};
 
 	const fileName = bakeUrl ? bakeUrl.split( '/' ).pop() : '';
@@ -742,6 +763,15 @@ export default function Edit( {
 						}
 					/>
 				</PanelBody>
+				{ hasGpx && waypointsEnabled() && (
+					<WaypointLinks
+						waypoints={ waypoints }
+						links={ attributes.waypointPosts }
+						onChange={ ( links ) =>
+							setAttributes( { waypointPosts: links } )
+						}
+					/>
+				) }
 			</InspectorControls>
 
 			{ hasGpx && (
