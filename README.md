@@ -8,7 +8,7 @@ Built with [MapLibre GL JS](https://maplibre.org/) + raster tiles (OpenStreetMap
 
 -   **Block + shortcode**: `gpx-route-map/map` block and `[gpx_route_map]`.
 -   **Interactive map**: track line, start/end markers, waypoint markers with popups, navigation/scale/fullscreen/geolocate controls.
--   **Waypoint posts** (opt-in, Settings > GPX Route Map > General): a `gpxrm_waypoint` post type that gives a waypoint its own description, popup photo and marker (photo thumbnail or a Dashicon in chosen colors). A block links waypoints to posts by their position in the file (`waypointPosts`), the shortcode with `waypoints="1:12"`, or the GPX file itself with `<gpxrm:waypoint>` in a waypoint's `<extensions>`; the block's link wins.
+-   **Waypoint posts** (opt-in, Settings > GPX Route Map > General): a `gpxrm_waypoint` post type that gives a waypoint its own description, popup photo and marker (photo thumbnail or a Dashicon in chosen colors). A block links waypoints to posts by their position in the file (`waypointPosts`), the shortcode with `waypoints="1:12"`, or a Media Library GPX file itself with `<gpxrm:waypoint>` in a waypoint's `<extensions>`; the block's link wins.
 -   **Stats bar**: distance, elevation gain/loss, max and min elevation (min is opt-in), waypoint count. Computed in the browser from the GPX file; a block also stores them, so its bar shows the figures without JavaScript, while a shortcode's fills in once the map loads.
 -   **Elevation profile**: scrub with mouse/touch; the position syncs onto the map, and clicking the track highlights the profile.
 -   **Lazy loading**: MapLibre loads only when a map scrolls into view; multiple maps per page are supported.

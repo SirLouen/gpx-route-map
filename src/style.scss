@@ -354,6 +354,9 @@
 	width: 100%;
 	max-width: 100%;
 	height: auto;
+	// Tall photos are cropped, so the name and description stay in view.
+	max-height: 140px;
+	object-fit: cover;
 	margin: 0 0 8px;
 	padding: 0;
 	border: 0;

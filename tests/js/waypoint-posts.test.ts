@@ -415,3 +415,126 @@ describe( 'addWaypointMarkers with Waypoint posts', () => {
 		).toBe( '<img src=x onerror=alert(1)>' );
 	} );
 } );
+
+// A photo's popup on a short map would run past the map's edge, which clips
+// it, so the name and description below the photo could not be reached.
+describe( 'popups taller than the map', () => {
+	/**
+	 * Open the popup of one waypoint on a map of a given height.
+	 *
+	 * @param mapHeight     The map's height.
+	 * @param contentHeight The popup content's height before it is fitted.
+	 * @param pointY        How far down the map the waypoint is.
+	 */
+	function openPopup(
+		mapHeight: number,
+		contentHeight: number,
+		pointY: number
+	) {
+		const element = document.createElement( 'div' );
+		const box = document.createElement( 'div' );
+		box.className = 'maplibregl-popup-content';
+		Object.defineProperty( box, 'offsetHeight', {
+			get: () => contentHeight,
+		} );
+		element.appendChild( box );
+		const placed: unknown[] = [];
+		const onOpen: Array< () => void > = [];
+
+		class FakePopup {
+			setDOMContent() {
+				return this;
+			}
+			on( type: string, fn: () => void ) {
+				if ( 'open' === type ) {
+					onOpen.push( fn );
+				}
+				return this;
+			}
+			isOpen() {
+				return true;
+			}
+			remove() {
+				return this;
+			}
+			getElement() {
+				return element;
+			}
+			getLngLat() {
+				return { lng: -5.8, lat: 43.3 };
+			}
+			setLngLat( lngLat: unknown ) {
+				placed.push( lngLat );
+				return this;
+			}
+		}
+
+		class FakeMarker {
+			element: HTMLElement;
+			constructor( options: { element: HTMLElement } ) {
+				this.element = options.element;
+			}
+			setLngLat() {
+				return this;
+			}
+			setPopup() {
+				return this;
+			}
+			getElement() {
+				return this.element;
+			}
+			togglePopup() {
+				return this;
+			}
+			addTo() {
+				return this;
+			}
+		}
+
+		const container = document.createElement( 'div' );
+		Object.defineProperty( container, 'clientHeight', {
+			get: () => mapHeight,
+		} );
+		addWaypointMarkers(
+			{ Popup: FakePopup, Marker: FakeMarker } as unknown as MapLibreGl,
+			{
+				getContainer: () => container,
+				project: () => ( { x: 100, y: pointY } ),
+			} as unknown as Parameters< typeof addWaypointMarkers >[ 1 ],
+			[
+				{
+					lon: -5.8,
+					lat: 43.3,
+					name: 'A',
+					desc: '',
+					type: '',
+					link: '',
+					index: 0,
+					postId: 0,
+				},
+			],
+			'#ffffff'
+		);
+		onOpen.forEach( ( fn ) => fn() );
+		return { box, placed };
+	}
+
+	it( 'scrolls a popup taller than the map, and places it again', () => {
+		// Opening above the waypoint, where there is more room.
+		const { box, placed } = openPopup( 220, 300, 150 );
+		expect( box.style.maxHeight ).toBe( '118px' );
+		expect( box.style.overflowY ).toBe( 'auto' );
+		expect( placed ).toEqual( [ { lng: -5.8, lat: 43.3 } ] );
+	} );
+
+	it( 'leaves a popup that fits as it is', () => {
+		const { box, placed } = openPopup( 480, 300, 400 );
+		expect( box.style.maxHeight ).toBe( '' );
+		expect( placed ).toEqual( [] );
+	} );
+
+	it( 'gives a waypoint near the top the room below it', () => {
+		const { box } = openPopup( 220, 300, 30 );
+		expect( box.style.maxHeight ).toBe( '158px' );
+	} );
+} );

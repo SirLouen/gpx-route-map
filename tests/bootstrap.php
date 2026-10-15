@@ -350,6 +350,18 @@ if ( ! function_exists( 'generate_block_asset_handle' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_check_invalid_utf8' ) ) {
+	/**
+	 * Stand in for WordPress's check: '' for text that is not valid UTF-8.
+	 *
+	 * @param string $text Text.
+	 * @return string
+	 */
+	function wp_check_invalid_utf8( string $text ): string {
+		return 1 === preg_match( '//u', $text ) ? $text : '';
+	}
+}
+
 if ( ! function_exists( 'attachment_url_to_postid' ) ) {
 	/**
 	 * No Media Library here: no address is one of its files.

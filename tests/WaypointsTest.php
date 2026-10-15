@@ -193,6 +193,23 @@ test(
 	}
 );
 
+// The map shows it as text, so nothing in it is a tag.
+test(
+	'a description keeps what looks like a tag',
+	function () {
+		expect( Waypoints::sanitize_description( "Gradient <10% here.\r\nViews >180 degrees, <b>not bold</b> & more." ) )
+			->toBe( "Gradient <10% here.\nViews >180 degrees, <b>not bold</b> & more." );
+	}
+);
+
+test(
+	'a description drops control characters and invalid text',
+	function () {
+		expect( Waypoints::sanitize_description( "  One\x00\x07 line\rtwo\ttabbed  " ) )->toBe( "One line\ntwo\ttabbed" );
+		expect( Waypoints::sanitize_description( "bad \xC3\x28 bytes" ) )->toBe( '' );
+	}
+);
+
 test(
 	'an icon marker always has an icon',
 	function () {
@@ -279,6 +296,14 @@ test(
 			array(
 				0 => 12,
 				3 => 40,
+			)
+		);
+		// As PHP writes {"0":12,"1":40} when it saves a post for a user
+		// without unfiltered_html.
+		expect( Waypoints::links_from_attribute( array( 12, 40 ) ) )->toBe(
+			array(
+				0 => 12,
+				1 => 40,
 			)
 		);
 		expect( Waypoints::links_from_attribute( 'not a list' ) )->toBe( array() );

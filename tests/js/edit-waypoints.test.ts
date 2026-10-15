@@ -29,15 +29,29 @@ const fields = new Map<
 let posts: Array< {
 	id: number;
 	status: string;
-	title: { raw: string };
+	title: { rendered: string };
 } > | null;
+/** Media Library files, by ID. */
+let media: Record< number, string >;
+/** The queries the panel listed posts with. */
+let queries: unknown[][];
+/** The listings the panel asked to have read again. */
+let refreshed: unknown[][];
 
 vi.mock( '@wordpress/data', () => ( {
 	useSelect: ( pick: ( select: () => unknown ) => unknown ) =>
 		pick( () => ( {
-			getEntityRecord: () => undefined,
-			getEntityRecords: () => posts,
+			getEntityRecord: ( _kind: string, _name: string, id: number ) =>
+				media[ id ] ? { source_url: media[ id ] } : undefined,
+			getEntityRecords: ( ...args: unknown[] ) => {
+				queries.push( args );
+				return posts;
+			},
 		} ) ),
+	useDispatch: () => ( {
+		invalidateResolution: ( selector: string, args: unknown[] ) =>
+			refreshed.push( [ selector, ...args ] ),
+	} ),
 } ) );
 
 vi.mock( '@wordpress/block-editor', () => {
@@ -51,8 +65,21 @@ vi.mock( '@wordpress/block-editor', () => {
 	};
 } );
 
+/** The Waypoints panel's open/close handler. */
+let togglePanel: ( ( opened: boolean ) => void ) | undefined;
+
 vi.mock( '@wordpress/components', () => {
 	const pass = ( { children }: { children?: unknown } ) => children ?? null;
+	const panel = ( props: {
+		title: string;
+		children?: unknown;
+		onToggle?: ( opened: boolean ) => void;
+	} ) => {
+		if ( 'Waypoints' === props.title ) {
+			togglePanel = props.onToggle;
+		}
+		return props.children ?? null;
+	};
 	const none = () => null;
 	const select = ( props: Select ) => {
 		selects.set( props.label, props );
@@ -67,7 +94,7 @@ vi.mock( '@wordpress/components', () => {
 		return null;
 	};
 	return {
-		PanelBody: pass,
+		PanelBody: panel,
 		RangeControl: none,
 		TextControl: text,
 		Button: none,
@@ -85,7 +112,7 @@ vi.mock( '@wordpress/components', () => {
 vi.mock( '../../src/editor/map-preview', () => ( { MapPreview: () => null } ) );
 
 import Edit from '../../src/edit';
-import { withLink } from '../../src/editor/waypoint-links';
+import { readLinks, withLink } from '../../src/editor/waypoint-links';
 import { bakeStats } from '../../src/baked-stats';
 import { parseGPX } from '../../src/view/map-core';
 
@@ -118,6 +145,7 @@ const ATTRIBUTES = {
 /** Every attribute change the editor made. */
 let writes: Array< Record< string, unknown > >;
 let root: ReturnType< typeof createRoot >;
+let container: HTMLElement;
 
 /**
  * The block, holding its attributes as the editor would.
@@ -187,10 +215,14 @@ beforeEach( () => {
 	writes = [];
 	selects.clear();
 	fields.clear();
+	media = {};
+	queries = [];
+	refreshed = [];
+	togglePanel = undefined;
 	posts = [
-		{ id: 10, status: 'publish', title: { raw: 'Fountain post' } },
-		{ id: 11, status: 'publish', title: { raw: 'Refuge post' } },
-		{ id: 12, status: 'draft', title: { raw: '' } },
+		{ id: 10, status: 'publish', title: { rendered: 'Fountain post' } },
+		{ id: 11, status: 'publish', title: { rendered: 'Refuge post' } },
+		{ id: 12, status: 'draft', title: { rendered: '' } },
 	];
 	feature( true );
 	vi.stubGlobal(
@@ -203,7 +235,7 @@ beforeEach( () => {
 			} as Response )
 		)
 	);
-	const container = document.createElement( 'div' );
+	container = document.createElement( 'div' );
 	document.body.append( container );
 	root = createRoot( container );
 } );
@@ -236,10 +268,96 @@ describe( 'The Waypoints panel', () => {
 			{ label: 'Refuge post', value: '11' },
 			{ label: '#12 (no title) (not published)', value: '12' },
 		] );
-		expect( selects.get( '2. Refuge' )?.options[ 0 ] ).toEqual( {
-			label: 'As in the GPX file: Refuge post',
-			value: '',
+	} );
+
+	// The edit context would list only the posts the user may edit, which
+	// for an Author leaves out every waypoint the site made.
+	it( 'lists the posts the user may read, not only edit', async () => {
+		await open();
+		const [ , , query ] = queries.at( -1 ) ?? [];
+		expect( queries.at( -1 )?.slice( 0, 2 ) ).toEqual( [
+			'postType',
+			'gpxrm_waypoint',
+		] );
+		expect( query ).toHaveProperty( 'context', 'view' );
+	} );
+
+	it( 'names posts as the map does, entities decoded and tags dropped', async () => {
+		posts = [
+			{
+				id: 10,
+				status: 'publish',
+				title: {
+					rendered:
+						'Fish &amp; Chips <em>stall</em> &#8220;No.1&#8221;',
+				},
+			},
+			{
+				id: 11,
+				status: 'publish',
+				title: { rendered: '<img src=x onerror="window.hacked=1">' },
+			},
+		];
+		await open();
+		expect(
+			selects.get( '1. Fountain' )?.options.map( ( { label } ) => label )
+		).toEqual( [ 'None', 'Fish & Chips stall “No.1”', '#11 (no title)' ] );
+		expect(
+			( window as unknown as { hacked?: number } ).hacked
+		).toBeUndefined();
+	} );
+
+	it( 'lists again what was added in another tab', async () => {
+		await open();
+		refreshed = [];
+		Object.defineProperty( document, 'visibilityState', {
+			configurable: true,
+			get: () => 'visible',
 		} );
+		document.dispatchEvent( new Event( 'visibilitychange' ) );
+		flushSync( () => togglePanel?.( true ) );
+		flushSync( () => togglePanel?.( false ) );
+		delete ( document as unknown as { visibilityState?: string } )
+			.visibilityState;
+
+		expect( refreshed ).toHaveLength( 2 );
+		expect( refreshed[ 0 ] ).toEqual( [
+			'getEntityRecords',
+			...( queries.at( -1 ) ?? [] ),
+		] );
+	} );
+
+	// Maps read the links in a file only from the Media Library.
+	it( 'says a file elsewhere links its waypoints in vain', async () => {
+		await open();
+		expect( selects.get( '2. Refuge' )?.options[ 0 ].label ).toBe( 'None' );
+		expect( container.textContent ).toContain(
+			'maps only read those links from files in the Media Library'
+		);
+	} );
+
+	it( 'says what the file links when it is in the Media Library', async () => {
+		media[ 7 ] = 'https://example.test/a.gpx';
+		await open( { gpxId: 7 } );
+		expect( selects.get( '1. Fountain' )?.options[ 0 ].label ).toBe(
+			'None'
+		);
+		expect( selects.get( '2. Refuge' )?.options[ 0 ].label ).toBe(
+			'As in the GPX file: Refuge post'
+		);
+		expect( container.textContent ).not.toContain( 'Media Library' );
+	} );
+
+	// Saved by a user without unfiltered_html, PHP writes {"0":10,"1":11}
+	// as a list.
+	it( 'reads links stored as a list', async () => {
+		await open( { waypointPosts: [ 10, 11 ] } );
+		expect( selects.get( '1. Fountain' )?.value ).toBe( '10' );
+		expect( selects.get( '2. Refuge' )?.value ).toBe( '11' );
+		expect( writes ).toEqual( [] );
+
+		choose( '1. Fountain', '' );
+		expect( writes.at( -1 ) ).toEqual( { waypointPosts: { 1: 11 } } );
 	} );
 
 	it( 'stores nothing when a post is merely opened', async () => {
@@ -294,6 +412,36 @@ describe( 'The Waypoints panel', () => {
 			gpxUrl: 'https://example.test/b.gpx',
 			gpxId: undefined,
 		} );
+	} );
+} );
+
+describe( 'readLinks', () => {
+	it( 'reads links stored as an object or a list', () => {
+		expect( readLinks( { 1: 10, 3: '12' } ) ).toEqual( { 1: 10, 3: 12 } );
+		expect( readLinks( [ 10, 11 ] ) ).toEqual( { 0: 10, 1: 11 } );
+	} );
+
+	it( 'keeps only whole post IDs above zero at whole positions', () => {
+		expect(
+			readLinks( {
+				0: 0,
+				1: -2,
+				2: 1.5,
+				3: 'x',
+				4: null,
+				'-1': 5,
+				'1.5': 6,
+				x: 7,
+				5: 8,
+			} )
+		).toEqual( { 5: 8 } );
+	} );
+
+	it( 'reads nothing from anything else', () => {
+		expect( readLinks( undefined ) ).toBeUndefined();
+		expect( readLinks( 'x' ) ).toBeUndefined();
+		expect( readLinks( {} ) ).toBeUndefined();
+		expect( readLinks( [ 0 ] ) ).toBeUndefined();
 	} );
 } );
 

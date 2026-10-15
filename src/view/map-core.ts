@@ -441,6 +441,36 @@ function markerElement(
 }
 
 /**
+ * Keep an open popup within the map. One taller than the map, such as a
+ * photo's on a short map, would run past its edge out of reach, so it
+ * scrolls instead.
+ *
+ * @param map   Map instance.
+ * @param popup The popup, just opened.
+ */
+function fitPopup( map: MapLibreMap, popup: MapLibreNs.Popup ): void {
+	const box = popup
+		.getElement()
+		?.querySelector< HTMLElement >( '.maplibregl-popup-content' );
+	if ( ! box ) {
+		return;
+	}
+	// It opens above or below its waypoint, whichever side has more room,
+	// less its offset and tip.
+	const height = map.getContainer().clientHeight;
+	const { y } = map.project( popup.getLngLat() );
+	const room = Math.round( Math.max( y, height - y ) ) - 32;
+	if ( room > 0 && box.offsetHeight > room ) {
+		// Padding included, as MapLibre measures the whole popup.
+		box.style.boxSizing = 'border-box';
+		box.style.maxHeight = room + 'px';
+		box.style.overflowY = 'auto';
+		// Placed again for its new size.
+		popup.setLngLat( popup.getLngLat() );
+	}
+}
+
+/**
  * Add DOM markers with popups for each waypoint.
  *
  * @param maplibregl MapLibre GL module.
@@ -514,6 +544,7 @@ export function addWaypointMarkers(
 			offset: 16,
 			closeButton: true,
 		} ).setDOMContent( content );
+		popup.on( 'open', () => fitPopup( map, popup ) );
 
 		const marker = new maplibregl.Marker( { element: el } )
 			.setLngLat( [ wpt.lon, wpt.lat ] )

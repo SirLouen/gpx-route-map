@@ -80,7 +80,7 @@
 			"type": "object"
 		},
 		"waypointPosts": {
-			"type": "object"
+			"type": [ "object", "array" ]
 		}
 	},
 	"editorScript": "file:./index.js",

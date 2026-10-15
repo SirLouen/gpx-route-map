@@ -254,7 +254,7 @@ class Waypoints {
 		<div id="gpxrm-waypoint-box">
 			<p>
 				<label for="gpxrm_description"><strong><?php esc_html_e( 'Description', 'gpx-route-map' ); ?></strong></label>
-				<textarea id="gpxrm_description" name="gpxrm_description" class="large-text" rows="4"><?php echo esc_textarea( self::plain( $description ) ); ?></textarea>
+				<textarea id="gpxrm_description" name="gpxrm_description" class="large-text" rows="4"><?php echo esc_textarea( $description ); ?></textarea>
 				<span class="description"><?php esc_html_e( 'What visitors read when they open this waypoint on a map, in place of the description in the GPX file. Line breaks are kept.', 'gpx-route-map' ); ?></span>
 			</p>
 
@@ -324,7 +324,7 @@ class Waypoints {
 				?>
 			</p>
 			<p class="description">
-				<?php esc_html_e( 'A map shows this waypoint when its block links one of the GPX file\'s waypoints to it. Or the GPX file can link to it itself: put this at the end of the waypoint\'s <wpt> element, or only its middle line inside the waypoint\'s <extensions> if it has one.', 'gpx-route-map' ); ?>
+				<?php esc_html_e( 'A map shows this waypoint when its block links one of the GPX file\'s waypoints to it. Or a GPX file in the Media Library can link to it itself: put this at the end of the waypoint\'s <wpt> element, or only its middle line inside the waypoint\'s <extensions> if it has one.', 'gpx-route-map' ); ?>
 			</p>
 			<textarea class="large-text code" rows="3" readonly aria-label="<?php esc_attr_e( 'GPX extension that links a waypoint to this one', 'gpx-route-map' ); ?>"><?php echo esc_textarea( self::gpx_snippet( $post->ID ) ); ?></textarea>
 		</div>
@@ -383,7 +383,7 @@ class Waypoints {
 
 		$fields = self::sanitize_fields(
 			array(
-				'description' => sanitize_textarea_field( self::posted( 'gpxrm_description' ) ),
+				'description' => self::posted( 'gpxrm_description' ),
 				'marker'      => sanitize_key( self::posted( 'gpxrm_marker' ) ),
 				'icon'        => sanitize_key( self::posted( 'gpxrm_icon' ) ),
 				'color'       => sanitize_text_field( self::posted( 'gpxrm_icon_color' ) ),
@@ -440,7 +440,7 @@ class Waypoints {
 		$marker      = self::sanitize_marker( $raw['marker'] ?? '' );
 
 		return array(
-			'description' => is_string( $description ) ? trim( $description ) : '',
+			'description' => is_string( $description ) ? self::sanitize_description( $description ) : '',
 			'marker'      => $marker,
 			'icon'        => is_string( $icon ) && Dashicons::exists( $icon ) ? $icon : ( 'icon' === $marker ? self::DEFAULT_ICON : '' ),
 			'color'       => self::chosen_color( $raw['color'] ?? '', self::DEFAULT_COLOR ),
@@ -460,6 +460,20 @@ class Waypoints {
 		$color = self::hex_color( $value, '' );
 
 		return $default_color === $color ? '' : $color;
+	}
+
+	/**
+	 * A description as typed: plain text, which the map shows as text, so
+	 * nothing that looks like a tag is taken out ("<10%" stays). Only
+	 * invalid UTF-8 and control characters go, and line breaks become \n.
+	 *
+	 * @param string $text Submitted description.
+	 * @return string
+	 */
+	public static function sanitize_description( string $text ): string {
+		$text = str_replace( array( "\r\n", "\r" ), "\n", wp_check_invalid_utf8( $text ) );
+
+		return trim( (string) preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text ) );
 	}
 
 	/**
@@ -602,6 +616,13 @@ CSS;
 		sync();
 	} );
 
+	// Enter would submit the post form, saving whatever is half done.
+	box.querySelector( '.gpxrm-icon-search' ).addEventListener( 'keydown', function ( event ) {
+		if ( 'Enter' === event.key ) {
+			event.preventDefault();
+		}
+	} );
+
 	box.querySelector( '.gpxrm-icon-search' ).addEventListener( 'input', function () {
 		var query = this.value.trim().toLowerCase();
 		Array.prototype.forEach.call( box.querySelectorAll( '.gpxrm-icon-choice' ), function ( choice ) {
@@ -679,17 +700,37 @@ JS;
 		$thumb  = (int) get_post_thumbnail_id( $post_id );
 
 		if ( 'image' === $marker && $thumb > 0 ) {
-			echo wp_get_attachment_image( $thumb, 'thumbnail', false, array( 'class' => 'gpxrm-marker-thumb' ) );
+			// Named by the text after it, as the photo's own alt describes
+			// the photo rather than the marker.
+			echo wp_get_attachment_image(
+				$thumb,
+				'thumbnail',
+				false,
+				array(
+					'class' => 'gpxrm-marker-thumb',
+					'alt'   => '',
+				)
+			);
+			echo '<span class="screen-reader-text">' . esc_html__( 'Photo', 'gpx-route-map' ) . '</span>';
 			return;
 		}
 
 		if ( 'icon' === $marker ) {
 			$icon = self::meta_text( $post_id, self::META_ICON );
-			echo self::icon_marker_html( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside.
-				Dashicons::exists( $icon ) ? $icon : self::DEFAULT_ICON,
+			$icon = Dashicons::exists( $icon ) ? $icon : self::DEFAULT_ICON;
+			$html = self::icon_marker_html(
+				$icon,
 				self::hex_color( self::meta_text( $post_id, self::META_COLOR ), self::DEFAULT_COLOR ),
 				self::hex_color( self::meta_text( $post_id, self::META_BACKGROUND ), self::DEFAULT_BACKGROUND )
 			);
+			echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside.
+			echo '<span class="screen-reader-text">' . esc_html(
+				sprintf(
+					/* translators: %s: a Dashicon's name, such as "location". */
+					__( 'Icon: %s', 'gpx-route-map' ),
+					$icon
+				)
+			) . '</span>';
 			return;
 		}
 
@@ -990,7 +1031,7 @@ JS;
 		return self::entry(
 			array(
 				'name'       => self::plain( get_the_title( $post ) ),
-				'desc'       => self::plain( self::meta_text( $post->ID, self::META_DESCRIPTION ) ),
+				'desc'       => trim( self::meta_text( $post->ID, self::META_DESCRIPTION ) ),
 				'marker'     => self::meta_text( $post->ID, self::META_MARKER ),
 				'icon'       => self::meta_text( $post->ID, self::META_ICON ),
 				'color'      => self::meta_text( $post->ID, self::META_COLOR ),

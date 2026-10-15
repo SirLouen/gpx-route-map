@@ -44,8 +44,12 @@ import { siteStatFields } from './stat-fields';
 import { bakeStats, shouldStore, statsToStore } from './baked-stats';
 import type { FreshStats, GpxStats } from './baked-stats';
 import { MapPreview } from './editor/map-preview';
-import { WaypointLinks, waypointsEnabled } from './editor/waypoint-links';
-import type { WaypointLinkMap } from './editor/waypoint-links';
+import {
+	WaypointLinks,
+	readLinks,
+	waypointsEnabled,
+} from './editor/waypoint-links';
+import type { StoredWaypointLinks } from './editor/waypoint-links';
 import type { Waypoint } from './view/types';
 
 /**
@@ -66,7 +70,7 @@ export type GpxBlockAttributes = {
 	provider: string;
 	units: string;
 	stats?: GpxStats;
-	waypointPosts?: WaypointLinkMap;
+	waypointPosts?: StoredWaypointLinks;
 };
 
 /**
@@ -203,11 +207,16 @@ export default function Edit( {
 				getEntityRecord: (
 					kind: string,
 					name: string,
-					id: number
+					id: number,
+					query: Record< string, string >
 				) => { source_url?: string } | undefined;
 			};
-			return core.getEntityRecord( 'postType', 'attachment', gpxId )
-				?.source_url;
+			// In the view context: the edit context answers only those who
+			// may edit the file, so an Author could not read one someone
+			// else uploaded.
+			return core.getEntityRecord( 'postType', 'attachment', gpxId, {
+				context: 'view',
+			} )?.source_url;
 		},
 		[ gpxId ]
 	);
@@ -766,7 +775,8 @@ export default function Edit( {
 				{ hasGpx && waypointsEnabled() && (
 					<WaypointLinks
 						waypoints={ waypoints }
-						links={ attributes.waypointPosts }
+						links={ readLinks( attributes.waypointPosts ) }
+						fromLibrary={ !! gpxId }
 						onChange={ ( links ) =>
 							setAttributes( { waypointPosts: links } )
 						}
