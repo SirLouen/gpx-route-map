@@ -344,7 +344,7 @@ final class Gpxrm_Seeder_Command {
 				'Linked in the block',
 				'The Alpine Loop, its three waypoints linked in the block\'s Waypoints panel.',
 				array(
-					'1: Trailhead Refuge, drawn as its photo. Its popup shows the photo, then the title and the post\'s two-line description.',
+					'1: Trailhead Refuge, drawn as its photo alone, under the track\'s Start and End pins, as the loop starts and ends there. Its popup shows the photo, then the title and the post\'s two-line description.',
 					'2: Crest Viewpoint, a dark eye icon on yellow. Its popup shows its photo, though its marker is the icon.',
 					'3: Spring, with the usual water marker, and the post\'s title and description in place of the file\'s.',
 				),

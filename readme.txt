@@ -18,7 +18,7 @@ GPX Route Map turns a GPX file into an interactive map on the front end of your 
 * The track drawn as a route line with start and end markers.
 * Support for both GPX tracks (`<trk>`) and GPX routes (`<rte>`), e.g. Garmin Connect course exports.
 * Waypoint markers with popups for any `<wpt>` points in the file.
-* Optional Waypoint posts, to give a waypoint its own description, a photo shown as its marker, or an icon in your own colors.
+* Optional Waypoint posts (experimental), to give a waypoint its own description, a photo shown as its marker, or an icon in your own colors.
 * A stats bar: distance, elevation gain, elevation loss, max and min elevation, in metric or imperial units.
 * A hand-drawn elevation profile you can scrub with mouse or touch, the position syncs onto the map.
 
@@ -171,7 +171,7 @@ Not from the editor: the block offers the providers above. A developer can point
 
 = Can I give a waypoint its own description, photo or icon? =
 
-Yes, with Waypoint posts. They are off by default: go to Settings > GPX Route Map and tick "Enable Waypoint posts" under General, and a Waypoints menu appears. Each Waypoint post has a description that replaces the one in the GPX file, a photo (set in its Photo box) shown at the top of the popup, and a marker: the usual one, the photo as a thumbnail, or any Dashicon in an icon color and background color of your choice. The post's title replaces the waypoint's name.
+Yes, with Waypoint posts. They are experimental, so how they work may change in later versions, and off by default: go to Settings > GPX Route Map and tick "Enable Waypoint posts (experimental)" under General, and a Waypoints menu appears. Each Waypoint post has a description that replaces the one in the GPX file, a photo (set in its Photo box) shown at the top of the popup, and a marker: the usual one, the photo as a thumbnail, or any Dashicon in an icon color and background color of your choice. The post's title replaces the waypoint's name.
 
 Then link a map's waypoints to them, in either of two ways. In the block's Waypoints panel, choose a Waypoint post for each waypoint of the file. Or, for a GPX file in the Media Library, put the post's ID in the file itself, inside the waypoint's `<extensions>`: each Waypoint post's screen shows the exact lines to copy, and maps then pick the link up on their own. Maps do not read these links from a file on another site, or on a server whose PHP lacks the XMLReader extension, which PHP includes by default (the plugin's settings say so). When both link the same waypoint, the block's choice wins. With the shortcode, use the `waypoints` attribute. Only published Waypoint posts without a password show on maps, and turning the setting off puts every map back to the waypoints of its file.
 

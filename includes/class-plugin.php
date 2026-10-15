@@ -448,7 +448,7 @@ class Plugin {
 			'<label for="%1$s"><input type="checkbox" name="%1$s" id="%1$s" value="1"%2$s> %3$s</label>',
 			esc_attr( Waypoints::OPTION ),
 			checked( Waypoints::enabled(), true, false ),
-			esc_html__( 'Enable Waypoint posts', 'gpx-route-map' )
+			esc_html__( 'Enable Waypoint posts (experimental)', 'gpx-route-map' )
 		);
 		echo '<p class="description">' . esc_html__( 'Adds a Waypoints menu. Each waypoint post can have its own description, a photo or an icon, and maps show them on the waypoints of their GPX files that link to it.', 'gpx-route-map' ) . ' ' . esc_html__( 'A map\'s block links its GPX file\'s waypoints in its Waypoints panel, or a GPX file can name the post itself.', 'gpx-route-map' ) . '</p>';
 
