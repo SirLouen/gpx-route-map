@@ -75,3 +75,18 @@ if ( ! function_exists( 'update_post_meta' ) ) {
 		return true;
 	}
 }
+
+if ( ! function_exists( 'wp_kses' ) ) {
+	/**
+	 * Stand in for WordPress's kses: only the elements allowed are kept.
+	 * Their attributes and the protocols of their addresses are left to the
+	 * real one, which these tests do not load.
+	 *
+	 * @param string                              $content      Markup.
+	 * @param array<string, array<string, mixed>> $allowed_html Elements allowed, with their attributes.
+	 * @return string
+	 */
+	function wp_kses( string $content, array $allowed_html ): string {
+		return strip_tags( $content, array_keys( $allowed_html ) );
+	}
+}

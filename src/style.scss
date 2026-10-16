@@ -149,11 +149,34 @@
 	color: #4b5563;
 }
 
-// A Waypoint post's description, typed in a plain text box: its line breaks
-// are kept. Not the GPX file's, whose pretty-printing would show as blank
-// lines.
-.gpxrm-popup-desc-post {
-	white-space: pre-line;
+// A Waypoint post's description, from its editor: paragraphs, lists and
+// links. Pinned like the rest of the map chrome, as themes space and indent
+// every paragraph and list in a post.
+.gpxrm .gpxrm-map .gpxrm-popup-desc-post {
+
+	:where(p, ul, ol) {
+		margin: 0 0 4px;
+		padding: 0;
+		font-size: inherit;
+		line-height: 1.4;
+	}
+
+	:where(ul, ol) {
+		padding-left: 18px;
+	}
+
+	:where(li) {
+		margin: 0;
+	}
+
+	> :last-child {
+		margin-bottom: 0;
+	}
+
+	a {
+		color: inherit;
+		text-decoration: underline;
+	}
 }
 
 .gpxrm-popup-type {

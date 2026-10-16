@@ -444,17 +444,64 @@ describe( 'addWaypointMarkers with Waypoint posts', () => {
 	} );
 
 	// Text from a post is text, whatever it looks like.
-	it( 'writes a post name and description as text', () => {
+	it( 'writes a post name as text', () => {
 		const [ { content } ] = draw( [ waypoint( 0 ) ], {
-			0: {
-				name: '<img src=x onerror=alert(1)>',
-				desc: '<b>bold</b>',
-			},
+			0: { name: '<img src=x onerror=alert(1)>' },
 		} );
-		expect( content.querySelector( 'b, img' ) ).toBeNull();
+		expect( content.querySelector( 'img' ) ).toBeNull();
 		expect(
 			content.querySelector( '.gpxrm-popup-name' )?.textContent
 		).toBe( '<img src=x onerror=alert(1)>' );
+	} );
+
+	/**
+	 * A post description's row, as a popup shows it.
+	 *
+	 * @param desc The description's markup.
+	 */
+	const descriptionRow = ( desc: string ) =>
+		draw( [ waypoint( 0 ) ], { 0: { desc } } )[ 0 ].content.querySelector(
+			'.gpxrm-popup-desc-post'
+		) as HTMLElement;
+
+	it( 'shows a description with its links, bold and italic text and lists', () => {
+		const row = descriptionRow(
+			'<p>Book on <a href="https://example.com/book">the site</a>, <strong>early</strong>.</p>\n<ul><li><em>Water</em></li></ul>'
+		);
+		expect( row.innerHTML ).toBe(
+			'<p>Book on <a href="https://example.com/book">the site</a>, <strong>early</strong>.</p>\n<ul><li><em>Water</em></li></ul>'
+		);
+	} );
+
+	it( 'opens a link in a new tab only as its author chose, and safely', () => {
+		const row = descriptionRow(
+			'<a href="https://example.com/" target="_blank" rel="opener">New tab</a> <a href="https://example.com/" target="_top">Same tab</a>'
+		);
+		const [ blank, same ] = Array.from( row.querySelectorAll( 'a' ) );
+		expect( blank.getAttribute( 'target' ) ).toBe( '_blank' );
+		expect( blank.getAttribute( 'rel' ) ).toBe( 'noopener noreferrer' );
+		expect( same.hasAttribute( 'target' ) ).toBe( false );
+		expect( same.hasAttribute( 'rel' ) ).toBe( false );
+	} );
+
+	it( 'keeps a link that is not http(s) or mailto only as its text', () => {
+		const row = descriptionRow(
+			'<a href="javascript:alert(1)">Go</a> <a href="mailto:hut@example.com">Mail</a>'
+		);
+		const [ go, mail ] = Array.from( row.querySelectorAll( 'a' ) );
+		expect( go.hasAttribute( 'href' ) ).toBe( false );
+		expect( go.textContent ).toBe( 'Go' );
+		expect( mail.getAttribute( 'href' ) ).toBe( 'mailto:hut@example.com' );
+	} );
+
+	it( 'drops every other element and attribute a description is sent with', () => {
+		const row = descriptionRow(
+			'<p onclick="alert(1)" style="color:red" class="x">Text</p><img src=x onerror="window.hacked=1"><script>window.hacked=2</script><style>p{}</style><span title="t">Shade</span><svg><a href="https://example.com/">svg</a></svg>'
+		);
+		expect( row.innerHTML ).toBe( '<p>Text</p>Shade' );
+		expect(
+			( window as unknown as { hacked?: number } ).hacked
+		).toBeUndefined();
 	} );
 } );
 

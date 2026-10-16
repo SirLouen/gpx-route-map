@@ -197,10 +197,27 @@ test(
 
 // The map shows it as text, so nothing in it is a tag.
 test(
-	'a description keeps what looks like a tag',
+	'a description keeps the markup its editor writes, and only that',
 	function () {
-		expect( Waypoints::sanitize_description( "Gradient <10% here.\r\nViews >180 degrees, <b>not bold</b> & more." ) )
-			->toBe( "Gradient <10% here.\nViews >180 degrees, <b>not bold</b> & more." );
+		expect(
+			Waypoints::sanitize_description(
+				"Gradient &lt;10% on <a href=\"https://example.test/\">the climb</a>, <strong>steep</strong>.\r\n<ul><li>Water</li></ul><img src=\"x\"><span>Shade</span>"
+			)
+		)->toBe( "Gradient &lt;10% on <a href=\"https://example.test/\">the climb</a>, <strong>steep</strong>.\n<ul><li>Water</li></ul>Shade" );
+	}
+);
+
+test(
+	'a description may hold links, bold and italic text, lists and paragraphs',
+	function () {
+		expect( array_keys( Waypoints::description_tags() ) )->toBe( array( 'a', 'b', 'br', 'em', 'i', 'li', 'ol', 'p', 'strong', 'ul' ) );
+		expect( Waypoints::description_tags()['a'] )->toBe(
+			array(
+				'href'   => true,
+				'target' => true,
+				'rel'    => true,
+			)
+		);
 	}
 );
 

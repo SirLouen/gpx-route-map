@@ -115,7 +115,7 @@ final class Gpxrm_Seeder_Command {
 		return array(
 			'refuge'    => array(
 				'title'       => 'Trailhead Refuge',
-				'description' => "Staffed from June to September, with 40 bunks.\nBook ahead in summer: it fills up on weekends.",
+				'description' => "Staffed from June to September, with <strong>40 bunks</strong>.\nBook ahead on <a href=\"https://example.com/\">the refuge's website</a>: it fills up on weekends.",
 				'marker'      => 'image',
 				'photo'       => array( 'Trailhead Refuge at dawn', 'A mountain ridge under a pink dawn sky', array( 255, 179, 140 ), array( 120, 90, 160 ) ),
 			),
@@ -344,7 +344,7 @@ final class Gpxrm_Seeder_Command {
 				'Linked in the block',
 				'The Alpine Loop, its three waypoints linked in the block\'s Waypoints panel.',
 				array(
-					'1: Trailhead Refuge, drawn as its photo alone, under the track\'s Start and End pins, as the loop starts and ends there. Its popup shows the photo, then the title and the post\'s two-line description.',
+					'1: Trailhead Refuge, drawn as its photo alone, under the track\'s Start and End pins, as the loop starts and ends there. Its popup shows the photo, then the title and the post\'s two-line description, with bold text and a link.',
 					'2: Crest Viewpoint, a dark eye icon on yellow. Its popup shows its photo, though its marker is the icon.',
 					'3: Spring, with the usual water marker, and the post\'s title and description in place of the file\'s.',
 				),

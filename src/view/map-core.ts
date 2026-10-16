@@ -14,6 +14,10 @@ import type {
 } from './types';
 import { keyboardMarker } from './marker-keyboard';
 import { readWaypointPosts } from './waypoint-posts';
+import { appendDescription } from './description';
+import { safeLinkUrl } from './safe-url';
+
+export { safeLinkUrl };
 
 type MapLibreMap = MapLibreNs.Map;
 type StyleSpecification = MapLibreNs.StyleSpecification;
@@ -351,27 +355,6 @@ function iconFor( type: string ): WaypointIcon {
 }
 
 /**
- * Validate a waypoint link URL, allowing only safe schemes.
- *
- * @param url Raw URL from the GPX file.
- * @return The original URL if safe, otherwise "".
- */
-export function safeLinkUrl( url: string ): string {
-	if ( ! url ) {
-		return '';
-	}
-	let parsed: URL;
-	try {
-		parsed = new URL( url, window.location.href );
-	} catch {
-		return '';
-	}
-	return [ 'http:', 'https:', 'mailto:' ].includes( parsed.protocol )
-		? url
-		: '';
-}
-
-/**
  * Append a <div> with text content to a popup container.
  *
  * @param parent    Container.
@@ -521,8 +504,8 @@ export function addWaypointMarkers(
 		}
 		appendPopupRow( content, 'gpxrm-popup-name', name );
 		if ( post?.desc ) {
-			// Written in a plain text box, so its line breaks are kept.
-			appendPopupRow(
+			// Written in an editor: links, bold and italic text and lists.
+			appendDescription(
 				content,
 				'gpxrm-popup-desc gpxrm-popup-desc-post',
 				post.desc

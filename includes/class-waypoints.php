@@ -252,11 +252,25 @@ class Waypoints {
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE );
 		?>
 		<div id="gpxrm-waypoint-box">
-			<p>
-				<label for="gpxrm_description"><strong><?php esc_html_e( 'Description', 'gpx-route-map' ); ?></strong></label>
-				<textarea id="gpxrm_description" name="gpxrm_description" class="large-text" rows="4"><?php echo esc_textarea( $description ); ?></textarea>
-				<span class="description"><?php esc_html_e( 'What visitors read when they open this waypoint on a map, in place of the description in the GPX file. Line breaks are kept.', 'gpx-route-map' ); ?></span>
-			</p>
+			<div class="gpxrm-description">
+				<p><label for="gpxrm_description"><strong><?php esc_html_e( 'Description', 'gpx-route-map' ); ?></strong></label></p>
+				<?php
+				wp_editor(
+					$description,
+					'gpxrm_description',
+					array(
+						'textarea_name' => 'gpxrm_description',
+						'textarea_rows' => 6,
+						'media_buttons' => false,
+						'teeny'         => true,
+						// Only what a description keeps (description_tags()).
+						'tinymce'       => array( 'toolbar1' => 'bold,italic,bullist,numlist,link,unlink,undo,redo' ),
+						'quicktags'     => array( 'buttons' => 'strong,em,link,ul,ol,li,close' ),
+					)
+				);
+				?>
+				<p class="description"><?php esc_html_e( 'What visitors read when they open this waypoint on a map, in place of the description in the GPX file. Links, bold and italic text, and lists are kept.', 'gpx-route-map' ); ?></p>
+			</div>
 
 			<fieldset class="gpxrm-marker-choice">
 				<legend><strong><?php esc_html_e( 'Marker', 'gpx-route-map' ); ?></strong></legend>
@@ -463,17 +477,58 @@ class Waypoints {
 	}
 
 	/**
-	 * A description as typed: plain text, which the map shows as text, so
-	 * nothing that looks like a tag is taken out ("<10%" stays). Only
-	 * invalid UTF-8 and control characters go, and line breaks become \n.
+	 * A description as its editor writes it, in WordPress's usual paragraph
+	 * format: links, bold and italic text and lists are kept, any other
+	 * markup goes, as do invalid UTF-8 and control characters, and line
+	 * breaks become \n. The visual editor writes a "<" typed as text as an
+	 * entity, so it stays.
 	 *
 	 * @param string $text Submitted description.
 	 * @return string
 	 */
 	public static function sanitize_description( string $text ): string {
 		$text = str_replace( array( "\r\n", "\r" ), "\n", wp_check_invalid_utf8( $text ) );
+		$text = (string) preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text );
 
-		return trim( (string) preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text ) );
+		return trim( wp_kses( $text, self::description_tags() ) );
+	}
+
+	/**
+	 * The markup a description keeps: what its editor's buttons write.
+	 *
+	 * @return array<string, array<string, bool>>
+	 */
+	public static function description_tags(): array {
+		$link = array(
+			'href'   => true,
+			'target' => true,
+			'rel'    => true,
+		);
+
+		return array(
+			'a'      => $link,
+			'b'      => array(),
+			'br'     => array(),
+			'em'     => array(),
+			'i'      => array(),
+			'li'     => array(),
+			'ol'     => array(),
+			'p'      => array(),
+			'strong' => array(),
+			'ul'     => array(),
+		);
+	}
+
+	/**
+	 * A description as the map shows it: its markup kept to what a
+	 * description may hold, as its meta can be written by other means than
+	 * its box, and its paragraphs and line breaks as HTML.
+	 *
+	 * @param string $text Stored description.
+	 * @return string
+	 */
+	private static function description_html( string $text ): string {
+		return trim( wpautop( wp_kses( $text, self::description_tags() ) ) );
 	}
 
 	/**
@@ -1027,7 +1082,7 @@ JS;
 		return self::entry(
 			array(
 				'name'       => self::plain( get_the_title( $post ) ),
-				'desc'       => trim( self::meta_text( $post->ID, self::META_DESCRIPTION ) ),
+				'desc'       => self::description_html( self::meta_text( $post->ID, self::META_DESCRIPTION ) ),
 				'marker'     => self::meta_text( $post->ID, self::META_MARKER ),
 				'icon'       => self::meta_text( $post->ID, self::META_ICON ),
 				'color'      => self::meta_text( $post->ID, self::META_COLOR ),
