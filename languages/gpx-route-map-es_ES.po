@@ -1,24 +1,24 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: GPX Route Map 2.0.0\n"
+"Project-Id-Version: GPX Route Map 2.1.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/gpx-route-map\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-06T10:39:57+00:00\n"
-"PO-Revision-Date: 2026-10-06T10:47:10+00:00\n"
+"POT-Creation-Date: 2026-10-16T11:16:42+00:00\n"
+"PO-Revision-Date: 2026-10-16T11:22:05+00:00\n"
 "Language: es_ES\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Domain: gpx-route-map\n"
 
 #. Plugin Name of the plugin
 #: gpx-route-map.php
-#: includes/class-plugin.php:59
-#: includes/class-plugin.php:60
-#: build/index.js:1243
-#: build/index.js:1482
+#: includes/class-plugin.php:63
+#: includes/class-plugin.php:64
+#: build/index.js:1621
+#: build/index.js:1866
 msgid "GPX Route Map"
 msgstr "GPX Route Map"
 
@@ -50,134 +50,138 @@ msgstr "GPX Route Map: no se ha seleccionado ningún archivo GPX."
 msgid "GPX Route Map: plugin assets are not built. Run \"pnpm install && pnpm run build\" in the plugin directory."
 msgstr "GPX Route Map: los recursos del plugin no están compilados. Ejecuta «pnpm install && pnpm run build» en el directorio del plugin."
 
-#: includes/class-renderer.php:783
+#: includes/class-renderer.php:793
 msgid "Interactive route map"
 msgstr "Mapa interactivo de la ruta"
 
-#: includes/class-renderer.php:933
+#: includes/class-renderer.php:948
 msgid "Loading map…"
 msgstr "Cargando el mapa…"
 
-#: includes/class-renderer.php:934
+#: includes/class-renderer.php:949
 msgid "Scroll or tap to load the interactive map"
 msgstr "Desplázate o toca para cargar el mapa interactivo"
 
-#: includes/class-renderer.php:946
+#: includes/class-renderer.php:961
 msgid "Could not load GPX file."
 msgstr "No se ha podido cargar el archivo GPX."
 
-#: includes/class-renderer.php:947
+#: includes/class-renderer.php:962
 msgid "Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead."
 msgstr "No se ha podido cargar el archivo GPX: su servidor no permite peticiones de origen cruzado (CORS). Sube el archivo a este sitio en su lugar."
 
-#: includes/class-renderer.php:948
+#: includes/class-renderer.php:963
 msgid "Invalid GPX file."
 msgstr "Archivo GPX no válido."
 
-#: includes/class-renderer.php:949
+#: includes/class-renderer.php:964
 msgid "No track or route points found in GPX file."
 msgstr "No se han encontrado puntos de pista ni de ruta en el archivo GPX."
 
-#: includes/class-plugin.php:406
-#: includes/class-renderer.php:1062
-#: build/index.js:1048
+#: includes/class-plugin.php:484
+#: includes/class-renderer.php:1077
+#: build/index.js:1418
 msgid "Distance"
 msgstr "Distancia"
 
-#: includes/class-plugin.php:407
-#: includes/class-renderer.php:1063
-#: build/index.js:1052
+#: includes/class-plugin.php:485
+#: includes/class-renderer.php:1078
+#: build/index.js:1422
 msgid "Elevation gain"
 msgstr "Desnivel positivo"
 
-#: includes/class-plugin.php:408
-#: includes/class-renderer.php:1064
-#: build/index.js:1056
+#: includes/class-plugin.php:486
+#: includes/class-renderer.php:1079
+#: build/index.js:1426
 msgid "Elevation loss"
 msgstr "Desnivel negativo"
 
-#: includes/class-plugin.php:409
-#: includes/class-renderer.php:1065
-#: build/index.js:1060
+#: includes/class-plugin.php:487
+#: includes/class-renderer.php:1080
+#: build/index.js:1430
 msgid "Max elevation"
 msgstr "Altitud máxima"
 
-#: includes/class-plugin.php:411
-#: includes/class-renderer.php:1067
-#: build/index.js:1068
+#: includes/class-plugin.php:235
+#: includes/class-plugin.php:489
+#: includes/class-renderer.php:1082
+#: includes/class-waypoints.php:130
+#: includes/class-waypoints.php:132
+#: build/index.js:1365
+#: build/index.js:1438
 msgid "Waypoints"
 msgstr "Waypoints"
 
-#: includes/class-plugin.php:106
-#: includes/class-renderer.php:1094
-#: build/index.js:1258
-#: build/index.js:1360
+#: includes/class-plugin.php:110
+#: includes/class-renderer.php:1109
+#: build/index.js:1636
+#: build/index.js:1738
 msgid "Elevation profile"
 msgstr "Perfil de desnivel"
 
-#: includes/class-renderer.php:1095
+#: includes/class-renderer.php:1110
 msgid "Elevation profile along the route"
 msgstr "Perfil de desnivel a lo largo de la ruta"
 
-#: build/index.js:1227
+#: build/index.js:1605
 msgid "Paste a direct link to a .gpx file. The file must be hosted on this site, or on a host that allows cross-origin (CORS) requests — most external sites do not."
 msgstr "Pega un enlace directo a un archivo .gpx. El archivo debe estar alojado en este sitio o en un servidor que permita peticiones de origen cruzado (CORS); la mayoría de los sitios externos no lo permiten."
 
 #. translators: %s: selected GPX file name.
-#: build/index.js:1230
+#: build/index.js:1608
 #, js-format
 msgid "Currently using the selected media file \"%s\". Entering a URL here replaces it (applied on Enter or when leaving the field)."
 msgstr "Actualmente se usa el archivo de medios seleccionado «%s». Si introduces una URL aquí, la sustituirás (se aplica al pulsar Intro o al salir del campo)."
 
-#: build/index.js:1273
+#: build/index.js:1651
 msgid "Source"
 msgstr "Origen"
 
-#: build/index.js:1281
+#: build/index.js:1659
 msgid "Replace GPX file"
 msgstr "Reemplazar el archivo GPX"
 
-#: build/index.js:1281
-#: build/index.js:1491
+#: build/index.js:1659
+#: build/index.js:1875
 msgid "Select GPX file"
 msgstr "Seleccionar un archivo GPX"
 
-#: build/index.js:1286
+#: build/index.js:1664
 msgid "or GPX file URL"
 msgstr "o URL del archivo GPX"
 
-#: includes/class-plugin.php:205
-#: build/index.js:1298
+#: includes/class-plugin.php:251
+#: build/index.js:1676
 msgid "Display"
 msgstr "Visualización"
 
-#: includes/class-plugin.php:238
-#: build/index.js:1399
+#: includes/class-plugin.php:284
+#: build/index.js:1777
 msgid "Max zoom"
 msgstr "Zoom máximo"
 
-#: includes/class-plugin.php:338
-#: build/index.js:1436
+#: includes/class-plugin.php:384
+#: build/index.js:1814
 msgid "Map tiles"
 msgstr "Teselas del mapa"
 
-#: build/index.js:1477
+#: build/index.js:1861
 msgid "Replace GPX"
 msgstr "Reemplazar GPX"
 
-#: build/index.js:1483
+#: build/index.js:1867
 msgid "Select a GPX track to render it as an interactive map with an elevation profile."
 msgstr "Selecciona una pista GPX para mostrarla como un mapa interactivo con un perfil de desnivel."
 
-#: build/index.js:1251
+#: build/index.js:1629
 msgid "The interactive map renders on the front end."
 msgstr "El mapa interactivo se muestra en la parte pública del sitio."
 
-#: build/index.js:1256
+#: build/index.js:1634
 msgid "Stats"
 msgstr "Estadísticas"
 
-#: build/index.js:1264
+#: build/index.js:1642
 msgid "Open GPX file"
 msgstr "Abrir el archivo GPX"
 
@@ -241,17 +245,17 @@ msgctxt "block keyword"
 msgid "cycling"
 msgstr "ciclismo"
 
-#: includes/class-plugin.php:763
-#: build/index.js:1386
+#: includes/class-plugin.php:841
+#: build/index.js:1764
 msgid "Metric (km / m)"
 msgstr "Métrico (km / m)"
 
-#: includes/class-plugin.php:764
-#: build/index.js:1390
+#: includes/class-plugin.php:842
+#: build/index.js:1768
 msgid "Imperial (mi / ft)"
 msgstr "Imperial (mi / ft)"
 
-#: includes/class-plugin.php:777
+#: includes/class-plugin.php:855
 msgid "Units used for distance and elevation on GPX maps. Individual maps can override this."
 msgstr "Unidades de distancia y desnivel en los mapas GPX. Cada mapa puede usar unas distintas."
 
@@ -269,7 +273,7 @@ msgstr "ft"
 
 #. translators: Abbreviation for kilometres, shown after a distance.
 #: includes/class-renderer.php:721
-#: includes/class-renderer.php:988
+#: includes/class-renderer.php:1003
 msgctxt "unit"
 msgid "km"
 msgstr "km"
@@ -280,97 +284,97 @@ msgctxt "unit"
 msgid "m"
 msgstr "m"
 
-#: includes/class-plugin.php:229
-#: build/index.js:1377
+#: includes/class-plugin.php:275
+#: build/index.js:1755
 msgid "Units"
 msgstr "Unidades"
 
-#: build/index.js:1378
+#: build/index.js:1756
 msgid "Distance and elevation units for this map."
 msgstr "Unidades de distancia y desnivel de este mapa."
 
-#: build/index.js:1094
-#: build/index.js:1382
+#: build/index.js:1464
+#: build/index.js:1760
 msgid "Site default"
 msgstr "Ajuste del sitio"
 
-#: includes/class-plugin.php:105
-#: build/index.js:1352
+#: includes/class-plugin.php:109
+#: build/index.js:1730
 msgid "Stats bar"
 msgstr "Barra de estadísticas"
 
-#: includes/class-plugin.php:85
+#: includes/class-plugin.php:89
 msgid "Defaults for every GPX map on this site. Individual maps can override them."
 msgstr "Valores predeterminados para todos los mapas GPX de este sitio. Cada mapa puede cambiarlos."
 
-#: includes/class-plugin.php:591
-#: build/index.js:1098
+#: includes/class-plugin.php:669
+#: build/index.js:1468
 msgid "Shown"
 msgstr "Mostrar"
 
-#: includes/class-plugin.php:592
-#: build/index.js:1102
+#: includes/class-plugin.php:670
+#: build/index.js:1472
 msgid "Hidden"
 msgstr "Ocultar"
 
-#: includes/class-plugin.php:108
-#: build/index.js:1368
+#: includes/class-plugin.php:112
+#: build/index.js:1746
 msgid "Download button"
 msgstr "Botón de descarga"
 
-#: includes/class-renderer.php:950
+#: includes/class-renderer.php:965
 msgid "Download GPX file"
 msgstr "Descargar el archivo GPX"
 
-#: build/index.js:1369
+#: build/index.js:1747
 msgid "Adds a button on the map for visitors to download the GPX file."
 msgstr "Añade un botón en el mapa para que los visitantes descarguen el archivo GPX."
 
-#: includes/class-plugin.php:259
-#: includes/class-plugin.php:449
+#: includes/class-plugin.php:305
+#: includes/class-plugin.php:527
 msgid "Stats shown"
 msgstr "Estadísticas mostradas"
 
-#: build/index.js:1415
+#: build/index.js:1793
 msgid "Stats bar items"
 msgstr "Elementos de la barra de estadísticas"
 
-#: build/index.js:1419
+#: build/index.js:1797
 msgid "Use site default"
 msgstr "Usar el ajuste del sitio"
 
-#: includes/class-plugin.php:462
+#: includes/class-plugin.php:540
 msgid "Which figures the stats bar lists. To remove the bar altogether, set Stats bar to Hidden."
 msgstr "Esas son las cifras que aparecen en la barra de estadísticas. Para eliminar la barra por completo, configura la opción «Barra de estadísticas» en «Oculta»."
 
-#: includes/class-plugin.php:345
-#: build/index.js:1441
+#: includes/class-plugin.php:391
+#: build/index.js:1819
 msgid "Tile provider"
 msgstr "Proveedor de teselas"
 
-#: includes/class-plugin.php:355
+#: includes/class-plugin.php:401
 msgid "Thunderforest API key"
 msgstr "Clave de API de Thunderforest"
 
-#: includes/class-plugin.php:471
+#: includes/class-plugin.php:549
 msgid "Where the map images come from. Visitors load these directly from the provider, so the provider receives their IP address and the area of the map being viewed."
 msgstr "De dónde salen las imágenes del mapa. Los visitantes las cargan directamente del proveedor, así que este recibe su dirección IP y la zona del mapa que se está viendo."
 
-#: includes/class-plugin.php:506
+#: includes/class-plugin.php:584
 msgid "That does not look like a Thunderforest API key. Keys are 32 letters and numbers, with nothing else in between."
 msgstr "Esto no parece una clave de API de Thunderforest. Las claves son 32 letras y números, sin nada más entre medias."
 
-#: includes/class-plugin.php:531
+#: includes/class-plugin.php:609
 msgid "OpenStreetMap works with no setup. Thunderforest offers outdoor and cycling styles, and needs an account."
 msgstr "OpenStreetMap funciona sin configurar nada. Thunderforest ofrece estilos para montaña y ciclismo, y necesita una cuenta."
 
 #. translators: %s: link to the Thunderforest sign-up page.
-#: includes/class-plugin.php:556
+#: includes/class-plugin.php:634
 #, php-format
 msgid "Get a free key at %s. The free plan covers 150,000 map tiles a month, which is roughly 8,000 map views."
 msgstr "Consigue una clave gratuita en %s. El plan gratuito cubre 150.000 teselas al mes, que son unas 8.000 visitas con mapa."
 
-#: includes/class-plugin.php:560
+#: includes/class-plugin.php:638
 msgid "The key is visible in your pages, because visitors' browsers load the tiles. Thunderforest cannot restrict a key to your domain, so keep an eye on your usage."
 msgstr "La clave queda visible en tus páginas, porque son los navegadores de los visitantes los que cargan las teselas. Thunderforest no permite restringir una clave a tu dominio, así que vigila tu consumo."
 
@@ -390,164 +394,164 @@ msgstr "Landscape (relieve)"
 msgid "Atlas (general)"
 msgstr "Atlas (general)"
 
-#: includes/class-renderer.php:951
+#: includes/class-renderer.php:966
 msgid "Map failed to load. Click to retry."
 msgstr "No se ha podido cargar el mapa. Haz clic para reintentar."
 
-#: build/index.js:1420
+#: build/index.js:1798
 msgid "Follow the stats chosen under Settings → GPX Route Map."
 msgstr "Sigue las estadísticas que hayas elegido en Ajustes → GPX Route Map."
 
-#: includes/class-plugin.php:220
+#: includes/class-plugin.php:266
 msgid "Map height"
 msgstr "Altura del mapa"
 
-#: includes/class-plugin.php:659
+#: includes/class-plugin.php:737
 msgid "px"
 msgstr "px"
 
-#: build/index.js:1302
+#: build/index.js:1680
 msgid "Use site default height"
 msgstr "Usar la altura del sitio"
 
 #. translators: %d: height in pixels.
-#: build/index.js:1305
+#: build/index.js:1683
 #, js-format
 msgid "Follow the height set under Settings → GPX Route Map (%d px)."
 msgstr "Usa la altura definida en Ajustes → GPX Route Map (%d px)."
 
-#: includes/class-plugin.php:631
+#: includes/class-plugin.php:709
 msgid "All screens"
 msgstr "Todas las pantallas"
 
-#: includes/class-plugin.php:636
+#: includes/class-plugin.php:714
 msgid "Tablet"
 msgstr "Tableta"
 
-#: includes/class-plugin.php:638
+#: includes/class-plugin.php:716
 msgid "Same as above"
 msgstr "Igual que lo de arriba"
 
-#: includes/class-plugin.php:641
+#: includes/class-plugin.php:719
 msgid "Mobile"
 msgstr "Móvil"
 
-#: includes/class-plugin.php:643
+#: includes/class-plugin.php:721
 msgid "Same as tablet"
 msgstr "Igual que en tableta"
 
 #. translators: 1: minimum height in pixels, 2: maximum height in pixels.
-#: includes/class-plugin.php:667
+#: includes/class-plugin.php:745
 #, php-format
 msgid "Height of every GPX map that does not set its own, from %1$d to %2$d pixels. Leave Tablet or Mobile empty to reuse the size above it. Individual maps can override all of this."
 msgstr "Altura de los mapas GPX que no definen la suya, de %1$d a %2$d píxeles. Deja Tableta o Móvil en blanco para reutilizar el tamaño de arriba. Cada mapa puede anular todo esto."
 
-#: build/index.js:1318
+#: build/index.js:1696
 msgid "All screens (px)"
 msgstr "Todas las pantallas (px)"
 
-#: build/index.js:1326
+#: build/index.js:1704
 msgid "Tablet (px)"
 msgstr "Tableta (px)"
 
-#: build/index.js:1332
+#: build/index.js:1710
 msgid "Mobile (px)"
 msgstr "Móvil (px)"
 
-#: build/index.js:1327
+#: build/index.js:1705
 msgid "Applies at 782px and below. Reset to follow the site setting, or the height above when the site has none."
 msgstr "Se aplica a 782px o menos. Restablécelo para seguir el ajuste del sitio, o la altura de arriba si el sitio no define ninguna."
 
-#: build/index.js:1333
+#: build/index.js:1711
 msgid "Applies at 480px and below. Reset to follow the site setting, or the tablet height when the site has none."
 msgstr "Se aplica a 480px o menos. Restablécelo para seguir el ajuste del sitio, o la altura de tableta si el sitio no define ninguna."
 
-#: includes/class-renderer.php:952
+#: includes/class-renderer.php:967
 msgctxt "popup on the pin marking where the route begins"
 msgid "Start"
 msgstr "Inicio"
 
-#: includes/class-renderer.php:953
+#: includes/class-renderer.php:968
 msgctxt "popup on the pin marking where the route finishes"
 msgid "End"
 msgstr "Fin"
 
-#: includes/class-renderer.php:973
+#: includes/class-renderer.php:988
 msgctxt "screen reader name of the map area"
 msgid "Map"
 msgstr "Mapa"
 
-#: includes/class-renderer.php:974
+#: includes/class-renderer.php:989
 msgctxt "map button"
 msgid "Zoom in"
 msgstr "Acercar"
 
-#: includes/class-renderer.php:975
+#: includes/class-renderer.php:990
 msgctxt "map button"
 msgid "Zoom out"
 msgstr "Alejar"
 
-#: includes/class-renderer.php:976
+#: includes/class-renderer.php:991
 msgctxt "map compass button"
 msgid "Drag to rotate map, click to reset north"
 msgstr "Arrastra para girar el mapa, haz clic para orientarlo al norte"
 
-#: includes/class-renderer.php:977
+#: includes/class-renderer.php:992
 msgctxt "map button"
 msgid "Enter fullscreen"
 msgstr "Ver a pantalla completa"
 
-#: includes/class-renderer.php:978
+#: includes/class-renderer.php:993
 msgctxt "map button"
 msgid "Exit fullscreen"
 msgstr "Salir de pantalla completa"
 
-#: includes/class-renderer.php:979
+#: includes/class-renderer.php:994
 msgctxt "map button"
 msgid "Find my location"
 msgstr "Buscar mi ubicación"
 
-#: includes/class-renderer.php:980
+#: includes/class-renderer.php:995
 msgctxt "map button, when the browser cannot tell where the visitor is"
 msgid "Location not available"
 msgstr "Ubicación no disponible"
 
-#: includes/class-renderer.php:981
+#: includes/class-renderer.php:996
 msgctxt "map button that shows or hides the map credits"
 msgid "Toggle attribution"
 msgstr "Mostrar u ocultar los créditos del mapa"
 
-#: includes/class-renderer.php:982
+#: includes/class-renderer.php:997
 msgctxt "button in a map popup"
 msgid "Close popup"
 msgstr "Cerrar ventana emergente"
 
 #. translators: Abbreviation for metres, shown after a distance on the map's scale bar.
-#: includes/class-renderer.php:987
+#: includes/class-renderer.php:1002
 msgctxt "unit on the map scale bar"
 msgid "m"
 msgstr "m"
 
-#: includes/class-plugin.php:410
-#: includes/class-renderer.php:1066
-#: build/index.js:1064
+#: includes/class-plugin.php:488
+#: includes/class-renderer.php:1081
+#: build/index.js:1434
 msgid "Min elevation"
 msgstr "Altitud mínima"
 
-#: includes/class-plugin.php:531
+#: includes/class-plugin.php:609
 msgid "OpenTopoMap shows contour lines and hill shading, also with no setup. It is run by volunteers, with no guarantee it stays available, and has less detail close in."
 msgstr "OpenTopoMap muestra curvas de nivel y sombreado del relieve, también sin configurar nada. Lo mantienen voluntarios, sin garantía de que siga disponible, y tiene menos detalle de cerca."
 
-#: includes/class-plugin.php:535
+#: includes/class-plugin.php:613
 msgid "No Thunderforest API key is saved, so maps that follow the site use OpenStreetMap until you add one."
 msgstr "No hay ninguna clave de API de Thunderforest guardada, así que los mapas que siguen el ajuste del sitio usan OpenStreetMap hasta que añadas una."
 
-#: includes/class-plugin.php:562
+#: includes/class-plugin.php:640
 msgid "The key also makes the Thunderforest styles available for single maps. Maps set to one use the site's provider while no key is saved."
 msgstr "La clave también permite usar los estilos de Thunderforest en mapas concretos. Los mapas configurados con uno de ellos usan el proveedor del sitio mientras no haya ninguna clave guardada."
 
 #. translators: 1: lowest zoom level, 2: highest zoom level.
-#: includes/class-plugin.php:732
+#: includes/class-plugin.php:810
 #, php-format
 msgid "How close a map opens when it frames a short route, from %1$d to %2$d, though never closer than its tile provider has tiles. Visitors can zoom in as far as those tiles go. Individual maps can override it."
 msgstr "Cuánto se acerca un mapa al abrirse si encuadra una ruta corta, de %1$d a %2$d, aunque nunca más de lo que permiten las teselas de su proveedor. Los visitantes pueden acercarse hasta donde lleguen esas teselas. Cada mapa puede cambiarlo."
@@ -559,27 +563,241 @@ msgid "Thunderforest: %s"
 msgstr "Thunderforest: %s"
 
 #. translators: %d: zoom level.
-#: build/index.js:1402
+#: build/index.js:1780
 #, js-format
 msgid "How close this map opens when it frames a short route, though never closer than its tile provider has tiles. Reset to follow the site setting (%d)."
 msgstr "Cuánto se acerca este mapa al abrirse si encuadra una ruta corta, aunque nunca más de lo que permiten las teselas de su proveedor. Restablécelo para seguir el ajuste del sitio (%d)."
 
-#: build/index.js:1442
+#: build/index.js:1820
 msgid "Thunderforest styles appear here once an API key is saved under Settings → GPX Route Map."
 msgstr "Los estilos de Thunderforest aparecerán aquí cuando se guarde una clave de API en Ajustes → GPX Route Map."
 
 #. translators: %s: the tile provider the site uses, e.g. "OpenTopoMap".
-#: build/index.js:1448
+#: build/index.js:1826
 #, js-format
 msgid "Site default — %s"
 msgstr "Ajuste del sitio — %s"
 
 #. translators: %s: a tile provider, e.g. "Thunderforest: Outdoors (hiking)".
-#: build/index.js:1460
+#: build/index.js:1838
 #, js-format
 msgid "%s — needs an API key"
 msgstr "%s — necesita una clave de API"
 
-#: includes/class-plugin.php:531
+#: includes/class-plugin.php:609
 msgid "Individual maps can choose their own provider."
 msgstr "Cada mapa puede elegir su propio proveedor."
+
+#: includes/class-plugin.php:228
+msgid "General"
+msgstr "General"
+
+#: includes/class-plugin.php:468
+msgid "Enable Waypoint posts (experimental)"
+msgstr "Activar las entradas de waypoint (experimental)"
+
+#: includes/class-plugin.php:470
+msgid "Adds a Waypoints menu. Each waypoint post can have its own description, a photo or an icon, and maps show them on the waypoints of their GPX files that link to it."
+msgstr "Añade un menú «Waypoints». Cada entrada de waypoint puede tener su propia descripción, una foto o un icono, y los mapas los muestran en los waypoints de sus archivos GPX que enlacen con ella."
+
+#: includes/class-plugin.php:470
+msgid "A map's block links its GPX file's waypoints in its Waypoints panel, or a GPX file can name the post itself."
+msgstr "El bloque de un mapa enlaza los waypoints de su archivo GPX en su panel «Waypoints», o el propio archivo GPX puede indicar la entrada."
+
+#: includes/class-plugin.php:473
+msgid "This site cannot read the links a GPX file names itself, as its PHP lacks the XMLReader extension. Links made in a map's block or shortcode still work."
+msgstr "Este sitio no puede leer los enlaces que indica el propio archivo GPX, porque a su PHP le falta la extensión XMLReader. Los enlaces hechos en el bloque o el shortcode de un mapa siguen funcionando."
+
+#: includes/class-waypoint-columns.php:33
+#: includes/class-waypoint-meta-box.php:120
+msgid "Marker"
+msgstr "Marcador"
+
+#: includes/class-waypoint-columns.php:34
+msgid "ID"
+msgstr "ID"
+
+#: includes/class-waypoint-columns.php:78
+#: includes/class-waypoint-meta-box.php:100
+#: includes/class-waypoints.php:143
+msgid "Photo"
+msgstr "Foto"
+
+#. translators: %s: a Dashicon's name, such as "location".
+#: includes/class-waypoint-columns.php:84
+#, php-format
+msgid "Icon: %s"
+msgstr "Icono: %s"
+
+#: includes/class-waypoint-columns.php:89
+#: includes/class-waypoint-meta-box.php:96
+msgid "Usual marker"
+msgstr "Marcador habitual"
+
+#: includes/class-waypoint-meta-box.php:32
+#: includes/class-waypoints.php:131
+msgid "Waypoint"
+msgstr "Waypoint"
+
+#: includes/class-waypoint-meta-box.php:68
+msgid "Description"
+msgstr "Descripción"
+
+#: includes/class-waypoint-meta-box.php:83
+msgid "What visitors read when they open this waypoint on a map, in place of the description in the GPX file. Links, bold and italic text, and lists are kept."
+msgstr "Lo que leen los visitantes al abrir este waypoint en un mapa, en lugar de la descripción del archivo GPX. Se conservan los enlaces, la negrita, la cursiva y las listas."
+
+#: includes/class-waypoint-meta-box.php:97
+msgid "The marker the map gives this waypoint, from its type in the GPX file."
+msgstr "El marcador que el mapa da a este waypoint según su tipo en el archivo GPX."
+
+#: includes/class-waypoint-meta-box.php:101
+msgid "A thumbnail of the photo set in the Photo box. Without one, the usual marker."
+msgstr "Una miniatura de la foto elegida en la caja «Foto». Si no hay ninguna, el marcador habitual."
+
+#: includes/class-waypoint-meta-box.php:104
+#: includes/class-waypoint-meta-box.php:153
+msgid "Icon"
+msgstr "Icono"
+
+#: includes/class-waypoint-meta-box.php:105
+msgid "An icon of your choice, in your own colors."
+msgstr "Un icono a tu elección, con tus propios colores."
+
+#: includes/class-waypoint-meta-box.php:147
+msgid "Icon color"
+msgstr "Color del icono"
+
+#: includes/class-waypoint-meta-box.php:148
+msgid "Background color"
+msgstr "Color de fondo"
+
+#: includes/class-waypoint-meta-box.php:155
+#: includes/class-waypoint-meta-box.php:156
+msgid "Search icons"
+msgstr "Buscar iconos"
+
+#: includes/class-waypoint-meta-box.php:177
+msgid "Preview:"
+msgstr "Vista previa:"
+
+#. translators: %d: the waypoint's post ID.
+#: includes/class-waypoint-meta-box.php:198
+#, php-format
+msgid "Waypoint ID: %d"
+msgstr "ID del waypoint: %d"
+
+#: includes/class-waypoint-meta-box.php:204
+msgid "A map shows this waypoint when its block links one of the GPX file's waypoints to it. Or a GPX file in the Media Library can link to it itself: put this at the end of the waypoint's <wpt> element, or only its middle line inside the waypoint's <extensions> if it has one."
+msgstr "Un mapa muestra este waypoint cuando su bloque enlaza con él uno de los waypoints del archivo GPX. O un archivo GPX de la biblioteca de medios puede enlazarlo por sí mismo: pon esto al final del elemento <wpt> del waypoint, o solo su línea central dentro del elemento <extensions> del waypoint si ya tiene uno."
+
+#: includes/class-waypoint-meta-box.php:206
+msgid "GPX extension that links a waypoint to this one"
+msgstr "Extensión GPX que enlaza un waypoint con este"
+
+#: includes/class-waypoints.php:133
+msgid "All Waypoints"
+msgstr "Todos los waypoints"
+
+#: includes/class-waypoints.php:134
+#: includes/class-waypoints.php:135
+msgid "Add Waypoint"
+msgstr "Añadir waypoint"
+
+#: includes/class-waypoints.php:136
+msgid "Edit Waypoint"
+msgstr "Editar waypoint"
+
+#: includes/class-waypoints.php:137
+msgid "New Waypoint"
+msgstr "Nuevo waypoint"
+
+#: includes/class-waypoints.php:138
+msgid "Search Waypoints"
+msgstr "Buscar waypoints"
+
+#: includes/class-waypoints.php:139
+msgid "No waypoints found."
+msgstr "No se han encontrado waypoints."
+
+#: includes/class-waypoints.php:140
+msgid "No waypoints found in Trash."
+msgstr "No se han encontrado waypoints en la papelera."
+
+#: includes/class-waypoints.php:141
+msgid "Waypoint published."
+msgstr "Waypoint publicado."
+
+#: includes/class-waypoints.php:142
+msgid "Waypoint updated."
+msgstr "Waypoint actualizado."
+
+#: includes/class-waypoints.php:144
+msgid "Set photo"
+msgstr "Establecer la foto"
+
+#: includes/class-waypoints.php:145
+msgid "Remove photo"
+msgstr "Quitar la foto"
+
+#: includes/class-waypoints.php:146
+msgid "Use as photo"
+msgstr "Usar como foto"
+
+#: includes/class-waypoints.php:148
+msgid "Waypoints that GPX maps link to, each with its own description, photo or icon."
+msgstr "Waypoints a los que enlazan los mapas GPX, cada uno con su propia descripción, foto o icono."
+
+#: build/index.js:1144
+msgid "This GPX file links waypoints to Waypoint posts itself, but this site cannot read those links, as its PHP lacks the XMLReader extension. Link them here instead."
+msgstr "Este archivo GPX enlaza por sí mismo waypoints con entradas de waypoint, pero este sitio no puede leer esos enlaces, porque a su PHP le falta la extensión XMLReader. Enlázalos aquí en su lugar."
+
+#: build/index.js:1144
+msgid "This GPX file links waypoints to Waypoint posts itself, but maps only read those links from files in the Media Library. Link them here instead, or choose the file from the Media Library."
+msgstr "Este archivo GPX enlaza por sí mismo waypoints con entradas de waypoint, pero los mapas solo leen esos enlaces en archivos de la biblioteca de medios. Enlázalos aquí en su lugar, o elige el archivo desde la biblioteca de medios."
+
+#. translators: %d: a Waypoint post's ID.
+#: build/index.js:1225
+#, js-format
+msgid "#%d (no title)"
+msgstr "#%d (sin título)"
+
+#. translators: %s: a Waypoint post's title.
+#: build/index.js:1231
+#, js-format
+msgid "%s (not published)"
+msgstr "%s (sin publicar)"
+
+#. translators: %d: a Waypoint post's ID.
+#: build/index.js:1243
+#, js-format
+msgid "#%d (not found)"
+msgstr "#%d (no encontrado)"
+
+#: build/index.js:1295
+msgid "None"
+msgstr "Ninguno"
+
+#. translators: %s: the Waypoint post a GPX file links a waypoint to.
+#: build/index.js:1299
+#, js-format
+msgid "As in the GPX file: %s"
+msgstr "Como en el archivo GPX: %s"
+
+#. translators: 1: the waypoint's number in the GPX file, 2: its name.
+#: build/index.js:1334
+#, js-format
+msgid "%1$d. %2$s"
+msgstr "%1$d. %2$s"
+
+#: build/index.js:1372
+msgid "Link a waypoint of the GPX file to a Waypoint post to show its description, photo or icon. Only published waypoints show on the map."
+msgstr "Enlaza un waypoint del archivo GPX con una entrada de waypoint para mostrar su descripción, foto o icono. En el mapa solo se muestran los waypoints publicados."
+
+#: build/index.js:1374
+msgid "This GPX file has no waypoints."
+msgstr "Este archivo GPX no tiene waypoints."
+
+#: build/index.js:1384
+msgid "Add a waypoint"
+msgstr "Añadir un waypoint"
