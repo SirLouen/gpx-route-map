@@ -770,11 +770,11 @@ class Renderer {
 
 		// What the map shows for waypoints linked to Waypoint posts. Only maps
 		// with some carry the attribute, so every other map is as it was.
-		$markers   = Waypoints::markers_for_map( $a['gpx_id'], $a['gpx_url'], $a['waypoint_posts'] );
-		$waypoints = array() === $markers
+		$markers   = Waypoint_Map_Markers::for_map( $a['gpx_id'], $a['gpx_url'], $a['waypoint_posts'] );
+		$waypoints = array() === $markers->all()
 			? ''
-			: sprintf( ' data-gpxrm-waypoints="%s"', esc_attr( Waypoints::json( $markers ) ) );
-		if ( Waypoints::uses_icons( $markers ) ) {
+			: sprintf( ' data-gpxrm-waypoints="%s"', esc_attr( $markers->json() ) );
+		if ( $markers->uses_icons() ) {
 			wp_enqueue_style( 'dashicons' );
 		}
 
@@ -867,7 +867,7 @@ class Renderer {
 			'provider'       => self::map_provider( $atts['provider'] ?? '' ),
 			'stats'          => self::normalize_stats( $atts['stats'] ?? null ),
 			'units'          => self::normalize_units( $atts['units'] ?? '' ),
-			'waypoint_posts' => Waypoints::links_from_attribute( $atts['waypointPosts'] ?? null ),
+			'waypoint_posts' => Waypoint_Links::from_attribute( $atts['waypointPosts'] ?? null ),
 		);
 	}
 

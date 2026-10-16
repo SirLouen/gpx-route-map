@@ -9,8 +9,16 @@
 declare( strict_types=1 );
 
 use Gpxrm\Dashicons;
+use Gpxrm\Gpx_File_Links;
+use Gpxrm\Gpx_Link_Reader;
 use Gpxrm\Plugin;
 use Gpxrm\Renderer;
+use Gpxrm\Waypoint_Description;
+use Gpxrm\Waypoint_Edit_Screen;
+use Gpxrm\Waypoint_Links;
+use Gpxrm\Waypoint_Map_Markers;
+use Gpxrm\Waypoint_Marker;
+use Gpxrm\Waypoint_Values;
 use Gpxrm\Waypoints;
 
 beforeEach(
@@ -50,7 +58,7 @@ function gpxrm_waypoint_gpx( string $waypoints ): string {
  */
 function gpxrm_links_in( string $waypoints ): array {
 	$path  = gpxrm_waypoint_gpx( $waypoints );
-	$links = Waypoints::links_in_gpx( $path );
+	$links = Gpx_Link_Reader::read( $path );
 	unlink( $path );
 
 	return $links;
@@ -132,7 +140,7 @@ test(
 	'a waypoint keeps only settings the map can use',
 	function () {
 		expect(
-			Waypoints::sanitize_fields(
+			Waypoint_Values::sanitize_fields(
 				array(
 					'description' => "  Cold water\nall year  ",
 					'marker'      => 'icon',
@@ -157,7 +165,7 @@ test(
 test(
 	'a waypoint keeps a colour left at its default as none',
 	function () {
-		$fields = Waypoints::sanitize_fields(
+		$fields = Waypoint_Values::sanitize_fields(
 			array(
 				'marker'     => 'icon',
 				'icon'       => 'flag',
@@ -174,7 +182,7 @@ test(
 	'a waypoint drops a marker, icon or colour it does not know',
 	function () {
 		expect(
-			Waypoints::sanitize_fields(
+			Waypoint_Values::sanitize_fields(
 				array(
 					'description' => array( 'not text' ),
 					'marker'      => 'balloon',
@@ -200,7 +208,7 @@ test(
 	'a description keeps the markup its editor writes, and only that',
 	function () {
 		expect(
-			Waypoints::sanitize_description(
+			Waypoint_Description::sanitize(
 				"Gradient &lt;10% on <a href=\"https://example.test/\">the climb</a>, <strong>steep</strong>.\r\n<ul><li>Water</li></ul><img src=\"x\"><span>Shade</span>"
 			)
 		)->toBe( "Gradient &lt;10% on <a href=\"https://example.test/\">the climb</a>, <strong>steep</strong>.\n<ul><li>Water</li></ul>Shade" );
@@ -210,8 +218,8 @@ test(
 test(
 	'a description may hold links, bold and italic text, lists and paragraphs',
 	function () {
-		expect( array_keys( Waypoints::description_tags() ) )->toBe( array( 'a', 'b', 'br', 'em', 'i', 'li', 'ol', 'p', 'strong', 'ul' ) );
-		expect( Waypoints::description_tags()['a'] )->toBe(
+		expect( array_keys( Waypoint_Description::tags() ) )->toBe( array( 'a', 'b', 'br', 'em', 'i', 'li', 'ol', 'p', 'strong', 'ul' ) );
+		expect( Waypoint_Description::tags()['a'] )->toBe(
 			array(
 				'href'   => true,
 				'target' => true,
@@ -224,15 +232,15 @@ test(
 test(
 	'a description drops control characters and invalid text',
 	function () {
-		expect( Waypoints::sanitize_description( "  One\x00\x07 line\rtwo\ttabbed  " ) )->toBe( "One line\ntwo\ttabbed" );
-		expect( Waypoints::sanitize_description( "bad \xC3\x28 bytes" ) )->toBe( '' );
+		expect( Waypoint_Description::sanitize( "  One\x00\x07 line\rtwo\ttabbed  " ) )->toBe( "One line\ntwo\ttabbed" );
+		expect( Waypoint_Description::sanitize( "bad \xC3\x28 bytes" ) )->toBe( '' );
 	}
 );
 
 test(
 	'an icon marker always has an icon',
 	function () {
-		$fields = Waypoints::sanitize_fields(
+		$fields = Waypoint_Values::sanitize_fields(
 			array(
 				'marker' => 'icon',
 				'icon'   => 'not-an-icon',
@@ -260,7 +268,7 @@ test(
 test(
 	'colours are #rgb or #rrggbb, in lower case',
 	function ( $value, string $want ) {
-		expect( Waypoints::hex_color( $value, 'fallback' ) )->toBe( $want );
+		expect( Waypoint_Values::hex_color( $value, 'fallback' ) )->toBe( $want );
 	}
 )->with(
 	array(
@@ -279,7 +287,7 @@ test(
 test(
 	'post IDs are whole numbers above zero',
 	function ( $value, int $want ) {
-		expect( Waypoints::post_id( $value ) )->toBe( $want );
+		expect( Waypoint_Links::post_id( $value ) )->toBe( $want );
 	}
 )->with(
 	array(
@@ -300,7 +308,7 @@ test(
 	'a block links waypoints by their place in the file, counting from 0',
 	function () {
 		expect(
-			Waypoints::links_from_attribute(
+			Waypoint_Links::from_attribute(
 				array(
 					'3'   => 40,
 					'0'   => '12',
@@ -319,14 +327,14 @@ test(
 		);
 		// As PHP writes {"0":12,"1":40} when it saves a post for a user
 		// without unfiltered_html.
-		expect( Waypoints::links_from_attribute( array( 12, 40 ) ) )->toBe(
+		expect( Waypoint_Links::from_attribute( array( 12, 40 ) ) )->toBe(
 			array(
 				0 => 12,
 				1 => 40,
 			)
 		);
-		expect( Waypoints::links_from_attribute( 'not a list' ) )->toBe( array() );
-		expect( Waypoints::links_from_attribute( null ) )->toBe( array() );
+		expect( Waypoint_Links::from_attribute( 'not a list' ) )->toBe( array() );
+		expect( Waypoint_Links::from_attribute( null ) )->toBe( array() );
 	}
 );
 
@@ -334,21 +342,21 @@ test(
 	'a block links no more waypoints than the cap',
 	function () {
 		$raw = array_fill( 0, Waypoints::MAX_LINKS + 5, 9 );
-		expect( Waypoints::links_from_attribute( $raw ) )->toHaveCount( Waypoints::MAX_LINKS );
+		expect( Waypoint_Links::from_attribute( $raw ) )->toHaveCount( Waypoints::MAX_LINKS );
 	}
 );
 
 test(
 	'a shortcode links waypoints by number, counting from 1',
 	function () {
-		expect( Waypoints::links_from_shortcode( '1:12, 3:40' ) )->toBe(
+		expect( Waypoint_Links::from_shortcode( '1:12, 3:40' ) )->toBe(
 			array(
 				0 => 12,
 				2 => 40,
 			)
 		);
-		expect( Waypoints::links_from_shortcode( '0:5, 2, 3:x, a:4, 4:5:6, , 2:7' ) )->toBe( array( 1 => 7 ) );
-		expect( Waypoints::links_from_shortcode( '' ) )->toBe( array() );
+		expect( Waypoint_Links::from_shortcode( '0:5, 2, 3:x, a:4, 4:5:6, , 2:7' ) )->toBe( array( 1 => 7 ) );
+		expect( Waypoint_Links::from_shortcode( '' ) )->toBe( array() );
 	}
 );
 
@@ -410,13 +418,13 @@ test(
 	function () {
 		$path = (string) tempnam( sys_get_temp_dir(), 'gpxrm' );
 		file_put_contents( $path, '<gpx><wpt lat="1" lon="1"><extensions><gpxrm:waypoint xmlns:gpxrm="' . Waypoints::GPX_NAMESPACE . '">5</gpxrm:waypoint></extensions></wpt><wpt' );
-		$links = Waypoints::links_in_gpx( $path );
+		$links = Gpx_Link_Reader::read( $path );
 		unlink( $path );
 
 		// What was read before the break still counts.
 		expect( $links )->toBe( array( 0 => 5 ) );
 		// Not read at all, which is not the same as a file without links.
-		expect( Waypoints::links_in_gpx( $path ) )->toBeNull();
+		expect( Gpx_Link_Reader::read( $path ) )->toBeNull();
 		expect( libxml_get_errors() )->toBe( array() );
 	}
 );
@@ -427,16 +435,16 @@ test(
 		$path                           = gpxrm_waypoint_gpx( '<wpt lat="43.0" lon="-6.0"><extensions><gpxrm:waypoint>12</gpxrm:waypoint></extensions></wpt>' );
 		$GLOBALS['gpxrm_test_files'][5] = $path;
 
-		expect( Waypoints::file_links( 5 ) )->toBe( array( 0 => 12 ) );
+		expect( ( new Gpx_File_Links( 5 ) )->links() )->toBe( array( 0 => 12 ) );
 
 		// The next view takes what was kept, without reading the file.
 		$GLOBALS['gpxrm_test_meta'][5][ Waypoints::META_FILE_LINKS ]['links'] = array( 0 => 30 );
-		expect( Waypoints::file_links( 5 ) )->toBe( array( 0 => 30 ) );
+		expect( ( new Gpx_File_Links( 5 ) )->links() )->toBe( array( 0 => 30 ) );
 
 		// Another file in its place, of another size.
 		rename( gpxrm_waypoint_gpx( '<wpt lat="43.0" lon="-6.0"/><wpt lat="43.1" lon="-6.0"><extensions><gpxrm:waypoint>40</gpxrm:waypoint></extensions></wpt>' ), $path );
 		clearstatcache();
-		expect( Waypoints::file_links( 5 ) )->toBe( array( 1 => 40 ) );
+		expect( ( new Gpx_File_Links( 5 ) )->links() )->toBe( array( 1 => 40 ) );
 
 		unlink( $path );
 	}
@@ -449,24 +457,22 @@ test(
 		$GLOBALS['gpxrm_test_files'][5] = $path;
 
 		// As on a site whose PHP lacks XMLReader.
-		$unreadable = new class() extends Waypoints {
+		$unreadable = new class( 5 ) extends Gpx_File_Links {
 			/**
 			 * No file can be read.
 			 *
-			 * @param string $path GPX file.
 			 * @return array<int, int>|null
 			 */
-			public static function links_in_gpx( string $path ): ?array {
-				unset( $path );
+			protected function read(): ?array {
 				return null;
 			}
 		};
 
-		expect( $unreadable::file_links( 5 ) )->toBe( array() );
+		expect( $unreadable->links() )->toBe( array() );
 		expect( $GLOBALS['gpxrm_test_meta'] )->toBe( array() );
 
 		// Once it can, such as after the host adds XMLReader.
-		expect( Waypoints::file_links( 5 ) )->toBe( array( 0 => 12 ) );
+		expect( ( new Gpx_File_Links( 5 ) )->links() )->toBe( array( 0 => 12 ) );
 
 		unlink( $path );
 	}
@@ -475,8 +481,8 @@ test(
 test(
 	'the editor is told whether the site reads the links in GPX files',
 	function () {
-		expect( Plugin::editor_defaults()['waypointFiles'] )->toBe( Waypoints::reads_files() );
-		expect( Waypoints::reads_files() )->toBeTrue();
+		expect( Plugin::editor_defaults()['waypointFiles'] )->toBe( Gpx_Link_Reader::available() );
+		expect( Gpx_Link_Reader::available() )->toBeTrue();
 	}
 );
 
@@ -491,7 +497,7 @@ test(
 			'<?xml version="1.0"?><!DOCTYPE gpx [<!ENTITY id SYSTEM "file://' . $secret . '">]>'
 			. '<gpx xmlns:gpxrm="' . Waypoints::GPX_NAMESPACE . '"><wpt lat="1" lon="1"><extensions><gpxrm:waypoint>&id;</gpxrm:waypoint></extensions></wpt></gpx>'
 		);
-		$links = Waypoints::links_in_gpx( $path );
+		$links = Gpx_Link_Reader::read( $path );
 		unlink( $path );
 		unlink( $secret );
 
@@ -502,16 +508,16 @@ test(
 test(
 	'a map is told only what a post changes about its waypoint',
 	function () {
-		expect( Waypoints::entry( gpxrm_waypoint_settings() ) )->toBe( array() );
+		expect( ( new Waypoint_Marker( gpxrm_waypoint_settings() ) )->to_array() )->toBe( array() );
 		expect(
-			Waypoints::entry(
+			( new Waypoint_Marker(
 				gpxrm_waypoint_settings(
 					array(
 						'name' => 'Fountain',
 						'desc' => "Cold\nwater",
 					)
 				)
-			)
+			) )->to_array()
 		)->toBe(
 			array(
 				'name' => 'Fountain',
@@ -533,7 +539,7 @@ test(
 		);
 
 		expect(
-			Waypoints::entry(
+			( new Waypoint_Marker(
 				gpxrm_waypoint_settings(
 					array(
 						'marker' => 'image',
@@ -541,7 +547,7 @@ test(
 						'thumb'  => 'https://example.test/a-150x150.jpg',
 					)
 				)
-			)
+			) )->to_array()
 		)->toBe(
 			array(
 				'photo'  => array(
@@ -556,7 +562,7 @@ test(
 		);
 
 		// No photo: the waypoint keeps its usual marker.
-		expect( Waypoints::entry( gpxrm_waypoint_settings( array( 'marker' => 'image' ) ) ) )->toBe( array() );
+		expect( ( new Waypoint_Marker( gpxrm_waypoint_settings( array( 'marker' => 'image' ) ) ) )->to_array() )->toBe( array() );
 	}
 );
 
@@ -564,7 +570,7 @@ test(
 	'an icon marker gets an icon, and the colours chosen for it',
 	function () {
 		expect(
-			Waypoints::entry(
+			( new Waypoint_Marker(
 				gpxrm_waypoint_settings(
 					array(
 						'marker' => 'icon',
@@ -572,7 +578,7 @@ test(
 						'color'  => '#FF0000',
 					)
 				)
-			)
+			) )->to_array()
 		)->toBe(
 			array(
 				'marker' => 'icon',
@@ -581,14 +587,14 @@ test(
 			)
 		);
 
-		$entry = Waypoints::entry(
+		$entry = ( new Waypoint_Marker(
 			gpxrm_waypoint_settings(
 				array(
 					'marker' => 'icon',
 					'icon'   => '" onclick="x',
 				)
 			)
-		);
+		) )->to_array();
 		expect( $entry )->toBe(
 			array(
 				'marker' => 'icon',
@@ -602,14 +608,14 @@ test(
 	'a marker the map does not know is the usual one',
 	function () {
 		expect(
-			Waypoints::entry(
+			( new Waypoint_Marker(
 				gpxrm_waypoint_settings(
 					array(
 						'marker' => 'balloon',
 						'icon'   => 'flag',
 					)
 				)
-			)
+			) )->to_array()
 		)->toBe( array() );
 	}
 );
@@ -617,25 +623,25 @@ test(
 test(
 	'the Dashicons font is needed only for an icon marker',
 	function () {
-		expect( Waypoints::uses_icons( array() ) )->toBeFalse();
-		expect( Waypoints::uses_icons( array( 2 => array( 'marker' => 'image' ) ) ) )->toBeFalse();
-		expect( Waypoints::uses_icons( array( 2 => array( 'marker' => 'icon' ) ) ) )->toBeTrue();
+		expect( ( new Waypoint_Map_Markers( array() ) )->uses_icons() )->toBeFalse();
+		expect( ( new Waypoint_Map_Markers( array( 2 => array( 'marker' => 'image' ) ) ) )->uses_icons() )->toBeFalse();
+		expect( ( new Waypoint_Map_Markers( array( 2 => array( 'marker' => 'icon' ) ) ) )->uses_icons() )->toBeTrue();
 	}
 );
 
 test(
 	'the map is told about waypoints as an object keyed by position',
 	function () {
-		expect( Waypoints::json( array( 0 => array( 'name' => 'A' ) ) ) )->toBe( '{"0":{"name":"A"}}' );
-		expect( Waypoints::json( array() ) )->toBe( '{}' );
-		expect( Waypoints::json( array( 0 => array( 'name' => 'Tom & Jerry' ) ) ) )->toBe( '{"0":{"name":"Tom \u0026 Jerry"}}' );
+		expect( ( new Waypoint_Map_Markers( array( 0 => array( 'name' => 'A' ) ) ) )->json() )->toBe( '{"0":{"name":"A"}}' );
+		expect( ( new Waypoint_Map_Markers( array() ) )->json() )->toBe( '{}' );
+		expect( ( new Waypoint_Map_Markers( array( 0 => array( 'name' => 'Tom & Jerry' ) ) ) )->json() )->toBe( '{"0":{"name":"Tom \u0026 Jerry"}}' );
 	}
 );
 
 test(
 	'a map says nothing about waypoints while Waypoint posts are off',
 	function () {
-		expect( Waypoints::markers_for_map( 5, '', array( 0 => 12 ) ) )->toBe( array() );
+		expect( Waypoint_Map_Markers::for_map( 5, '', array( 0 => 12 ) )->all() )->toBe( array() );
 
 		$html = Renderer::render(
 			array(

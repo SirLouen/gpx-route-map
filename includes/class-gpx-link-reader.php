@@ -51,15 +51,30 @@ final class Gpx_Link_Reader {
 	private $depth = -1;
 
 	/**
+	 * Whether this site can read the links a GPX file holds, which takes
+	 * PHP's XMLReader extension. PHP builds it in by default, but a host can
+	 * leave it out. Links made in a block or shortcode work without it.
+	 *
+	 * @return bool
+	 */
+	public static function available(): bool {
+		return class_exists( '\XMLReader' );
+	}
+
+	/**
 	 * The links in a GPX file, read up to its end or its first error.
 	 * External entities and network access stay off, and libxml reports
 	 * nothing.
 	 *
 	 * @param string $path GPX file.
 	 * @return array<int, int>|null Post IDs by waypoint position, in order,
-	 *                              or null when the file could not be opened.
+	 *                              or null when the file could not be read.
 	 */
 	public static function read( string $path ): ?array {
+		if ( ! self::available() || ! is_readable( $path ) ) {
+			return null;
+		}
+
 		$internal = libxml_use_internal_errors( true );
 		$reader   = new \XMLReader();
 
@@ -125,7 +140,7 @@ final class Gpx_Link_Reader {
 			return;
 		}
 
-		$id = Waypoints::post_id( $this->reader->readString() );
+		$id = Waypoint_Links::post_id( $this->reader->readString() );
 		if ( $id > 0 ) {
 			$this->links[ $this->index ] = $id;
 		}

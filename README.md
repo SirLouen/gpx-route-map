@@ -54,28 +54,41 @@ pnpm run env:stop
 ### Layout
 
 ```text
-gpx-route-map.php          Plugin bootstrap
-bin/build.mjs              Vite build orchestrator (JS, SCSS, RTL, asset.php)
+gpx-route-map.php                 Plugin bootstrap
+bin/build.mjs                     Vite build orchestrator (JS, SCSS, RTL, asset.php)
 includes/
-  class-plugin.php         Hooks: block, shortcode, GPX upload MIME
-  class-renderer.php       Shared HTML for block + shortcode, SSR stats, asset enqueue
-  class-waypoints.php      Waypoint post type, its edit screen, waypoint links and map data
-  class-dashicons.php      The icons a waypoint can use
+  class-plugin.php                Hooks: block, shortcode, GPX upload MIME
+  class-renderer.php              Shared HTML for block + shortcode, SSR stats, asset enqueue
+  class-waypoints.php             Waypoint post type: its switch, registration and shared constants
+  class-waypoint-edit-screen.php  A Waypoint post's settings box, saving and list columns
+  class-waypoint-values.php       Checks a Waypoint post's marker, icon and colours
+  class-waypoint-description.php  The markup a description keeps, and how maps show it
+  class-waypoint-links.php        Waypoint links from a block or a shortcode
+  class-gpx-file-links.php        A Media Library GPX file's own links, cached
+  class-gpx-link-reader.php       Reads those links from the file, as a stream
+  class-waypoint-map-markers.php  What one map is told about its linked waypoints
+  class-waypoint-posts.php        The published Waypoint posts a map links
+  class-waypoint-post.php         One Waypoint post, as a map shows it
+  class-waypoint-marker.php       A post's settings, as the map's marker and popup
+  class-dashicons.php             The icons a waypoint can use
 src/
-  block.json               Block metadata
-  index.tsx / edit.tsx     Editor
-  render.php               Server render → Renderer
-  view.ts                  Front-end entry (lazy init)
+  block.json                      Block metadata
+  index.tsx / edit.tsx            Editor
+  render.php                      Server render → Renderer
+  view.ts                         Front-end entry (lazy init)
   view/
-    types.ts               Shared domain types
-    map-core.ts            GPX parse, MapLibre markers
-    elevation.ts           Canvas elevation profile
-    stats.ts               Route stats
-    map-instance.ts        Assembles one map
-    waypoint-posts.ts      Reads the map's Waypoint post data
+    types.ts                      Shared domain types
+    map-core.ts                   GPX parse, MapLibre markers
+    elevation.ts                  Canvas elevation profile
+    stats.ts                      Route stats
+    map-instance.ts               Assembles one map
+    waypoint-posts.ts             Reads the map's Waypoint post data
+    description.ts                A Waypoint post's description, rebuilt for its popup
+    safe-url.ts                   The link addresses a map may open
   editor/
-    waypoint-links.tsx     The block's Waypoints panel
-  style.scss / editor.scss Styles
+    waypoint-links.tsx            The block's Waypoints panel
+    media-url.ts                  The block's Media Library file address
+  style.scss / editor.scss        Styles
 ```
 
 ## License

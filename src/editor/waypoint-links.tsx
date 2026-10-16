@@ -399,17 +399,36 @@ export function WaypointLinks( {
  * The Waypoints panel, while the block has a GPX file and the site has
  * turned Waypoint posts on.
  *
- * @param props        Props.
- * @param props.shown  Whether the block has a GPX file.
- * @param props.stored The block's links, as stored.
+ * @param props                          Props.
+ * @param props.shown                    Whether the block has a GPX file.
+ * @param props.waypoints                The waypoints of the block's GPX file.
+ * @param props.attributes               The block's attributes.
+ * @param props.attributes.gpxId         Its Media Library file, if any.
+ * @param props.attributes.waypointPosts Its links, as stored.
+ * @param props.setAttributes            Sets the block's attributes.
  */
 export function WaypointsPanel( {
 	shown,
-	stored,
-	...props
-}: Omit< Props, 'links' > & { shown: boolean; stored: unknown } ) {
+	waypoints,
+	attributes,
+	setAttributes,
+}: {
+	shown: boolean;
+	waypoints: Waypoint[] | undefined;
+	attributes: { gpxId?: number; waypointPosts?: StoredWaypointLinks };
+	setAttributes: ( next: {
+		waypointPosts: WaypointLinkMap | undefined;
+	} ) => void;
+} ) {
 	if ( ! shown || ! waypointsEnabled() ) {
 		return null;
 	}
-	return <WaypointLinks { ...props } links={ readLinks( stored ) } />;
+	return (
+		<WaypointLinks
+			waypoints={ waypoints }
+			links={ readLinks( attributes.waypointPosts ) }
+			fromLibrary={ !! attributes.gpxId }
+			onChange={ ( links ) => setAttributes( { waypointPosts: links } ) }
+		/>
+	);
 }

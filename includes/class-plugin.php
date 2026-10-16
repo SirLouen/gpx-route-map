@@ -469,7 +469,7 @@ class Plugin {
 		);
 		echo '<p class="description">' . esc_html__( 'Adds a Waypoints menu. Each waypoint post can have its own description, a photo or an icon, and maps show them on the waypoints of their GPX files that link to it.', 'gpx-route-map' ) . ' ' . esc_html__( 'A map\'s block links its GPX file\'s waypoints in its Waypoints panel, or a GPX file can name the post itself.', 'gpx-route-map' ) . '</p>';
 
-		if ( ! Waypoints::reads_files() ) {
+		if ( ! Gpx_Link_Reader::available() ) {
 			echo '<p class="description"><strong>' . esc_html__( 'This site cannot read the links a GPX file names itself, as its PHP lacks the XMLReader extension. Links made in a map\'s block or shortcode still work.', 'gpx-route-map' ) . '</strong></p>';
 		}
 	}
@@ -963,7 +963,7 @@ class Plugin {
 			'tileProviders' => $providers,
 			'tileProvider'  => Renderer::site_provider_in_use(),
 			'waypoints'     => Waypoints::enabled(),
-			'waypointFiles' => Waypoints::reads_files(),
+			'waypointFiles' => Gpx_Link_Reader::available(),
 		);
 	}
 
@@ -1077,7 +1077,7 @@ class Plugin {
 			'maxZoom'       => (int) $atts['maxzoom'],
 			'provider'      => strtolower( trim( (string) $atts['provider'] ) ),
 			'units'         => (string) $atts['units'],
-			'waypointPosts' => Waypoints::links_from_shortcode( (string) $atts['waypoints'] ),
+			'waypointPosts' => Waypoint_Links::from_shortcode( (string) $atts['waypoints'] ),
 		);
 
 		if ( is_numeric( $atts['id'] ) ) {

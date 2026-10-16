@@ -181,7 +181,7 @@ final class Gpxrm_Seeder_Command {
 				)
 			);
 
-			$fields = \Gpxrm\Waypoints::sanitize_fields( $fixture );
+			$fields = \Gpxrm\Waypoint_Values::sanitize_fields( $fixture );
 			$meta   = array(
 				\Gpxrm\Waypoints::META_DESCRIPTION => $fields['description'],
 				\Gpxrm\Waypoints::META_MARKER      => $fields['marker'],
@@ -292,7 +292,7 @@ final class Gpxrm_Seeder_Command {
 			'#</wpt>#',
 			static function ( array $match ) use ( $links, &$position ): string {
 				++$position;
-				return isset( $links[ $position ] ) ? \Gpxrm\Waypoints::gpx_snippet( $links[ $position ] ) . "\n  " . $match[0] : $match[0];
+				return isset( $links[ $position ] ) ? \Gpxrm\Waypoint_Edit_Screen::gpx_snippet( $links[ $position ] ) . "\n  " . $match[0] : $match[0];
 			},
 			(string) $source
 		);

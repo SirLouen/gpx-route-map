@@ -6,7 +6,6 @@ import type { KeyboardEvent } from 'react';
 
 import { __, sprintf } from '@wordpress/i18n';
 import { useEffect, useRef, useState } from '@wordpress/element';
-import { useSelect } from '@wordpress/data';
 import type { BlockEditProps } from '@wordpress/blocks';
 import {
 	useBlockProps,
@@ -44,6 +43,7 @@ import { siteStatFields } from './stat-fields';
 import { bakeStats, shouldStore, statsToStore } from './baked-stats';
 import type { FreshStats, GpxStats } from './baked-stats';
 import { MapPreview } from './editor/map-preview';
+import { useMediaUrl } from './editor/media-url';
 import { WaypointsPanel, droppedLinks } from './editor/waypoint-links';
 import type { StoredWaypointLinks } from './editor/waypoint-links';
 import type { Waypoint } from './view/types';
@@ -190,32 +190,9 @@ export default function Edit( {
 	const committedUrl = gpxId ? '' : gpxUrl;
 
 	// The file's waypoints, for the Waypoints panel; undefined until read.
-	const [ waypoints, setWaypoints ] = useState< Waypoint[] | undefined >(
-		undefined
-	);
+	const [ waypoints, setWaypoints ] = useState< Waypoint[] >();
 
-	const mediaUrl = useSelect(
-		( select ): string | undefined => {
-			if ( ! gpxId ) {
-				return undefined;
-			}
-			const core = select( 'core' ) as {
-				getEntityRecord: (
-					kind: string,
-					name: string,
-					id: number,
-					query: Record< string, string >
-				) => { source_url?: string } | undefined;
-			};
-			// In the view context: the edit context answers only those who
-			// may edit the file, so an Author could not read one someone
-			// else uploaded.
-			return core.getEntityRecord( 'postType', 'attachment', gpxId, {
-				context: 'view',
-			} )?.source_url;
-		},
-		[ gpxId ]
-	);
+	const mediaUrl = useMediaUrl( gpxId );
 	const site = siteHeights();
 	const siteMaxZoom = siteDefaultMaxZoom();
 	const tiles = readTileProviders();
@@ -769,11 +746,8 @@ export default function Edit( {
 				<WaypointsPanel
 					shown={ hasGpx }
 					waypoints={ waypoints }
-					stored={ attributes.waypointPosts }
-					fromLibrary={ !! gpxId }
-					onChange={ ( links ) =>
-						setAttributes( { waypointPosts: links } )
-					}
+					attributes={ attributes }
+					setAttributes={ setAttributes }
 				/>
 			</InspectorControls>
 
