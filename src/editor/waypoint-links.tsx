@@ -112,6 +112,17 @@ function postId( value: unknown ): number {
 }
 
 /**
+ * A waypoint's position from a key of the links, or -1 for a key that is not
+ * one.
+ *
+ * @param key The key.
+ */
+function position( key: string ): number {
+	const index = Number( key );
+	return Number.isInteger( index ) && index >= 0 ? index : -1;
+}
+
+/**
  * A block's links, whichever shape they were stored in, keeping only well
  * formed ones.
  *
@@ -124,9 +135,9 @@ export function readLinks( stored: unknown ): WaypointLinkMap | undefined {
 	}
 	const links: WaypointLinkMap = {};
 	for ( const [ key, value ] of Object.entries( stored ) ) {
-		const index = Number( key );
+		const index = position( key );
 		const id = postId( value );
-		if ( Number.isInteger( index ) && index >= 0 && id ) {
+		if ( index >= 0 && id ) {
 			links[ index ] = id;
 		}
 	}
@@ -221,6 +232,175 @@ function notFound( id: number ): string {
 	);
 }
 
+/**
+ * The Waypoint posts the panel offers, while they load and once they have.
+ */
+interface WaypointChoices {
+	/** The posts by ID, or undefined while they load. */
+	byId: Map< number, WaypointRecord > | undefined;
+	/** The posts, as choices of a select. */
+	choices: { label: string; value: string }[];
+	/** Lists the posts again, with any added since. */
+	refresh: () => void;
+}
+
+/**
+ * The Waypoint posts the panel offers.
+ */
+function useWaypointChoices(): WaypointChoices {
+	const posts = useSelect( ( select ) => {
+		const core = select( 'core' ) as {
+			getEntityRecords: (
+				kind: string,
+				name: string,
+				query: Record< string, unknown >
+			) => WaypointRecord[] | null;
+		};
+		return core.getEntityRecords( 'postType', WAYPOINT_POST_TYPE, QUERY );
+	}, [] );
+
+	const { invalidateResolution } = useDispatch( 'core' ) as {
+		invalidateResolution: ( selector: string, args: unknown[] ) => void;
+	};
+	const refresh = useCallback(
+		() =>
+			invalidateResolution( 'getEntityRecords', [
+				'postType',
+				WAYPOINT_POST_TYPE,
+				QUERY,
+			] ),
+		[ invalidateResolution ]
+	);
+
+	const list = posts ?? [];
+	return {
+		byId: posts
+			? new Map( list.map( ( post ) => [ post.id, post ] ) )
+			: undefined,
+		choices: list.map( ( post ) => ( {
+			label: titleOf( post ),
+			value: String( post.id ),
+		} ) ),
+		refresh,
+	};
+}
+
+/**
+ * Call refresh each time the user comes back to this tab, while watching.
+ *
+ * @param watching Whether to.
+ * @param refresh  What to call.
+ */
+function useRefreshOnReturn( watching: boolean, refresh: () => void ): void {
+	useEffect( () => {
+		if ( ! watching ) {
+			return undefined;
+		}
+		const onVisible = () => {
+			if ( 'visible' === document.visibilityState ) {
+				refresh();
+			}
+		};
+		document.addEventListener( 'visibilitychange', onVisible );
+		return () =>
+			document.removeEventListener( 'visibilitychange', onVisible );
+	}, [ watching, refresh ] );
+}
+
+/**
+ * What a waypoint shows while the block links it to nothing: the post the
+ * file links it to, when the map reads the file's links.
+ *
+ * @param waypoint  The waypoint.
+ * @param readsFile Whether the map reads the file's links.
+ * @param byId      The posts by ID, or undefined while they load.
+ */
+function fileLinkLabel(
+	waypoint: Waypoint,
+	readsFile: boolean,
+	byId: WaypointChoices[ 'byId' ]
+): string {
+	if ( ! readsFile || ! waypoint.postId ) {
+		return __( 'None', 'gpx-route-map' );
+	}
+	const post = byId?.get( waypoint.postId );
+	return sprintf(
+		/* translators: %s: the Waypoint post a GPX file links a waypoint to. */
+		__( 'As in the GPX file: %s', 'gpx-route-map' ),
+		post ? titleOf( post ) : notFound( waypoint.postId )
+	);
+}
+
+/**
+ * Whether the file links some waypoints itself while the map leaves those
+ * links out: the file is not in the Media Library, or the site cannot read
+ * it.
+ *
+ * @param waypoints The waypoints of the file.
+ * @param readsFile Whether the map reads the file's links.
+ */
+function ignoresFileLinks(
+	waypoints: Waypoint[] | undefined,
+	readsFile: boolean
+): boolean {
+	return (
+		! readsFile &&
+		( waypoints ?? [] ).some( ( waypoint ) => waypoint.postId )
+	);
+}
+
+/**
+ * The select that links one waypoint to a post.
+ *
+ * @param props           Props.
+ * @param props.waypoint  The waypoint.
+ * @param props.linked    The post the block links it to, or 0.
+ * @param props.posts     The posts the panel offers.
+ * @param props.readsFile Whether the map reads the file's links.
+ * @param props.onChange  Called with the post to link, or 0 for none.
+ */
+function WaypointSelect( {
+	waypoint,
+	linked,
+	posts,
+	readsFile,
+	onChange,
+}: {
+	waypoint: Waypoint;
+	linked: number;
+	posts: WaypointChoices;
+	readsFile: boolean;
+	onChange: ( post: number ) => void;
+} ) {
+	// Linked before it was deleted or made private.
+	const missing =
+		linked > 0 && posts.byId && ! posts.byId.has( linked )
+			? [ { label: notFound( linked ), value: String( linked ) } ]
+			: [];
+	return (
+		<SelectControl
+			__nextHasNoMarginBottom
+			__next40pxDefaultSize
+			label={ sprintf(
+				/* translators: 1: the waypoint's number in the GPX file, 2: its name. */
+				__( '%1$d. %2$s', 'gpx-route-map' ),
+				waypoint.index + 1,
+				waypoint.name
+			) }
+			value={ linked ? String( linked ) : '' }
+			options={ [
+				{
+					label: fileLinkLabel( waypoint, readsFile, posts.byId ),
+					value: '',
+				},
+				...posts.choices,
+				...missing,
+			] }
+			onChange={ ( value ) => onChange( Number( value ) || 0 ) }
+		/>
+	);
+}
+
 interface Props {
 	/** The waypoints of the block's GPX file, once it has been read. */
 	waypoints: Waypoint[] | undefined;
@@ -250,78 +430,16 @@ export function WaypointLinks( {
 	fromLibrary,
 	onChange,
 }: Props ) {
-	const posts = useSelect( ( select ) => {
-		const core = select( 'core' ) as {
-			getEntityRecords: (
-				kind: string,
-				name: string,
-				query: Record< string, unknown >
-			) => WaypointRecord[] | null;
-		};
-		return core.getEntityRecords( 'postType', WAYPOINT_POST_TYPE, QUERY );
-	}, [] );
-
-	const { invalidateResolution } = useDispatch( 'core' ) as {
-		invalidateResolution: ( selector: string, args: unknown[] ) => void;
-	};
+	const posts = useWaypointChoices();
 	// "Add a waypoint" opens a tab of its own; opening the panel, or coming
 	// back to the tab while it is open, lists what was added there.
 	const [ open, setOpen ] = useState( false );
-	const refresh = useCallback(
-		() =>
-			invalidateResolution( 'getEntityRecords', [
-				'postType',
-				WAYPOINT_POST_TYPE,
-				QUERY,
-			] ),
-		[ invalidateResolution ]
-	);
-	useEffect( () => {
-		if ( ! open ) {
-			return undefined;
-		}
-		const onVisible = () => {
-			if ( 'visible' === document.visibilityState ) {
-				refresh();
-			}
-		};
-		document.addEventListener( 'visibilitychange', onVisible );
-		return () =>
-			document.removeEventListener( 'visibilitychange', onVisible );
-	}, [ open, refresh ] );
-
-	const byId = new Map(
-		( posts ?? [] ).map( ( post ) => [ post.id, post ] )
-	);
-	const choices = ( posts ?? [] ).map( ( post ) => ( {
-		label: titleOf( post ),
-		value: String( post.id ),
-	} ) );
+	useRefreshOnReturn( open, posts.refresh );
 
 	// Links in a file elsewhere, or in any file on a site that cannot read
 	// them, are never read, so those waypoints are unlinked as far as the map
 	// goes.
 	const readsFile = fromLibrary && siteReadsFiles();
-	const ignoredLinks =
-		! readsFile &&
-		( waypoints ?? [] ).some( ( waypoint ) => waypoint.postId );
-
-	/**
-	 * What a waypoint shows while the block links it to nothing.
-	 *
-	 * @param waypoint The waypoint.
-	 */
-	const fromFile = ( waypoint: Waypoint ): string => {
-		if ( ! readsFile || ! waypoint.postId ) {
-			return __( 'None', 'gpx-route-map' );
-		}
-		const post = byId.get( waypoint.postId );
-		return sprintf(
-			/* translators: %s: the Waypoint post a GPX file links a waypoint to. */
-			__( 'As in the GPX file: %s', 'gpx-route-map' ),
-			post ? titleOf( post ) : notFound( waypoint.postId )
-		);
-	};
 
 	return (
 		<PanelBody
@@ -330,7 +448,7 @@ export function WaypointLinks( {
 			onToggle={ ( opened: boolean ) => {
 				setOpen( opened );
 				if ( opened ) {
-					refresh();
+					posts.refresh();
 				}
 			} }
 		>
@@ -340,52 +458,26 @@ export function WaypointLinks( {
 					'gpx-route-map'
 				) }
 			</p>
-			{ ignoredLinks && <p>{ unreadLinksNote( fromLibrary ) }</p> }
+			{ ignoresFileLinks( waypoints, readsFile ) && (
+				<p>{ unreadLinksNote( fromLibrary ) }</p>
+			) }
 			{ undefined !== waypoints && ! waypoints.length && (
 				<p>
 					{ __( 'This GPX file has no waypoints.', 'gpx-route-map' ) }
 				</p>
 			) }
-			{ ( waypoints ?? [] ).map( ( waypoint ) => {
-				const linked = links?.[ waypoint.index ] ?? 0;
-				const missing = linked > 0 && posts && ! byId.has( linked );
-				return (
-					<SelectControl
-						key={ waypoint.index }
-						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-						label={ sprintf(
-							/* translators: 1: the waypoint's number in the GPX file, 2: its name. */
-							__( '%1$d. %2$s', 'gpx-route-map' ),
-							waypoint.index + 1,
-							waypoint.name
-						) }
-						value={ linked ? String( linked ) : '' }
-						options={ [
-							{ label: fromFile( waypoint ), value: '' },
-							...choices,
-							// Linked before it was deleted or made private.
-							...( missing
-								? [
-										{
-											label: notFound( linked ),
-											value: String( linked ),
-										},
-									]
-								: [] ),
-						] }
-						onChange={ ( value ) =>
-							onChange(
-								withLink(
-									links,
-									waypoint.index,
-									Number( value ) || 0
-								)
-							)
-						}
-					/>
-				);
-			} ) }
+			{ ( waypoints ?? [] ).map( ( waypoint ) => (
+				<WaypointSelect
+					key={ waypoint.index }
+					waypoint={ waypoint }
+					linked={ links?.[ waypoint.index ] ?? 0 }
+					posts={ posts }
+					readsFile={ readsFile }
+					onChange={ ( post ) =>
+						onChange( withLink( links, waypoint.index, post ) )
+					}
+				/>
+			) ) }
 			<p>
 				<ExternalLink href="post-new.php?post_type=gpxrm_waypoint">
 					{ __( 'Add a waypoint', 'gpx-route-map' ) }

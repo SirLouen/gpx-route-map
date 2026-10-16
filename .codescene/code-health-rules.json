@@ -1,0 +1,18 @@
+{
+	"usage": "The plugin's classes are WordPress hook callbacks, which WordPress calls with post IDs, hook names, column keys and option values, as ints and strings, so those two rules measure WordPress's signatures rather than the plugin's design.",
+	"rule_sets": [
+		{
+			"matching_content_path": "includes/*.php",
+			"rules": [
+				{
+					"name": "Primitive Obsession",
+					"weight": 0.0
+				},
+				{
+					"name": "String Heavy Function Arguments",
+					"weight": 0.0
+				}
+			]
+		}
+	]
+}

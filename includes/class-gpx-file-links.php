@@ -58,9 +58,9 @@ class Gpx_File_Links {
 			return array();
 		}
 
-		$stored = get_post_meta( $this->attachment_id, Waypoints::META_FILE_LINKS, true );
-		if ( is_array( $stored ) && isset( $stored['file'], $stored['links'] ) && $version === $stored['file'] ) {
-			return Waypoint_Links::from_attribute( $stored['links'] );
+		$kept = $this->kept( $version );
+		if ( null !== $kept ) {
+			return $kept;
 		}
 
 		// A read that could not run is not kept, so the file is read again
@@ -80,6 +80,22 @@ class Gpx_File_Links {
 		);
 
 		return $links;
+	}
+
+	/**
+	 * The links kept from this version of the file.
+	 *
+	 * @param string $version The file's version (see version()).
+	 * @return array<int, int>|null Post IDs by waypoint position, in order,
+	 *                              or null when none are kept for it.
+	 */
+	private function kept( string $version ): ?array {
+		$stored = get_post_meta( $this->attachment_id, Waypoints::META_FILE_LINKS, true );
+		if ( ! is_array( $stored ) || ! isset( $stored['file'], $stored['links'] ) ) {
+			return null;
+		}
+
+		return $version === $stored['file'] ? Waypoint_Links::from_attribute( $stored['links'] ) : null;
 	}
 
 	/**

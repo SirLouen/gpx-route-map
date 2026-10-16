@@ -60,7 +60,10 @@ includes/
   class-plugin.php                Hooks: block, shortcode, GPX upload MIME
   class-renderer.php              Shared HTML for block + shortcode, SSR stats, asset enqueue
   class-waypoints.php             Waypoint post type: its switch, registration and shared constants
-  class-waypoint-edit-screen.php  A Waypoint post's settings box, saving and list columns
+  class-waypoint-edit-screen.php  Sets up the screens Waypoint posts are edited and listed on
+  class-waypoint-meta-box.php     A Waypoint post's settings box, and how it saves
+  class-waypoint-settings.php     A Waypoint post's saved settings, as its screens show them
+  class-waypoint-columns.php      The marker and ID columns of the list of waypoints
   class-waypoint-values.php       Checks a Waypoint post's marker, icon and colours
   class-waypoint-description.php  The markup a description keeps, and how maps show it
   class-waypoint-links.php        Waypoint links from a block or a shortcode
@@ -88,6 +91,8 @@ src/
   editor/
     waypoint-links.tsx            The block's Waypoints panel
     media-url.ts                  The block's Media Library file address
+  admin/
+    waypoint-edit.js / .scss      The Waypoint post screens' script and styles
   style.scss / editor.scss        Styles
 ```
 

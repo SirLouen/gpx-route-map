@@ -309,7 +309,7 @@ final class Gpxrm_Seeder_Command {
 			'#</wpt>#',
 			static function ( array $match ) use ( $links, &$position ): string {
 				++$position;
-				return isset( $links[ $position ] ) ? \Gpxrm\Waypoint_Edit_Screen::gpx_snippet( $links[ $position ] ) . "\n  " . $match[0] : $match[0];
+				return isset( $links[ $position ] ) ? \Gpxrm\Waypoint_Meta_Box::gpx_snippet( $links[ $position ] ) . "\n  " . $match[0] : $match[0];
 			},
 			(string) $source
 		);

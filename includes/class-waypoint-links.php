@@ -57,9 +57,10 @@ final class Waypoint_Links {
 		$links = array();
 		foreach ( $raw as $index => $post ) {
 			// PHP turns a key such as "3" into the number already.
-			$id = self::post_id( $post );
-			if ( is_int( $index ) && $index >= 0 && $id > 0 ) {
-				$links[ $index ] = $id;
+			$position = is_int( $index ) ? $index : -1;
+			$id       = self::post_id( $post );
+			if ( $position >= 0 && $id > 0 ) {
+				$links[ $position ] = $id;
 			}
 		}
 

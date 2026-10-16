@@ -411,6 +411,14 @@ describe( 'The Waypoints panel', () => {
 		} );
 	} );
 
+	it( 'calls no linked post gone while the posts load', async () => {
+		posts = null;
+		await open( { waypointPosts: { 0: 10 } } );
+		const fountain = selects.get( '1. Fountain' );
+		expect( fountain?.value ).toBe( '10' );
+		expect( fountain?.options ).toEqual( [ { label: 'None', value: '' } ] );
+	} );
+
 	it( 'drops the links when the block shows another file', async () => {
 		await open( { waypointPosts: { 0: 10 } } );
 		flushSync( () =>

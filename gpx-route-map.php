@@ -36,6 +36,9 @@ require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-marker.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-post.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-posts.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-map-markers.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-settings.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-meta-box.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-columns.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-edit-screen.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-plugin.php';
 

@@ -55,6 +55,19 @@ function srcset( value: unknown ): string {
 }
 
 /**
+ * The fields that have a value: a string that is not empty, or an object.
+ *
+ * @param fields Fields, some of them without a value.
+ */
+function filled< T extends Record< string, string | object | undefined > >(
+	fields: T
+): Partial< T > {
+	return Object.fromEntries(
+		Object.entries( fields ).filter( ( [ , value ] ) => value )
+	) as Partial< T >;
+}
+
+/**
  * A size in pixels, or 0.
  *
  * @param value Value.
@@ -79,17 +92,13 @@ function readPhoto( raw: unknown ): WaypointPhoto | undefined {
 	if ( ! src ) {
 		return undefined;
 	}
-	const read: WaypointPhoto = {
+	return {
 		src,
 		width: pixels( photo.width ),
 		height: pixels( photo.height ),
 		alt: text( photo.alt ),
+		...filled( { srcset: srcset( photo.srcset ) } ),
 	};
-	const set = srcset( photo.srcset );
-	if ( set ) {
-		read.srcset = set;
-	}
-	return read;
 }
 
 /**
@@ -138,22 +147,42 @@ function readPost( raw: unknown ): WaypointPost | null {
 		return null;
 	}
 	const entry = raw as Record< string, unknown >;
-	const post: WaypointPost = {};
+	return {
+		...filled( {
+			name: text( entry.name ).trim(),
+			desc: text( entry.desc ).trim(),
+			photo: readPhoto( entry.photo ),
+		} ),
+		...readMarker( entry ),
+	};
+}
 
-	const name = text( entry.name ).trim();
-	if ( name ) {
-		post.name = name;
+/**
+ * The map's entries, as decoded from JSON, or null for none.
+ *
+ * @param raw The map's attribute.
+ */
+function decode( raw: string | undefined ): object | null {
+	if ( ! raw ) {
+		return null;
 	}
-	const desc = text( entry.desc ).trim();
-	if ( desc ) {
-		post.desc = desc;
+	try {
+		const decoded: unknown = JSON.parse( raw );
+		return decoded && 'object' === typeof decoded ? decoded : null;
+	} catch {
+		return null;
 	}
-	const photo = readPhoto( entry.photo );
-	if ( photo ) {
-		post.photo = photo;
-	}
+}
 
-	return { ...post, ...readMarker( entry ) };
+/**
+ * A waypoint's position from a key of the entries, or -1 for a key that is
+ * not one.
+ *
+ * @param key The key.
+ */
+function position( key: string ): number {
+	const index = Number( key );
+	return Number.isInteger( index ) && index >= 0 ? index : -1;
 }
 
 /**
@@ -165,26 +194,13 @@ function readPost( raw: unknown ): WaypointPost | null {
 export function readWaypointPosts(
 	mapEl: HTMLElement
 ): Record< number, WaypointPost > {
-	const raw = mapEl.dataset.gpxrmWaypoints;
-	if ( ! raw ) {
-		return {};
-	}
-
-	let decoded: unknown;
-	try {
-		decoded = JSON.parse( raw );
-	} catch {
-		return {};
-	}
-	if ( ! decoded || 'object' !== typeof decoded ) {
-		return {};
-	}
-
 	const posts: Record< number, WaypointPost > = {};
-	for ( const [ key, value ] of Object.entries( decoded ) ) {
-		const index = Number( key );
+	for ( const [ key, value ] of Object.entries(
+		decode( mapEl.dataset.gpxrmWaypoints ) ?? {}
+	) ) {
+		const index = position( key );
 		const post = readPost( value );
-		if ( Number.isInteger( index ) && index >= 0 && post ) {
+		if ( index >= 0 && post ) {
 			posts[ index ] = post;
 		}
 	}
