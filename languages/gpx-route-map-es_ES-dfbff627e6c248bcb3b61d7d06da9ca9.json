@@ -1,5 +1,5 @@
 {
-    "translation-revision-date": "2026-10-06T10:47:10+00:00",
+    "translation-revision-date": "2026-10-16T11:22:05+00:00",
     "generator": "WP-CLI\/2.12.0",
     "source": "build\/index.js",
     "domain": "messages",
@@ -150,6 +150,39 @@
             ],
             "%s \u2014 needs an API key": [
                 "%s \u2014 necesita una clave de API"
+            ],
+            "This GPX file links waypoints to Waypoint posts itself, but this site cannot read those links, as its PHP lacks the XMLReader extension. Link them here instead.": [
+                "Este archivo GPX enlaza por s\u00ed mismo waypoints con entradas de waypoint, pero este sitio no puede leer esos enlaces, porque a su PHP le falta la extensi\u00f3n XMLReader. Enl\u00e1zalos aqu\u00ed en su lugar."
+            ],
+            "This GPX file links waypoints to Waypoint posts itself, but maps only read those links from files in the Media Library. Link them here instead, or choose the file from the Media Library.": [
+                "Este archivo GPX enlaza por s\u00ed mismo waypoints con entradas de waypoint, pero los mapas solo leen esos enlaces en archivos de la biblioteca de medios. Enl\u00e1zalos aqu\u00ed en su lugar, o elige el archivo desde la biblioteca de medios."
+            ],
+            "#%d (no title)": [
+                "#%d (sin t\u00edtulo)"
+            ],
+            "%s (not published)": [
+                "%s (sin publicar)"
+            ],
+            "#%d (not found)": [
+                "#%d (no encontrado)"
+            ],
+            "None": [
+                "Ninguno"
+            ],
+            "As in the GPX file: %s": [
+                "Como en el archivo GPX: %s"
+            ],
+            "%1$d. %2$s": [
+                "%1$d. %2$s"
+            ],
+            "Link a waypoint of the GPX file to a Waypoint post to show its description, photo or icon. Only published waypoints show on the map.": [
+                "Enlaza un waypoint del archivo GPX con una entrada de waypoint para mostrar su descripci\u00f3n, foto o icono. En el mapa solo se muestran los waypoints publicados."
+            ],
+            "This GPX file has no waypoints.": [
+                "Este archivo GPX no tiene waypoints."
+            ],
+            "Add a waypoint": [
+                "A\u00f1adir un waypoint"
             ]
         }
     }

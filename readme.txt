@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -195,6 +195,15 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 
 == Changelog ==
 
+= 2.1.0 =
+* New, experimental: Waypoint posts, which give a waypoint of a GPX file its own title, a description that can hold links, bold and italic text and lists, a photo at the top of its popup, and a marker: the usual one, the photo as a thumbnail, or a Dashicon in colors of your choice. They are off until you tick "Enable Waypoint posts (experimental)" under Settings > GPX Route Map, and being experimental, how they work may change in later versions.
+* New: link a map's waypoints to Waypoint posts in the block's Waypoints panel, with the shortcode's `waypoints` attribute, or in a Media Library GPX file itself, inside each waypoint's `<extensions>`, where each Waypoint post's screen shows the lines to copy. A link made in the block or the shortcode wins over the file's. Reading the links in a file needs PHP's XMLReader extension, which PHP includes by default; the settings say when it is missing.
+* Fixed: a waypoint's popup that is taller than its map, such as one with a long description, now fits inside the map and scrolls, and fits again when the map changes size.
+* Fixed: a waypoint whose GPX link names a file type, such as `image/jpeg` for a photo, now gets the marker of its own type rather than the link's.
+* The Spanish translation covers the strings new in 2.1.0, translated here until they are reviewed on translate.wordpress.org.
+* For developers: Waypoint posts are the `gpxrm_waypoint` post type, in the REST API so the editor can list them, and the setting is the `gpxrm_waypoints` option. A GPX file links a waypoint with `<gpxrm:waypoint xmlns:gpxrm="https://wordpress.org/plugins/gpx-route-map/">ID</gpxrm:waypoint>`.
+
+
 = 2.0.0 =
 * Removed: custom tile URLs. This is a breaking change, and the reason this release is 2.0.0. The block's "Custom tile URL" field and the shortcode's `tile` attribute are gone, and a map that used one now shows the site's tile provider instead. The old address is not kept: it is dropped from a post the next time the post is saved, though older revisions still have it, so going back to 1.8 does not bring it back for posts edited in 2.0. To give a single map different tiles, choose OpenStreetMap, OpenTopoMap or a Thunderforest style in its Map tiles panel, or with the shortcode's new `provider` attribute. Developers who serve tiles from their own server can keep doing so with the `gpxrm_tile_url` filter, which applies to every map, or to every map using a given provider; a single map can no longer have a tile address of its own.
 * New: choose the map tiles for each map. The block's Map tiles panel offers the site default, OpenStreetMap, OpenTopoMap and, once an API key is saved under Settings > GPX Route Map, each Thunderforest style. The shortcode takes the same choice, for example `provider="opentopomap"`.
@@ -278,6 +287,10 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 2.1.0 =
+Adds Waypoint posts, experimental and off by default, to give a GPX waypoint its own description with links, a photo or an icon marker. Turn them on under Settings > GPX Route Map. Also fits a waypoint popup taller than its map inside it.
+
 
 = 2.0.0 =
 Breaking change: custom tile URLs are removed, which is why this is 2.0.0. Maps and shortcodes that used one now show the site's tile provider; choose OpenStreetMap, OpenTopoMap or a Thunderforest style for a single map instead. Also adds a live editor preview and an optional Min elevation.
