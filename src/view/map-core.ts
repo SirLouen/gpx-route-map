@@ -13,6 +13,7 @@ import type {
 	WaypointPost,
 } from './types';
 import { keyboardMarker } from './marker-keyboard';
+import { readWaypointPosts } from './waypoint-posts';
 
 type MapLibreMap = MapLibreNs.Map;
 type StyleSpecification = MapLibreNs.StyleSpecification;
@@ -479,14 +480,17 @@ function fitPopup( map: MapLibreMap, popup: MapLibreNs.Popup ): void {
  * @param waypoints  Parsed waypoints.
  * @param bg         Map background colour used for the marker ring.
  * @param posts      What Waypoint posts change about waypoints, by their
- *                   position in the file.
+ *                   position in the file: by default, what the map's
+ *                   element says about them.
  */
 export function addWaypointMarkers(
 	maplibregl: MapLibreGl,
 	map: MapLibreMap,
 	waypoints: Waypoint[],
 	bg: string,
-	posts: Record< number, WaypointPost > = {}
+	posts: Record< number, WaypointPost > = readWaypointPosts(
+		map.getContainer()
+	)
 ): void {
 	waypoints.forEach( ( wpt ) => {
 		const post = posts[ wpt.index ];

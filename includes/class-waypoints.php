@@ -839,82 +839,14 @@ JS;
 	 * The posts a GPX file links its waypoints to, by each waypoint's
 	 * position among the file's <wpt> elements, as the map counts them.
 	 *
-	 * Read as a stream, so a long track costs no memory. External entities
-	 * and network access stay off.
+	 * Read as a stream, so a long track costs no memory.
 	 *
 	 * @param string $path GPX file.
 	 * @return array<int, int>|null Post IDs by waypoint position, in order,
 	 *                              or null when the file could not be read.
 	 */
 	public static function links_in_gpx( string $path ): ?array {
-		if ( ! self::reads_files() || ! is_readable( $path ) ) {
-			return null;
-		}
-
-		$internal = libxml_use_internal_errors( true );
-		$reader   = new \XMLReader();
-
-		try {
-			return $reader->open( $path, null, LIBXML_NONET ) ? self::read_links( $reader ) : null;
-		} finally {
-			$reader->close();
-			libxml_clear_errors();
-			libxml_use_internal_errors( $internal );
-		}
-	}
-
-	/**
-	 * The links in an opened GPX file, read up to its end or its first error.
-	 *
-	 * @param \XMLReader $reader The file.
-	 * @return array<int, int> Post IDs by waypoint position, in order.
-	 */
-	private static function read_links( \XMLReader $reader ): array {
-		$links = array();
-
-		// The open waypoint's position and depth; depth -1 between waypoints.
-		$index = -1;
-		$depth = -1;
-
-		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- XMLReader's own properties.
-		while ( $reader->read() ) {
-			if ( \XMLReader::ELEMENT !== $reader->nodeType ) {
-				continue;
-			}
-
-			if ( $reader->depth <= $depth ) {
-				$depth = -1;
-			}
-
-			if ( 'wpt' === $reader->localName ) {
-				++$index;
-				$depth = $reader->depth;
-			} elseif ( $depth >= 0 && ! isset( $links[ $index ] ) ) {
-				$id = self::linked_post( $reader );
-				if ( $id > 0 ) {
-					$links[ $index ] = $id;
-				}
-			}
-		}
-		// phpcs:enable
-
-		return array_slice( $links, 0, self::MAX_LINKS, true );
-	}
-
-	/**
-	 * The post ID in the link element the reader is on, or 0 on any other
-	 * element.
-	 *
-	 * @param \XMLReader $reader The file, on an element.
-	 * @return int
-	 */
-	private static function linked_post( \XMLReader $reader ): int {
-		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- XMLReader's own properties.
-		if ( self::GPX_ELEMENT !== $reader->localName || self::GPX_NAMESPACE !== $reader->namespaceURI ) {
-			return 0;
-		}
-
-		return self::post_id( $reader->readString() );
+		return self::reads_files() && is_readable( $path ) ? Gpx_Link_Reader::read( $path ) : null;
 	}
 
 	/**
@@ -1017,6 +949,26 @@ JS;
 			return array();
 		}
 
+		$by_id   = self::markers_by_id( $ids );
+		$markers = array();
+		foreach ( $links as $index => $id ) {
+			if ( isset( $by_id[ $id ] ) && array() !== $by_id[ $id ] ) {
+				$markers[ $index ] = $by_id[ $id ];
+			}
+		}
+
+		return $markers;
+	}
+
+	/**
+	 * What a map shows for each of these waypoint posts it may show, by post
+	 * ID: only published waypoints without a password.
+	 *
+	 * @param array<int, int> $ids Post IDs.
+	 * @return array<int, array<string, mixed>>
+	 * @phpstan-return array<int, Marker>
+	 */
+	private static function markers_by_id( array $ids ): array {
 		$query = new \WP_Query(
 			array(
 				'post_type'              => self::POST_TYPE,
@@ -1038,14 +990,7 @@ JS;
 			}
 		}
 
-		$markers = array();
-		foreach ( $links as $index => $id ) {
-			if ( isset( $by_id[ $id ] ) && array() !== $by_id[ $id ] ) {
-				$markers[ $index ] = $by_id[ $id ];
-			}
-		}
-
-		return $markers;
+		return $by_id;
 	}
 
 	/**
@@ -1117,35 +1062,67 @@ JS;
 		}
 
 		if ( null !== $raw['photo'] && '' !== $raw['photo']['src'] ) {
-			$photo = array(
-				'src'    => $raw['photo']['src'],
-				'width'  => max( 0, $raw['photo']['width'] ),
-				'height' => max( 0, $raw['photo']['height'] ),
-				'alt'    => $raw['photo']['alt'],
-			);
-			if ( '' !== $raw['photo']['srcset'] ) {
-				$photo['srcset'] = $raw['photo']['srcset'];
-			}
-			$entry['photo'] = $photo;
+			$entry['photo'] = self::photo_entry( $raw['photo'] );
 		}
 
+		return $entry + self::marker_entry( $raw );
+	}
+
+	/**
+	 * What a map is told about a post's photo.
+	 *
+	 * @param array{src: string, width: int, height: int, alt: string, srcset: string} $photo The photo.
+	 * @return array<string, mixed>
+	 * @phpstan-return Photo
+	 */
+	private static function photo_entry( array $photo ): array {
+		$entry = array(
+			'src'    => $photo['src'],
+			'width'  => max( 0, $photo['width'] ),
+			'height' => max( 0, $photo['height'] ),
+			'alt'    => $photo['alt'],
+		);
+		if ( '' !== $photo['srcset'] ) {
+			$entry['srcset'] = $photo['srcset'];
+		}
+
+		return $entry;
+	}
+
+	/**
+	 * What a map is told about a post's marker: a photo marker with its
+	 * thumbnail, an icon marker with its icon and any colours chosen, or
+	 * nothing for the usual marker.
+	 *
+	 * @param array{marker: mixed, icon: mixed, color: mixed, background: mixed, thumb: string} $raw Post settings.
+	 * @return array<string, string>
+	 * @phpstan-return array{marker?: string, thumb?: string, icon?: string, color?: string, background?: string}
+	 */
+	private static function marker_entry( array $raw ): array {
 		$marker = self::sanitize_marker( $raw['marker'] );
-
 		if ( 'image' === $marker && '' !== $raw['thumb'] ) {
-			$entry['marker'] = 'image';
-			$entry['thumb']  = $raw['thumb'];
-		} elseif ( 'icon' === $marker ) {
-			$entry['marker'] = 'icon';
-			$entry['icon']   = is_string( $raw['icon'] ) && Dashicons::exists( $raw['icon'] ) ? $raw['icon'] : self::DEFAULT_ICON;
+			return array(
+				'marker' => 'image',
+				'thumb'  => $raw['thumb'],
+			);
+		}
 
-			$color = self::hex_color( $raw['color'], '' );
-			if ( '' !== $color ) {
-				$entry['color'] = $color;
-			}
-			$background = self::hex_color( $raw['background'], '' );
-			if ( '' !== $background ) {
-				$entry['background'] = $background;
-			}
+		if ( 'icon' !== $marker ) {
+			return array();
+		}
+
+		$entry = array(
+			'marker' => 'icon',
+			'icon'   => is_string( $raw['icon'] ) && Dashicons::exists( $raw['icon'] ) ? $raw['icon'] : self::DEFAULT_ICON,
+		);
+
+		$color = self::hex_color( $raw['color'], '' );
+		if ( '' !== $color ) {
+			$entry['color'] = $color;
+		}
+		$background = self::hex_color( $raw['background'], '' );
+		if ( '' !== $background ) {
+			$entry['background'] = $background;
 		}
 
 		return $entry;

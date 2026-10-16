@@ -28,6 +28,8 @@ class Plugin {
 		add_action( 'init', array( $this, 'register_shortcode' ) );
 		add_action( 'admin_menu', array( $this, 'register_settings_page' ) );
 		add_action( 'init', array( $this, 'register_options' ) );
+		// First, so the General section leads the settings screen.
+		add_action( 'admin_init', array( $this, 'register_general_settings' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'upload_mimes', array( $this, 'allow_gpx_upload' ) );
 		add_filter( 'wp_check_filetype_and_ext', array( $this, 'fix_gpx_filetype_check' ), 10, 4 );
@@ -193,6 +195,16 @@ class Plugin {
 			)
 		);
 
+		$this->register_waypoints_option();
+		$this->register_tile_options();
+	}
+
+	/**
+	 * Register the Waypoints switch, off until a site turns it on.
+	 *
+	 * @return void
+	 */
+	private function register_waypoints_option(): void {
 		register_setting(
 			self::OPTION_GROUP,
 			Waypoints::OPTION,
@@ -203,16 +215,14 @@ class Plugin {
 				'show_in_rest'      => true,
 			)
 		);
-
-		$this->register_tile_options();
 	}
 
 	/**
-	 * Register the settings, their sections and their fields.
+	 * Register the General section and its Waypoints switch.
 	 *
 	 * @return void
 	 */
-	public function register_settings(): void {
+	public function register_general_settings(): void {
 		add_settings_section(
 			'gpxrm_general',
 			__( 'General', 'gpx-route-map' ),
@@ -228,7 +238,14 @@ class Plugin {
 			'gpxrm_general',
 			array( 'label_for' => Waypoints::OPTION )
 		);
+	}
 
+	/**
+	 * Register the settings, their sections and their fields.
+	 *
+	 * @return void
+	 */
+	public function register_settings(): void {
 		add_settings_section(
 			'gpxrm_display',
 			__( 'Display', 'gpx-route-map' ),

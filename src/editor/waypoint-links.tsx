@@ -157,6 +157,20 @@ export function withLink(
 }
 
 /**
+ * The attributes that drop a block's links, which go by each waypoint's
+ * position in the file: none while it has none, or when the file stays.
+ *
+ * @param stored      The block's links.
+ * @param fileChanged Whether the block now shows another file.
+ */
+export function droppedLinks(
+	stored: StoredWaypointLinks | undefined,
+	fileChanged = true
+): { waypointPosts?: undefined } {
+	return stored && fileChanged ? { waypointPosts: undefined } : {};
+}
+
+/**
  * Text from markup, as the map shows a post's title: tags dropped and
  * entities decoded. Parsed in a document of its own, which runs no script
  * and loads nothing.
@@ -379,4 +393,23 @@ export function WaypointLinks( {
 			</p>
 		</PanelBody>
 	);
+}
+
+/**
+ * The Waypoints panel, while the block has a GPX file and the site has
+ * turned Waypoint posts on.
+ *
+ * @param props        Props.
+ * @param props.shown  Whether the block has a GPX file.
+ * @param props.stored The block's links, as stored.
+ */
+export function WaypointsPanel( {
+	shown,
+	stored,
+	...props
+}: Omit< Props, 'links' > & { shown: boolean; stored: unknown } ) {
+	if ( ! shown || ! waypointsEnabled() ) {
+		return null;
+	}
+	return <WaypointLinks { ...props } links={ readLinks( stored ) } />;
 }

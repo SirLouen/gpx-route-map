@@ -308,7 +308,9 @@ describe( 'addWaypointMarkers with Waypoint posts', () => {
 
 		addWaypointMarkers(
 			{ Popup: FakePopup, Marker: FakeMarker } as unknown as MapLibreGl,
-			{} as Parameters< typeof addWaypointMarkers >[ 1 ],
+			{
+				getContainer: () => document.createElement( 'div' ),
+			} as unknown as Parameters< typeof addWaypointMarkers >[ 1 ],
 			waypoints,
 			'#ffffff',
 			posts

@@ -44,11 +44,7 @@ import { siteStatFields } from './stat-fields';
 import { bakeStats, shouldStore, statsToStore } from './baked-stats';
 import type { FreshStats, GpxStats } from './baked-stats';
 import { MapPreview } from './editor/map-preview';
-import {
-	WaypointLinks,
-	readLinks,
-	waypointsEnabled,
-} from './editor/waypoint-links';
+import { WaypointsPanel, droppedLinks } from './editor/waypoint-links';
 import type { StoredWaypointLinks } from './editor/waypoint-links';
 import type { Waypoint } from './view/types';
 
@@ -331,9 +327,7 @@ export default function Edit( {
 
 	// Links go by each waypoint's position in the file, so another file
 	// drops them.
-	const dropLinks = attributes.waypointPosts
-		? { waypointPosts: undefined }
-		: {};
+	const dropLinks = droppedLinks( attributes.waypointPosts );
 
 	const commitUrl = () => {
 		if ( null === urlDraft ) {
@@ -358,7 +352,7 @@ export default function Edit( {
 		setAttributes( {
 			gpxId: media.id,
 			gpxUrl: media.url,
-			...( media.id === gpxId ? {} : dropLinks ),
+			...droppedLinks( attributes.waypointPosts, media.id !== gpxId ),
 		} );
 	};
 
@@ -772,16 +766,15 @@ export default function Edit( {
 						}
 					/>
 				</PanelBody>
-				{ hasGpx && waypointsEnabled() && (
-					<WaypointLinks
-						waypoints={ waypoints }
-						links={ readLinks( attributes.waypointPosts ) }
-						fromLibrary={ !! gpxId }
-						onChange={ ( links ) =>
-							setAttributes( { waypointPosts: links } )
-						}
-					/>
-				) }
+				<WaypointsPanel
+					shown={ hasGpx }
+					waypoints={ waypoints }
+					stored={ attributes.waypointPosts }
+					fromLibrary={ !! gpxId }
+					onChange={ ( links ) =>
+						setAttributes( { waypointPosts: links } )
+					}
+				/>
 			</InspectorControls>
 
 			{ hasGpx && (

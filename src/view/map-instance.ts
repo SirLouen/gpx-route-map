@@ -16,7 +16,6 @@ import {
 } from './map-core';
 import { keyboardMarker } from './marker-keyboard';
 import { readMapUi } from './map-ui';
-import { readWaypointPosts } from './waypoint-posts';
 import type { FeatureCollection } from 'geojson';
 import type { GeoJSONSource } from 'maplibre-gl';
 
@@ -403,13 +402,7 @@ export async function initInstance(
 		addPin( coords[ 0 ], '#22c55e', msg.start );
 		addPin( coords[ coords.length - 1 ], '#ef4444', msg.end );
 
-		addWaypointMarkers(
-			maplibregl,
-			map,
-			waypoints,
-			TRACK_CASING,
-			readWaypointPosts( mapEl )
-		);
+		addWaypointMarkers( maplibregl, map, waypoints, TRACK_CASING );
 
 		map.on( 'click', 'gpxrm-track-hit', ( e ) => {
 			if ( ! e.lngLat || ! profile ) {

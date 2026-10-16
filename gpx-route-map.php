@@ -26,6 +26,7 @@ define( 'GPXRM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
 require_once GPXRM_PLUGIN_DIR . 'includes/class-renderer.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-dashicons.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-gpx-link-reader.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoints.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-plugin.php';
 
