@@ -8,6 +8,7 @@ Built with [MapLibre GL JS](https://maplibre.org/) + raster tiles (OpenStreetMap
 
 -   **Block + shortcode**: `gpx-route-map/map` block and `[gpx_route_map]`.
 -   **Interactive map**: track line, start/end markers, waypoint markers with popups, navigation/scale/fullscreen/geolocate controls.
+-   **Waypoint posts** (experimental, opt-in, Settings > GPX Route Map > General): a `gpxrm_waypoint` post type that gives a waypoint its own description, popup photo and marker (photo thumbnail or a Dashicon in chosen colors). A block links waypoints to posts by their position in the file (`waypointPosts`), the shortcode with `waypoints="1:12"`, or a Media Library GPX file itself with `<gpxrm:waypoint>` in a waypoint's `<extensions>`; a link made in the block or the shortcode wins over the file's.
 -   **Stats bar**: distance, elevation gain/loss, max and min elevation (min is opt-in), waypoint count. Computed in the browser from the GPX file; a block also stores them, so its bar shows the figures without JavaScript, while a shortcode's fills in once the map loads.
 -   **Elevation profile**: scrub with mouse/touch; the position syncs onto the map, and clicking the track highlights the profile.
 -   **Lazy loading**: MapLibre loads only when a map scrolls into view; multiple maps per page are supported.
@@ -53,23 +54,46 @@ pnpm run env:stop
 ### Layout
 
 ```text
-gpx-route-map.php          Plugin bootstrap
-bin/build.mjs              Vite build orchestrator (JS, SCSS, RTL, asset.php)
+gpx-route-map.php                 Plugin bootstrap
+bin/build.mjs                     Vite build orchestrator (JS, SCSS, RTL, asset.php)
 includes/
-  class-plugin.php         Hooks: block, shortcode, GPX upload MIME
-  class-renderer.php       Shared HTML for block + shortcode, SSR stats, asset enqueue
+  class-plugin.php                Hooks: block, shortcode, GPX upload MIME
+  class-renderer.php              Shared HTML for block + shortcode, SSR stats, asset enqueue
+  class-waypoints.php             Waypoint post type: its switch, registration and shared constants
+  class-waypoint-edit-screen.php  Sets up the screens Waypoint posts are edited and listed on
+  class-waypoint-meta-box.php     A Waypoint post's settings box, and how it saves
+  class-waypoint-settings.php     A Waypoint post's saved settings, as its screens show them
+  class-waypoint-columns.php      The marker and ID columns of the list of waypoints
+  class-waypoint-values.php       Checks a Waypoint post's marker, icon and colours
+  class-waypoint-description.php  The markup a description keeps, and how maps show it
+  class-waypoint-links.php        Waypoint links from a block or a shortcode
+  class-gpx-file-links.php        A Media Library GPX file's own links, cached
+  class-gpx-link-reader.php       Reads those links from the file, as a stream
+  class-waypoint-map-markers.php  What one map is told about its linked waypoints
+  class-waypoint-posts.php        The published Waypoint posts a map links
+  class-waypoint-post.php         One Waypoint post, as a map shows it
+  class-waypoint-marker.php       A post's settings, as the map's marker and popup
+  class-dashicons.php             The icons a waypoint can use
 src/
-  block.json               Block metadata
-  index.tsx / edit.tsx     Editor
-  render.php               Server render → Renderer
-  view.ts                  Front-end entry (lazy init)
+  block.json                      Block metadata
+  index.tsx / edit.tsx            Editor
+  render.php                      Server render → Renderer
+  view.ts                         Front-end entry (lazy init)
   view/
-    types.ts               Shared domain types
-    map-core.ts            GPX parse, MapLibre markers
-    elevation.ts           Canvas elevation profile
-    stats.ts               Route stats
-    map-instance.ts        Assembles one map
-  style.scss / editor.scss Styles
+    types.ts                      Shared domain types
+    map-core.ts                   GPX parse, MapLibre markers
+    elevation.ts                  Canvas elevation profile
+    stats.ts                      Route stats
+    map-instance.ts               Assembles one map
+    waypoint-posts.ts             Reads the map's Waypoint post data
+    description.ts                A Waypoint post's description, rebuilt for its popup
+    safe-url.ts                   The link addresses a map may open
+  editor/
+    waypoint-links.tsx            The block's Waypoints panel
+    media-url.ts                  The block's Media Library file address
+  admin/
+    waypoint-edit.js / .scss      The Waypoint post screens' script and styles
+  style.scss / editor.scss        Styles
 ```
 
 ## License

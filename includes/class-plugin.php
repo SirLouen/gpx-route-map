@@ -28,9 +28,13 @@ class Plugin {
 		add_action( 'init', array( $this, 'register_shortcode' ) );
 		add_action( 'admin_menu', array( $this, 'register_settings_page' ) );
 		add_action( 'init', array( $this, 'register_options' ) );
+		// First, so the General section leads the settings screen.
+		add_action( 'admin_init', array( $this, 'register_general_settings' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'upload_mimes', array( $this, 'allow_gpx_upload' ) );
 		add_filter( 'wp_check_filetype_and_ext', array( $this, 'fix_gpx_filetype_check' ), 10, 4 );
+
+		( new Waypoints() )->register();
 	}
 
 	/**
@@ -191,7 +195,49 @@ class Plugin {
 			)
 		);
 
+		$this->register_waypoints_option();
 		$this->register_tile_options();
+	}
+
+	/**
+	 * Register the Waypoints switch, off until a site turns it on.
+	 *
+	 * @return void
+	 */
+	private function register_waypoints_option(): void {
+		register_setting(
+			self::OPTION_GROUP,
+			Waypoints::OPTION,
+			array(
+				'type'              => 'boolean',
+				'default'           => false,
+				'sanitize_callback' => array( $this, 'sanitize_waypoints' ),
+				'show_in_rest'      => true,
+			)
+		);
+	}
+
+	/**
+	 * Register the General section and its Waypoints switch.
+	 *
+	 * @return void
+	 */
+	public function register_general_settings(): void {
+		add_settings_section(
+			'gpxrm_general',
+			__( 'General', 'gpx-route-map' ),
+			'__return_false',
+			self::SETTINGS_PAGE
+		);
+
+		add_settings_field(
+			Waypoints::OPTION,
+			__( 'Waypoints', 'gpx-route-map' ),
+			array( $this, 'render_waypoints_field' ),
+			self::SETTINGS_PAGE,
+			'gpxrm_general',
+			array( 'label_for' => Waypoints::OPTION )
+		);
 	}
 
 	/**
@@ -394,6 +440,38 @@ class Plugin {
 			}() );
 		</script>
 		<?php
+	}
+
+	/**
+	 * Store the Waypoints switch as a boolean.
+	 *
+	 * An unticked box is not submitted at all, which options.php passes on as
+	 * null, so anything but a ticked box turns the feature off.
+	 *
+	 * @param mixed $value Submitted value.
+	 * @return bool
+	 */
+	public function sanitize_waypoints( $value ): bool {
+		return in_array( $value, array( true, 1, '1', 'on' ), true );
+	}
+
+	/**
+	 * Output the Waypoints switch.
+	 *
+	 * @return void
+	 */
+	public function render_waypoints_field(): void {
+		printf(
+			'<label for="%1$s"><input type="checkbox" name="%1$s" id="%1$s" value="1"%2$s> %3$s</label>',
+			esc_attr( Waypoints::OPTION ),
+			checked( Waypoints::enabled(), true, false ),
+			esc_html__( 'Enable Waypoint posts (experimental)', 'gpx-route-map' )
+		);
+		echo '<p class="description">' . esc_html__( 'Adds a Waypoints menu. Each waypoint post can have its own description, a photo or an icon, and maps show them on the waypoints of their GPX files that link to it.', 'gpx-route-map' ) . ' ' . esc_html__( 'A map\'s block links its GPX file\'s waypoints in its Waypoints panel, or a GPX file can name the post itself.', 'gpx-route-map' ) . '</p>';
+
+		if ( ! Gpx_Link_Reader::available() ) {
+			echo '<p class="description"><strong>' . esc_html__( 'This site cannot read the links a GPX file names itself, as its PHP lacks the XMLReader extension. Links made in a map\'s block or shortcode still work.', 'gpx-route-map' ) . '</strong></p>';
+		}
 	}
 
 	/**
@@ -856,12 +934,14 @@ class Plugin {
 	 *
 	 * The editor previews such a map, names its height and zoom in the help
 	 * text, starts a block that stops following the site from the site's list
-	 * of stats, and offers the tile providers a map can use, naming the site's.
+	 * of stats, offers the tile providers a map can use, naming the site's, and
+	 * offers its Waypoints panel only while the site has turned it on, saying
+	 * when the site cannot read the links in GPX files.
 	 * It cannot read these from /wp/v2/settings: core gates
 	 * that route on manage_options, so an Editor or Author would silently be
 	 * shown the shipped defaults instead of the real settings.
 	 *
-	 * @return array<string, int|string|array<int, string>|array<int, array{id: string, label: string, usable: bool}>>
+	 * @return array<string, int|string|bool|array<int, string>|array<int, array{id: string, label: string, usable: bool}>>
 	 */
 	public static function editor_defaults(): array {
 		// Built on every request, so in one pass rather than asking
@@ -882,6 +962,8 @@ class Plugin {
 			'statFields'    => Renderer::default_stat_fields(),
 			'tileProviders' => $providers,
 			'tileProvider'  => Renderer::site_provider_in_use(),
+			'waypoints'     => Waypoints::enabled(),
+			'waypointFiles' => Gpx_Link_Reader::available(),
 		);
 	}
 
@@ -953,6 +1035,7 @@ class Plugin {
 			'maxzoom'       => 0,
 			'provider'      => '',
 			'units'         => '',
+			'waypoints'     => '',
 		);
 	}
 
@@ -970,6 +1053,8 @@ class Plugin {
 	 *   maxzoom   How close the map opens for a short route (defaults to the site setting).
 	 *   provider  Map provider, e.g. "opentopomap" (defaults to the site setting).
 	 *   units     "metric" or "imperial" (defaults to the site setting).
+	 *   waypoints Waypoint posts for the file's waypoints, as "number:post ID"
+	 *             pairs counting from 1, e.g. "1:12,3:40". Needs Waypoints on.
 	 *
 	 * @param array<int|string, string>|string $atts Shortcode attributes.
 	 * @return string
@@ -992,6 +1077,7 @@ class Plugin {
 			'maxZoom'       => (int) $atts['maxzoom'],
 			'provider'      => strtolower( trim( (string) $atts['provider'] ) ),
 			'units'         => (string) $atts['units'],
+			'waypointPosts' => Waypoint_Links::from_shortcode( (string) $atts['waypoints'] ),
 		);
 
 		if ( is_numeric( $atts['id'] ) ) {

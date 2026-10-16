@@ -350,5 +350,22 @@ if ( ! function_exists( 'generate_block_asset_handle' ) ) {
 	}
 }
 
+require_once __DIR__ . '/waypoints-stubs.php';
+
 require_once dirname( __DIR__ ) . '/includes/class-renderer.php';
+require_once dirname( __DIR__ ) . '/includes/class-dashicons.php';
+require_once dirname( __DIR__ ) . '/includes/class-gpx-link-reader.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoints.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-links.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-values.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-description.php';
+require_once dirname( __DIR__ ) . '/includes/class-gpx-file-links.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-marker.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-post.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-posts.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-map-markers.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-settings.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-meta-box.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-columns.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-edit-screen.php';
 require_once dirname( __DIR__ ) . '/includes/class-plugin.php';

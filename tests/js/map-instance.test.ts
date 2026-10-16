@@ -47,6 +47,10 @@ function fakeMapLibre() {
 			maps.push( this );
 		}
 
+		getContainer() {
+			return this.container;
+		}
+
 		on( type: string, layerOrListener: unknown, listener?: unknown ) {
 			const fn = (
 				'function' === typeof layerOrListener

@@ -4,8 +4,20 @@
 
 import type * as MapLibreNs from 'maplibre-gl';
 
-import type { Bounds, Coord, MapLibreGl, ParsedGpx, Waypoint } from './types';
+import type {
+	Bounds,
+	Coord,
+	MapLibreGl,
+	ParsedGpx,
+	Waypoint,
+	WaypointPost,
+} from './types';
 import { keyboardMarker } from './marker-keyboard';
+import { readWaypointPosts } from './waypoint-posts';
+import { appendDescription } from './description';
+import { safeLinkUrl } from './safe-url';
+
+export { safeLinkUrl };
 
 type MapLibreMap = MapLibreNs.Map;
 type StyleSpecification = MapLibreNs.StyleSpecification;
@@ -18,6 +30,13 @@ export const DEFAULT_ATTRIBUTION =
 
 export const TRACK_COLOR = '#2e7d32';
 export const TRACK_CASING = '#1b3a1e';
+
+/**
+ * The namespace of the element a GPX file links a waypoint to a Waypoint post
+ * with, inside the waypoint's <extensions>. Mirrors Waypoints::GPX_NAMESPACE.
+ */
+export const WAYPOINT_NAMESPACE =
+	'https://wordpress.org/plugins/gpx-route-map/';
 
 /**
  * Whether a point can go on the map: MapLibre throws on a latitude past a
@@ -66,6 +85,43 @@ function readPoints(
 }
 
 /**
+ * The text of a waypoint's own child element, such as its <name>.
+ *
+ * Only a direct child: a <link> holds a <type> of its own, the MIME type of
+ * the page it points to, and <extensions> can hold anything.
+ *
+ * @param parent    The <wpt> element.
+ * @param localName The child's name, in whatever namespace the file uses.
+ */
+function childText( parent: Element, localName: string ): string {
+	for ( const child of Array.from( parent.children ) ) {
+		if ( child.localName === localName ) {
+			return child.textContent ?? '';
+		}
+	}
+	return '';
+}
+
+/**
+ * The Waypoint post a waypoint's <extensions> link it to, or 0.
+ *
+ * @param wpt The <wpt> element.
+ */
+function linkedPostId( wpt: Element ): number {
+	// The first that holds an ID, as the server reads it.
+	for ( const element of Array.from(
+		wpt.getElementsByTagNameNS( WAYPOINT_NAMESPACE, 'waypoint' )
+	) ) {
+		const text = element.textContent?.trim() ?? '';
+		const id = /^[0-9]{1,15}$/.test( text ) ? Number( text ) : 0;
+		if ( id > 0 ) {
+			return id;
+		}
+	}
+	return 0;
+}
+
+/**
  * Parse a GPX document string into track coordinates and waypoints.
  *
  * @param xmlText Raw GPX XML.
@@ -93,21 +149,28 @@ export function parseGPX( xmlText: string ): ParsedGpx {
 		: readPoints( doc.querySelectorAll( 'rtept' ) );
 
 	const waypoints: Waypoint[] = [];
-	doc.querySelectorAll( 'wpt' ).forEach( ( w ) => {
+	// The index counts every <wpt>, those left off the map too, so it is the
+	// position the server finds in the file.
+	doc.querySelectorAll( 'wpt' ).forEach( ( w, index ) => {
 		const lat = parseFloat( w.getAttribute( 'lat' ) ?? '' );
 		const lon = parseFloat( w.getAttribute( 'lon' ) ?? '' );
 		if ( ! onMap( lat, lon ) ) {
 			return;
 		}
+		const link = Array.from( w.children ).find(
+			( child ) => 'link' === child.localName
+		);
 		waypoints.push( {
 			lon,
 			lat,
 			// Trimmed: a whitespace-only name would otherwise count as one, and as
 			// the marker's accessible name it would announce as nothing at all.
-			name: w.querySelector( 'name' )?.textContent?.trim() || 'Waypoint',
-			desc: w.querySelector( 'desc' )?.textContent || '',
-			type: w.querySelector( 'type' )?.textContent || '',
-			link: w.querySelector( 'link' )?.getAttribute( 'href' ) || '',
+			name: childText( w, 'name' ).trim() || 'Waypoint',
+			desc: childText( w, 'desc' ),
+			type: childText( w, 'type' ),
+			link: link?.getAttribute( 'href' ) || '',
+			index,
+			postId: linkedPostId( w ),
 		} );
 	} );
 
@@ -292,27 +355,6 @@ function iconFor( type: string ): WaypointIcon {
 }
 
 /**
- * Validate a waypoint link URL, allowing only safe schemes.
- *
- * @param url Raw URL from the GPX file.
- * @return The original URL if safe, otherwise "".
- */
-export function safeLinkUrl( url: string ): string {
-	if ( ! url ) {
-		return '';
-	}
-	let parsed: URL;
-	try {
-		parsed = new URL( url, window.location.href );
-	} catch {
-		return '';
-	}
-	return [ 'http:', 'https:', 'mailto:' ].includes( parsed.protocol )
-		? url
-		: '';
-}
-
-/**
  * Append a <div> with text content to a popup container.
  *
  * @param parent    Container.
@@ -331,36 +373,169 @@ function appendPopupRow(
 }
 
 /**
+ * The element a waypoint's marker is drawn with.
+ *
+ * @param wpt  The waypoint.
+ * @param post What its Waypoint post changes about it, if anything.
+ * @param bg   Colour of the marker's ring.
+ */
+function markerElement(
+	wpt: Waypoint,
+	post: WaypointPost | undefined,
+	bg: string
+): HTMLElement {
+	const el = document.createElement( 'div' );
+	el.className = 'gpxrm-waypoint';
+
+	if ( 'image' === post?.marker && post.thumb ) {
+		el.classList.add( 'gpxrm-waypoint-image' );
+		const frame = document.createElement( 'div' );
+		frame.className = 'gpxrm-marker-image';
+		const img = document.createElement( 'img' );
+		img.src = post.thumb;
+		// The marker is named for screen readers already.
+		img.alt = '';
+		img.decoding = 'async';
+		img.draggable = false;
+		frame.appendChild( img );
+		el.appendChild( frame );
+		return el;
+	}
+
+	const dot = document.createElement( 'div' );
+	dot.className = 'gpxrm-marker';
+	dot.style.borderColor = bg || '#ffffff';
+
+	if ( 'icon' === post?.marker && post.icon ) {
+		dot.classList.add( 'gpxrm-marker-icon' );
+		dot.style.background = post.background || TRACK_COLOR;
+		dot.style.color = post.color || '#ffffff';
+		const glyph = document.createElement( 'span' );
+		glyph.className = `dashicons dashicons-${ post.icon }`;
+		glyph.setAttribute( 'aria-hidden', 'true' );
+		dot.appendChild( glyph );
+	} else {
+		const cfg = iconFor( wpt.type );
+		dot.style.background = cfg.color;
+		dot.textContent = cfg.icon;
+	}
+
+	el.appendChild( dot );
+	return el;
+}
+
+/**
+ * Keep an open popup within the map. One taller than the map, such as a
+ * photo's on a short map, would run past its edge out of reach, so it
+ * scrolls instead. Measured afresh each time, as the map may have changed
+ * size, or the waypoint moved, since it was last fitted.
+ *
+ * @param map   Map instance.
+ * @param popup The popup, open.
+ */
+function fitPopup( map: MapLibreMap, popup: MapLibreNs.Popup ): void {
+	const box = popup
+		.getElement()
+		?.querySelector< HTMLElement >( '.maplibregl-popup-content' );
+	if ( ! box ) {
+		return;
+	}
+	const fitted = '' !== box.style.maxHeight;
+	box.style.maxHeight = '';
+	box.style.overflowY = '';
+	// With no anchor set, MapLibre opens it above its waypoint, or below when
+	// it does not fit above. Kept to the larger side's room, less its offset
+	// and tip, it fits on whichever side MapLibre then picks for it.
+	const height = map.getContainer().clientHeight;
+	const { y } = map.project( popup.getLngLat() );
+	const room = Math.round( Math.max( y, height - y ) ) - 32;
+	const tall = room > 0 && box.offsetHeight > room;
+	if ( tall ) {
+		// Padding included, as MapLibre measures the whole popup.
+		box.style.boxSizing = 'border-box';
+		box.style.maxHeight = room + 'px';
+		box.style.overflowY = 'auto';
+	}
+	if ( tall || fitted ) {
+		// Placed again for its new size.
+		popup.setLngLat( popup.getLngLat() );
+	}
+}
+
+/**
+ * Keep a popup within the map while it is open: when it opens, and when the
+ * map changes size under it, such as on leaving fullscreen.
+ *
+ * @param map   Map instance.
+ * @param popup The popup.
+ */
+function fitWhileOpen( map: MapLibreMap, popup: MapLibreNs.Popup ): void {
+	const fit = () => fitPopup( map, popup );
+	popup.on( 'open', () => {
+		fit();
+		map.on( 'resize', fit );
+	} );
+	popup.on( 'close', () => {
+		map.off( 'resize', fit );
+	} );
+}
+
+/**
  * Add DOM markers with popups for each waypoint.
  *
  * @param maplibregl MapLibre GL module.
  * @param map        Map instance.
  * @param waypoints  Parsed waypoints.
  * @param bg         Map background colour used for the marker ring.
+ * @param posts      What Waypoint posts change about waypoints, by their
+ *                   position in the file: by default, what the map's
+ *                   element says about them.
  */
 export function addWaypointMarkers(
 	maplibregl: MapLibreGl,
 	map: MapLibreMap,
 	waypoints: Waypoint[],
-	bg: string
+	bg: string,
+	posts: Record< number, WaypointPost > = readWaypointPosts(
+		map.getContainer()
+	)
 ): void {
 	waypoints.forEach( ( wpt ) => {
-		const cfg = iconFor( wpt.type );
-
-		const el = document.createElement( 'div' );
-		el.className = 'gpxrm-waypoint';
-		const dot = document.createElement( 'div' );
-		dot.className = 'gpxrm-marker';
-		dot.style.background = cfg.color;
-		dot.style.borderColor = bg || '#ffffff';
-		dot.textContent = cfg.icon;
-		el.appendChild( dot );
+		const post = posts[ wpt.index ];
+		const name = post?.name || wpt.name;
+		const el = markerElement( wpt, post, bg );
 
 		// Popup content is built with DOM APIs (never HTML strings) so
 		// attacker-controlled GPX fields can only ever become text nodes.
 		const content = document.createElement( 'div' );
-		appendPopupRow( content, 'gpxrm-popup-name', wpt.name );
-		if ( wpt.desc ) {
+		if ( post?.photo ) {
+			const photo = document.createElement( 'img' );
+			photo.className = 'gpxrm-popup-photo';
+			photo.src = post.photo.src;
+			if ( post.photo.srcset ) {
+				photo.srcset = post.photo.srcset;
+				// The popup's content is at most 240px wide.
+				photo.sizes = '240px';
+			}
+			// Its size is known before it loads, so the popup does not grow
+			// and shift once it opens.
+			if ( post.photo.width > 0 && post.photo.height > 0 ) {
+				photo.width = post.photo.width;
+				photo.height = post.photo.height;
+			}
+			photo.alt = post.photo.alt;
+			photo.decoding = 'async';
+			content.appendChild( photo );
+		}
+		appendPopupRow( content, 'gpxrm-popup-name', name );
+		if ( post?.desc ) {
+			// Written in an editor: links, bold and italic text and lists.
+			appendDescription(
+				content,
+				'gpxrm-popup-desc gpxrm-popup-desc-post',
+				post.desc
+			);
+		} else if ( wpt.desc ) {
 			appendPopupRow( content, 'gpxrm-popup-desc', wpt.desc );
 		}
 		if ( wpt.type ) {
@@ -382,11 +557,12 @@ export function addWaypointMarkers(
 			offset: 16,
 			closeButton: true,
 		} ).setDOMContent( content );
+		fitWhileOpen( map, popup );
 
 		const marker = new maplibregl.Marker( { element: el } )
 			.setLngLat( [ wpt.lon, wpt.lat ] )
 			.setPopup( popup );
-		keyboardMarker( marker, popup, wpt.name );
+		keyboardMarker( marker, popup, name );
 		marker.addTo( map );
 	} );
 }

@@ -1,0 +1,526 @@
+/**
+ * The block's Waypoints panel: link each waypoint of the GPX file to a
+ * Waypoint post.
+ */
+
+import { __, sprintf } from '@wordpress/i18n';
+import { useCallback, useEffect, useState } from '@wordpress/element';
+import { useDispatch, useSelect } from '@wordpress/data';
+import { ExternalLink, PanelBody, SelectControl } from '@wordpress/components';
+
+import type { Waypoint } from '../view/types';
+
+/** The post type, as registered by Waypoints::POST_TYPE. */
+export const WAYPOINT_POST_TYPE = 'gpxrm_waypoint';
+
+/**
+ * Waypoints a block links to posts: post IDs by each waypoint's position
+ * among the file's <wpt> elements, counting from 0.
+ */
+export type WaypointLinkMap = Record< string, number >;
+
+/**
+ * The links as a block stores them. Saving a post for a user without the
+ * unfiltered_html capability re-encodes block attributes in PHP, which
+ * writes an object keyed 0, 1, 2… as a list.
+ */
+export type StoredWaypointLinks = WaypointLinkMap | number[];
+
+/**
+ * The posts the panel offers. In the view context, as the edit context the
+ * editor asks for by default lists only the posts the user may edit: an
+ * Author would see none of the site's own waypoints. Drafts and pending
+ * posts the user may read come too, so a map can be linked to a waypoint
+ * before it is published.
+ */
+const QUERY = {
+	context: 'view',
+	per_page: -1,
+	status: 'publish,future,draft,pending',
+	orderby: 'title',
+	order: 'asc',
+	_fields: 'id,title,status',
+};
+
+/** The fields of a Waypoint post the panel reads. */
+interface WaypointRecord {
+	id: number;
+	status: string;
+	title?: { rendered?: string };
+}
+
+/**
+ * What the server says about Waypoint posts on this site.
+ */
+function siteDefaults(): { waypoints?: unknown; waypointFiles?: unknown } {
+	return (
+		(
+			window as unknown as {
+				gpxrmDefaults?: {
+					waypoints?: unknown;
+					waypointFiles?: unknown;
+				};
+			}
+		 ).gpxrmDefaults ?? {}
+	);
+}
+
+/**
+ * Whether the site has turned Waypoint posts on, as the server says.
+ */
+export function waypointsEnabled(): boolean {
+	return true === siteDefaults().waypoints;
+}
+
+/**
+ * Whether the server can read the links a GPX file holds, which takes PHP's
+ * XMLReader extension. Taken as yes unless the server says no.
+ */
+function siteReadsFiles(): boolean {
+	return false !== siteDefaults().waypointFiles;
+}
+
+/**
+ * Why maps leave out the links a GPX file holds.
+ *
+ * @param fromLibrary Whether the file is in the Media Library.
+ */
+function unreadLinksNote( fromLibrary: boolean ): string {
+	return fromLibrary
+		? __(
+				'This GPX file links waypoints to Waypoint posts itself, but this site cannot read those links, as its PHP lacks the XMLReader extension. Link them here instead.',
+				'gpx-route-map'
+			)
+		: __(
+				'This GPX file links waypoints to Waypoint posts itself, but maps only read those links from files in the Media Library. Link them here instead, or choose the file from the Media Library.',
+				'gpx-route-map'
+			);
+}
+
+/**
+ * A post ID, or 0: a whole number above zero, as the server takes it.
+ *
+ * @param value Stored value.
+ */
+function postId( value: unknown ): number {
+	if ( 'string' === typeof value && /^[0-9]{1,15}$/.test( value.trim() ) ) {
+		value = Number( value.trim() );
+	}
+	return 'number' === typeof value && Number.isInteger( value ) && value > 0
+		? value
+		: 0;
+}
+
+/**
+ * A waypoint's position from a key of the links, or -1 for a key that is not
+ * one.
+ *
+ * @param key The key.
+ */
+function position( key: string ): number {
+	const index = Number( key );
+	return Number.isInteger( index ) && index >= 0 ? index : -1;
+}
+
+/**
+ * A block's links, whichever shape they were stored in, keeping only well
+ * formed ones.
+ *
+ * @param stored The block's attribute.
+ * @return The links, or undefined when there are none.
+ */
+export function readLinks( stored: unknown ): WaypointLinkMap | undefined {
+	if ( ! stored || 'object' !== typeof stored ) {
+		return undefined;
+	}
+	const links: WaypointLinkMap = {};
+	for ( const [ key, value ] of Object.entries( stored ) ) {
+		const index = position( key );
+		const id = postId( value );
+		if ( index >= 0 && id ) {
+			links[ index ] = id;
+		}
+	}
+	return Object.keys( links ).length ? links : undefined;
+}
+
+/**
+ * A new link map with one waypoint's link changed.
+ *
+ * @param links Current links.
+ * @param index The waypoint's position in the file.
+ * @param post  The post to link, or 0 to drop the link.
+ * @return The new links, or undefined when none are left, so the attribute
+ *         goes back to unset rather than an empty object.
+ */
+export function withLink(
+	links: WaypointLinkMap | undefined,
+	index: number,
+	post: number
+): WaypointLinkMap | undefined {
+	const next: WaypointLinkMap = { ...links };
+	if ( post > 0 ) {
+		next[ index ] = post;
+	} else {
+		delete next[ index ];
+	}
+	return Object.keys( next ).length ? next : undefined;
+}
+
+/**
+ * The attributes that drop a block's links, which go by each waypoint's
+ * position in the file: none while it has none, or when the file stays.
+ *
+ * @param stored      The block's links.
+ * @param fileChanged Whether the block now shows another file.
+ */
+export function droppedLinks(
+	stored: StoredWaypointLinks | undefined,
+	fileChanged = true
+): { waypointPosts?: undefined } {
+	return stored && fileChanged ? { waypointPosts: undefined } : {};
+}
+
+/**
+ * Text from markup, as the map shows a post's title: tags dropped and
+ * entities decoded. Parsed in a document of its own, which runs no script
+ * and loads nothing.
+ *
+ * @param html Markup, such as a rendered title.
+ */
+function textOf( html: string ): string {
+	return (
+		new window.DOMParser().parseFromString( html, 'text/html' ).body
+			.textContent ?? ''
+	).trim();
+}
+
+/**
+ * A post's title as the list shows it.
+ *
+ * @param post The post.
+ */
+function titleOf( post: WaypointRecord ): string {
+	const title = textOf( post.title?.rendered ?? '' );
+	const named =
+		title ||
+		sprintf(
+			/* translators: %d: a Waypoint post's ID. */
+			__( '#%d (no title)', 'gpx-route-map' ),
+			post.id
+		);
+	if ( 'publish' === post.status ) {
+		return named;
+	}
+	return sprintf(
+		/* translators: %s: a Waypoint post's title. */
+		__( '%s (not published)', 'gpx-route-map' ),
+		named
+	);
+}
+
+/**
+ * A post the list cannot show: deleted, private, or a draft of someone else.
+ *
+ * @param id The post's ID.
+ */
+function notFound( id: number ): string {
+	return sprintf(
+		/* translators: %d: a Waypoint post's ID. */
+		__( '#%d (not found)', 'gpx-route-map' ),
+		id
+	);
+}
+
+/**
+ * The Waypoint posts the panel offers, while they load and once they have.
+ */
+interface WaypointChoices {
+	/** The posts by ID, or undefined while they load. */
+	byId: Map< number, WaypointRecord > | undefined;
+	/** The posts, as choices of a select. */
+	choices: { label: string; value: string }[];
+	/** Lists the posts again, with any added since. */
+	refresh: () => void;
+}
+
+/**
+ * The Waypoint posts the panel offers.
+ */
+function useWaypointChoices(): WaypointChoices {
+	const posts = useSelect( ( select ) => {
+		const core = select( 'core' ) as {
+			getEntityRecords: (
+				kind: string,
+				name: string,
+				query: Record< string, unknown >
+			) => WaypointRecord[] | null;
+		};
+		return core.getEntityRecords( 'postType', WAYPOINT_POST_TYPE, QUERY );
+	}, [] );
+
+	const { invalidateResolution } = useDispatch( 'core' ) as {
+		invalidateResolution: ( selector: string, args: unknown[] ) => void;
+	};
+	const refresh = useCallback(
+		() =>
+			invalidateResolution( 'getEntityRecords', [
+				'postType',
+				WAYPOINT_POST_TYPE,
+				QUERY,
+			] ),
+		[ invalidateResolution ]
+	);
+
+	const list = posts ?? [];
+	return {
+		byId: posts
+			? new Map( list.map( ( post ) => [ post.id, post ] ) )
+			: undefined,
+		choices: list.map( ( post ) => ( {
+			label: titleOf( post ),
+			value: String( post.id ),
+		} ) ),
+		refresh,
+	};
+}
+
+/**
+ * Call refresh each time the user comes back to this tab, while watching.
+ *
+ * @param watching Whether to.
+ * @param refresh  What to call.
+ */
+function useRefreshOnReturn( watching: boolean, refresh: () => void ): void {
+	useEffect( () => {
+		if ( ! watching ) {
+			return undefined;
+		}
+		const onVisible = () => {
+			if ( 'visible' === document.visibilityState ) {
+				refresh();
+			}
+		};
+		document.addEventListener( 'visibilitychange', onVisible );
+		return () =>
+			document.removeEventListener( 'visibilitychange', onVisible );
+	}, [ watching, refresh ] );
+}
+
+/**
+ * What a waypoint shows while the block links it to nothing: the post the
+ * file links it to, when the map reads the file's links.
+ *
+ * @param waypoint  The waypoint.
+ * @param readsFile Whether the map reads the file's links.
+ * @param byId      The posts by ID, or undefined while they load.
+ */
+function fileLinkLabel(
+	waypoint: Waypoint,
+	readsFile: boolean,
+	byId: WaypointChoices[ 'byId' ]
+): string {
+	if ( ! readsFile || ! waypoint.postId ) {
+		return __( 'None', 'gpx-route-map' );
+	}
+	const post = byId?.get( waypoint.postId );
+	return sprintf(
+		/* translators: %s: the Waypoint post a GPX file links a waypoint to. */
+		__( 'As in the GPX file: %s', 'gpx-route-map' ),
+		post ? titleOf( post ) : notFound( waypoint.postId )
+	);
+}
+
+/**
+ * Whether the file links some waypoints itself while the map leaves those
+ * links out: the file is not in the Media Library, or the site cannot read
+ * it.
+ *
+ * @param waypoints The waypoints of the file.
+ * @param readsFile Whether the map reads the file's links.
+ */
+function ignoresFileLinks(
+	waypoints: Waypoint[] | undefined,
+	readsFile: boolean
+): boolean {
+	return (
+		! readsFile &&
+		( waypoints ?? [] ).some( ( waypoint ) => waypoint.postId )
+	);
+}
+
+/**
+ * The select that links one waypoint to a post.
+ *
+ * @param props           Props.
+ * @param props.waypoint  The waypoint.
+ * @param props.linked    The post the block links it to, or 0.
+ * @param props.posts     The posts the panel offers.
+ * @param props.readsFile Whether the map reads the file's links.
+ * @param props.onChange  Called with the post to link, or 0 for none.
+ */
+function WaypointSelect( {
+	waypoint,
+	linked,
+	posts,
+	readsFile,
+	onChange,
+}: {
+	waypoint: Waypoint;
+	linked: number;
+	posts: WaypointChoices;
+	readsFile: boolean;
+	onChange: ( post: number ) => void;
+} ) {
+	// Linked before it was deleted or made private.
+	const missing =
+		linked > 0 && posts.byId && ! posts.byId.has( linked )
+			? [ { label: notFound( linked ), value: String( linked ) } ]
+			: [];
+	return (
+		<SelectControl
+			__nextHasNoMarginBottom
+			__next40pxDefaultSize
+			label={ sprintf(
+				/* translators: 1: the waypoint's number in the GPX file, 2: its name. */
+				__( '%1$d. %2$s', 'gpx-route-map' ),
+				waypoint.index + 1,
+				waypoint.name
+			) }
+			value={ linked ? String( linked ) : '' }
+			options={ [
+				{
+					label: fileLinkLabel( waypoint, readsFile, posts.byId ),
+					value: '',
+				},
+				...posts.choices,
+				...missing,
+			] }
+			onChange={ ( value ) => onChange( Number( value ) || 0 ) }
+		/>
+	);
+}
+
+interface Props {
+	/** The waypoints of the block's GPX file, once it has been read. */
+	waypoints: Waypoint[] | undefined;
+	/** The block's links. */
+	links: WaypointLinkMap | undefined;
+	/**
+	 * Whether the file is in the Media Library, the only place the server
+	 * reads the links a GPX file holds.
+	 */
+	fromLibrary: boolean;
+	/** Called with the new links. */
+	onChange: ( links: WaypointLinkMap | undefined ) => void;
+}
+
+/**
+ * The Waypoints panel.
+ *
+ * @param props             Props.
+ * @param props.waypoints   The waypoints of the block's GPX file.
+ * @param props.links       The block's links.
+ * @param props.fromLibrary Whether the file is in the Media Library.
+ * @param props.onChange    Called with the new links.
+ */
+export function WaypointLinks( {
+	waypoints,
+	links,
+	fromLibrary,
+	onChange,
+}: Props ) {
+	const posts = useWaypointChoices();
+	// "Add a waypoint" opens a tab of its own; opening the panel, or coming
+	// back to the tab while it is open, lists what was added there.
+	const [ open, setOpen ] = useState( false );
+	useRefreshOnReturn( open, posts.refresh );
+
+	// Links in a file elsewhere, or in any file on a site that cannot read
+	// them, are never read, so those waypoints are unlinked as far as the map
+	// goes.
+	const readsFile = fromLibrary && siteReadsFiles();
+
+	return (
+		<PanelBody
+			title={ __( 'Waypoints', 'gpx-route-map' ) }
+			initialOpen={ false }
+			onToggle={ ( opened: boolean ) => {
+				setOpen( opened );
+				if ( opened ) {
+					posts.refresh();
+				}
+			} }
+		>
+			<p>
+				{ __(
+					'Link a waypoint of the GPX file to a Waypoint post to show its description, photo or icon. Only published waypoints show on the map.',
+					'gpx-route-map'
+				) }
+			</p>
+			{ ignoresFileLinks( waypoints, readsFile ) && (
+				<p>{ unreadLinksNote( fromLibrary ) }</p>
+			) }
+			{ undefined !== waypoints && ! waypoints.length && (
+				<p>
+					{ __( 'This GPX file has no waypoints.', 'gpx-route-map' ) }
+				</p>
+			) }
+			{ ( waypoints ?? [] ).map( ( waypoint ) => (
+				<WaypointSelect
+					key={ waypoint.index }
+					waypoint={ waypoint }
+					linked={ links?.[ waypoint.index ] ?? 0 }
+					posts={ posts }
+					readsFile={ readsFile }
+					onChange={ ( post ) =>
+						onChange( withLink( links, waypoint.index, post ) )
+					}
+				/>
+			) ) }
+			<p>
+				<ExternalLink href="post-new.php?post_type=gpxrm_waypoint">
+					{ __( 'Add a waypoint', 'gpx-route-map' ) }
+				</ExternalLink>
+			</p>
+		</PanelBody>
+	);
+}
+
+/**
+ * The Waypoints panel, while the block has a GPX file and the site has
+ * turned Waypoint posts on.
+ *
+ * @param props                          Props.
+ * @param props.shown                    Whether the block has a GPX file.
+ * @param props.waypoints                The waypoints of the block's GPX file.
+ * @param props.attributes               The block's attributes.
+ * @param props.attributes.gpxId         Its Media Library file, if any.
+ * @param props.attributes.waypointPosts Its links, as stored.
+ * @param props.setAttributes            Sets the block's attributes.
+ */
+export function WaypointsPanel( {
+	shown,
+	waypoints,
+	attributes,
+	setAttributes,
+}: {
+	shown: boolean;
+	waypoints: Waypoint[] | undefined;
+	attributes: { gpxId?: number; waypointPosts?: StoredWaypointLinks };
+	setAttributes: ( next: {
+		waypointPosts: WaypointLinkMap | undefined;
+	} ) => void;
+} ) {
+	if ( ! shown || ! waypointsEnabled() ) {
+		return null;
+	}
+	return (
+		<WaypointLinks
+			waypoints={ waypoints }
+			links={ readLinks( attributes.waypointPosts ) }
+			fromLibrary={ !! attributes.gpxId }
+			onChange={ ( links ) => setAttributes( { waypointPosts: links } ) }
+		/>
+	);
+}

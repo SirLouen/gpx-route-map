@@ -5,6 +5,7 @@
  *   index.js + index.asset.php            editor script (IIFE, wp.* externals)
  *   view.js + chunks + view.asset.php     front-end script module (ESM)
  *   style-index.css / index.css (+ -rtl)  compiled SCSS
+ *   waypoint-edit.js / .css (+ -rtl)      Waypoint post screens
  *   block.json / render.php               copied from src/
  *
  * Usage: node bin/build.mjs [--watch]
@@ -121,6 +122,7 @@ async function buildEditor() {
 				'edit.tsx',
 				'editor/map-preview.tsx',
 				'editor/use-rendered-markup.ts',
+				'editor/waypoint-links.tsx',
 			] ),
 			code
 		)
@@ -175,6 +177,7 @@ function buildStyles() {
 	const targets = [
 		{ src: 'style.scss', out: 'style-index.css' },
 		{ src: 'editor.scss', out: 'index.css' },
+		{ src: 'admin/waypoint-edit.scss', out: 'waypoint-edit.css' },
 	];
 	for ( const { src, out } of targets ) {
 		const css = sass.compile( path.join( SRC, src ), {
@@ -194,6 +197,17 @@ function buildStyles() {
 	}
 }
 
+/**
+ * The script of the screens Waypoint posts are edited on, which needs no
+ * bundling.
+ */
+function buildAdmin() {
+	fs.copyFileSync(
+		path.join( SRC, 'admin', 'waypoint-edit.js' ),
+		path.join( OUT, 'waypoint-edit.js' )
+	);
+}
+
 function copyStatic() {
 	for ( const file of [ 'block.json', 'render.php' ] ) {
 		fs.copyFileSync( path.join( SRC, file ), path.join( OUT, file ) );
@@ -205,6 +219,7 @@ async function buildAll() {
 	await buildEditor();
 	await buildView();
 	buildStyles();
+	buildAdmin();
 	copyStatic();
 	// eslint-disable-next-line no-console
 	console.log( `built in ${ Date.now() - started }ms` );

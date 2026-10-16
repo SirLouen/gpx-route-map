@@ -20,6 +20,40 @@ export interface Waypoint {
 	desc: string;
 	type: string;
 	link: string;
+	/**
+	 * Its position among the file's <wpt> elements, counting from 0 and
+	 * including any left off the map: how a block links it to a post.
+	 */
+	index: number;
+	/** The Waypoint post the file itself links it to, or 0. */
+	postId: number;
+}
+
+/** A waypoint post's photo, at the size a popup shows it. */
+export interface WaypointPhoto {
+	src: string;
+	width: number;
+	height: number;
+	alt: string;
+	srcset?: string;
+}
+
+/**
+ * What a map shows for a waypoint linked to a Waypoint post: only what the
+ * post changes about the waypoint in the GPX file.
+ */
+export interface WaypointPost {
+	name?: string;
+	desc?: string;
+	photo?: WaypointPhoto;
+	/** Its marker: a photo thumbnail or an icon, else the usual one. */
+	marker?: 'image' | 'icon';
+	/** The thumbnail of an image marker. */
+	thumb?: string;
+	/** The Dashicon of an icon marker, without the "dashicons-" prefix. */
+	icon?: string;
+	color?: string;
+	background?: string;
 }
 
 export interface ParsedGpx {

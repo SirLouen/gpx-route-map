@@ -768,8 +768,18 @@ class Renderer {
 		$tile_url      = self::tile_url_for( $a['provider'] );
 		$tile_max_zoom = self::tile_max_zoom_for( $tile_url );
 
+		// What the map shows for waypoints linked to Waypoint posts. Only maps
+		// with some carry the attribute, so every other map is as it was.
+		$markers   = Waypoint_Map_Markers::for_map( $a['gpx_id'], $a['gpx_url'], $a['waypoint_posts'] );
+		$waypoints = array() === $markers->all()
+			? ''
+			: sprintf( ' data-gpxrm-waypoints="%s"', esc_attr( $markers->json() ) );
+		if ( $markers->uses_icons() ) {
+			wp_enqueue_style( 'dashicons' );
+		}
+
 		$map = sprintf(
-			'<div class="gpxrm-map" style="%1$s" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d"%6$s data-gpxrm-i18n="%7$s" data-gpxrm-map-ui="%8$s" data-gpxrm-units="%9$s"%10$s role="application" aria-label="%11$s">%12$s</div>',
+			'<div class="gpxrm-map" style="%1$s" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d"%6$s data-gpxrm-i18n="%7$s" data-gpxrm-map-ui="%8$s" data-gpxrm-units="%9$s"%10$s%13$s role="application" aria-label="%11$s">%12$s</div>',
 			esc_attr( self::height_style( $a ) ),
 			esc_url( $a['gpx_url'] ),
 			esc_attr( $tile_url ),
@@ -781,7 +791,8 @@ class Renderer {
 			esc_attr( self::attr_json( $units ) ),
 			$download,
 			esc_attr__( 'Interactive route map', 'gpx-route-map' ),
-			self::placeholder_html()
+			self::placeholder_html(),
+			$waypoints
 		);
 
 		$stats_html     = $a['show_stats'] ? self::stats_html( $stats, $units, $a['stat_fields'] ) : '';
@@ -800,16 +811,18 @@ class Renderer {
 	 * Normalize block attributes and shortcode atts into one shape.
 	 *
 	 * @param array<string, mixed> $atts Raw attributes.
-	 * @return array{gpx_url: string, height: int, height_tablet: int, height_mobile: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, provider: string, stats: array{distance: float, gain: float, loss: float, max: float, min: float|null, waypoints: int}|null, units: string, stat_fields: array<int, string>}
+	 * @return array{gpx_url: string, gpx_id: int, height: int, height_tablet: int, height_mobile: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, provider: string, stats: array{distance: float, gain: float, loss: float, max: float, min: float|null, waypoints: int}|null, units: string, stat_fields: array<int, string>, waypoint_posts: array<int, int>}
 	 */
 	private static function normalize( array $atts ): array {
 		$gpx_url = '';
+		$gpx_id  = 0;
 
 		$attachment_id = ( isset( $atts['gpxId'] ) && is_numeric( $atts['gpxId'] ) ) ? (int) $atts['gpxId'] : 0;
 		if ( $attachment_id > 0 ) {
 			$url = wp_get_attachment_url( $attachment_id );
 			if ( is_string( $url ) ) {
 				$gpx_url = $url;
+				$gpx_id  = $attachment_id;
 			}
 		}
 
@@ -842,6 +855,7 @@ class Renderer {
 
 		return array(
 			'gpx_url'        => $gpx_url,
+			'gpx_id'         => $gpx_id,
 			'height'         => self::clamp( $height, self::MIN_HEIGHT, self::MAX_HEIGHT ),
 			'height_tablet'  => $tablet,
 			'height_mobile'  => $mobile,
@@ -853,6 +867,7 @@ class Renderer {
 			'provider'       => self::map_provider( $atts['provider'] ?? '' ),
 			'stats'          => self::normalize_stats( $atts['stats'] ?? null ),
 			'units'          => self::normalize_units( $atts['units'] ?? '' ),
+			'waypoint_posts' => Waypoint_Links::from_attribute( $atts['waypointPosts'] ?? null ),
 		);
 	}
 
