@@ -427,10 +427,11 @@ function markerElement(
 /**
  * Keep an open popup within the map. One taller than the map, such as a
  * photo's on a short map, would run past its edge out of reach, so it
- * scrolls instead.
+ * scrolls instead. Measured afresh each time, as the map may have changed
+ * size, or the waypoint moved, since it was last fitted.
  *
  * @param map   Map instance.
- * @param popup The popup, just opened.
+ * @param popup The popup, open.
  */
 function fitPopup( map: MapLibreMap, popup: MapLibreNs.Popup ): void {
 	const box = popup
@@ -439,20 +440,44 @@ function fitPopup( map: MapLibreMap, popup: MapLibreNs.Popup ): void {
 	if ( ! box ) {
 		return;
 	}
+	const fitted = '' !== box.style.maxHeight;
+	box.style.maxHeight = '';
+	box.style.overflowY = '';
 	// With no anchor set, MapLibre opens it above its waypoint, or below when
 	// it does not fit above. Kept to the larger side's room, less its offset
 	// and tip, it fits on whichever side MapLibre then picks for it.
 	const height = map.getContainer().clientHeight;
 	const { y } = map.project( popup.getLngLat() );
 	const room = Math.round( Math.max( y, height - y ) ) - 32;
-	if ( room > 0 && box.offsetHeight > room ) {
+	const tall = room > 0 && box.offsetHeight > room;
+	if ( tall ) {
 		// Padding included, as MapLibre measures the whole popup.
 		box.style.boxSizing = 'border-box';
 		box.style.maxHeight = room + 'px';
 		box.style.overflowY = 'auto';
+	}
+	if ( tall || fitted ) {
 		// Placed again for its new size.
 		popup.setLngLat( popup.getLngLat() );
 	}
+}
+
+/**
+ * Keep a popup within the map while it is open: when it opens, and when the
+ * map changes size under it, such as on leaving fullscreen.
+ *
+ * @param map   Map instance.
+ * @param popup The popup.
+ */
+function fitWhileOpen( map: MapLibreMap, popup: MapLibreNs.Popup ): void {
+	const fit = () => fitPopup( map, popup );
+	popup.on( 'open', () => {
+		fit();
+		map.on( 'resize', fit );
+	} );
+	popup.on( 'close', () => {
+		map.off( 'resize', fit );
+	} );
 }
 
 /**
@@ -532,7 +557,7 @@ export function addWaypointMarkers(
 			offset: 16,
 			closeButton: true,
 		} ).setDOMContent( content );
-		popup.on( 'open', () => fitPopup( map, popup ) );
+		fitWhileOpen( map, popup );
 
 		const marker = new maplibregl.Marker( { element: el } )
 			.setLngLat( [ wpt.lon, wpt.lat ] )

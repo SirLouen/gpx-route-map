@@ -528,16 +528,19 @@ describe( 'popups taller than the map', () => {
 		} );
 		element.appendChild( box );
 		const placed: unknown[] = [];
-		const onOpen: Array< () => void > = [];
+		// What the popup and the map call back, by event.
+		const onPopup: Record< string, Array< () => void > > = {};
+		const onMap: Record< string, Array< () => void > > = {};
+		const fire = ( handlers?: Array< () => void > ) =>
+			( handlers ?? [] ).forEach( ( fn ) => fn() );
+		let height = mapHeight;
 
 		class FakePopup {
 			setDOMContent() {
 				return this;
 			}
 			on( type: string, fn: () => void ) {
-				if ( 'open' === type ) {
-					onOpen.push( fn );
-				}
+				( onPopup[ type ] ??= [] ).push( fn );
 				return this;
 			}
 			isOpen() {
@@ -582,13 +585,20 @@ describe( 'popups taller than the map', () => {
 
 		const container = document.createElement( 'div' );
 		Object.defineProperty( container, 'clientHeight', {
-			get: () => mapHeight,
+			get: () => height,
 		} );
 		addWaypointMarkers(
 			{ Popup: FakePopup, Marker: FakeMarker } as unknown as MapLibreGl,
 			{
 				getContainer: () => container,
 				project: () => ( { x: 100, y: pointY } ),
+				on: ( type: string, fn: () => void ) =>
+					( onMap[ type ] ??= [] ).push( fn ),
+				off: ( type: string, fn: () => void ) => {
+					onMap[ type ] = ( onMap[ type ] ?? [] ).filter(
+						( handler ) => handler !== fn
+					);
+				},
 			} as unknown as Parameters< typeof addWaypointMarkers >[ 1 ],
 			[
 				{
@@ -604,8 +614,22 @@ describe( 'popups taller than the map', () => {
 			],
 			'#ffffff'
 		);
-		onOpen.forEach( ( fn ) => fn() );
-		return { box, placed };
+		fire( onPopup.open );
+		return {
+			box,
+			placed,
+			/**
+			 * Give the map a new height, as the browser tells it.
+			 *
+			 * @param to The new height.
+			 */
+			resize( to: number ) {
+				height = to;
+				fire( onMap.resize );
+			},
+			close: () => fire( onPopup.close ),
+			reopen: () => fire( onPopup.open ),
+		};
 	}
 
 	it( 'scrolls a popup taller than the map, and places it again', () => {
@@ -625,5 +649,30 @@ describe( 'popups taller than the map', () => {
 	it( 'gives a waypoint near the top the room below it', () => {
 		const { box } = openPopup( 220, 300, 30 );
 		expect( box.style.maxHeight ).toBe( '158px' );
+	} );
+
+	it( 'fits an open popup again when the map changes size', () => {
+		const { box, placed, resize } = openPopup( 220, 300, 150 );
+		resize( 120 );
+		expect( box.style.maxHeight ).toBe( '118px' );
+		// Taller, as on entering fullscreen: the popup fits as it is.
+		resize( 600 );
+		expect( box.style.maxHeight ).toBe( '' );
+		expect( box.style.overflowY ).toBe( '' );
+		expect( placed ).toHaveLength( 3 );
+	} );
+
+	it( 'fits a popup afresh each time it opens, and not while closed', () => {
+		const { box, placed, resize, close, reopen } = openPopup(
+			220,
+			300,
+			150
+		);
+		close();
+		resize( 600 );
+		expect( placed ).toHaveLength( 1 );
+		reopen();
+		expect( box.style.maxHeight ).toBe( '' );
+		expect( placed ).toHaveLength( 2 );
 	} );
 } );

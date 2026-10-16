@@ -197,7 +197,7 @@ final class Gpxrm_Seeder_Command {
 				}
 			}
 
-			$photo = isset( $fixture['photo'] ) ? $this->seed_photo( $key, ...$fixture['photo'] ) : 0;
+			$photo = isset( $fixture['photo'] ) ? $this->seed_photo( $key, $fixture['photo'] ) : 0;
 			if ( $photo > 0 ) {
 				set_post_thumbnail( $post_id, $photo );
 			} else {
@@ -215,14 +215,14 @@ final class Gpxrm_Seeder_Command {
 	 * A generated landscape photo as a Media attachment: a sky in two colors
 	 * over two mountain ranges, large enough for every image size.
 	 *
-	 * @param string          $key    Waypoint slug.
-	 * @param string          $title  Attachment title.
-	 * @param string          $alt    Alt text.
-	 * @param array<int, int> $top    Sky color at the top, as RGB.
-	 * @param array<int, int> $bottom Sky color at the horizon, as RGB.
+	 * @param string            $key   Waypoint slug.
+	 * @param array<int, mixed> $photo Its title, alt text, and sky colors at
+	 *                                 the top and at the horizon, as RGB.
 	 * @return int Attachment ID, or 0 when PHP cannot draw one.
 	 */
-	private function seed_photo( string $key, string $title, string $alt, array $top, array $bottom ): int {
+	private function seed_photo( string $key, array $photo ): int {
+		list( $title, $alt, $top, $bottom ) = $photo;
+
 		$existing = $this->find_seeded( 'attachment:photo-' . $key, 'attachment' );
 		if ( $existing ) {
 			return $existing;
@@ -247,8 +247,8 @@ final class Gpxrm_Seeder_Command {
 			);
 			imageline( $image, 0, $y, $width, $y, $color );
 		}
-		imagefilledpolygon( $image, array( 0, 800, 0, 470, 230, 260, 430, 430, 690, 180, 960, 460, 1200, 300, 1200, 800 ), imagecolorallocate( $image, 92, 110, 128 ) );
-		imagefilledpolygon( $image, array( 0, 800, 0, 620, 300, 470, 560, 640, 840, 500, 1200, 650, 1200, 800 ), imagecolorallocate( $image, 46, 125, 50 ) );
+		$this->polygon( $image, array( 0, 800, 0, 470, 230, 260, 430, 430, 690, 180, 960, 460, 1200, 300, 1200, 800 ), (int) imagecolorallocate( $image, 92, 110, 128 ) );
+		$this->polygon( $image, array( 0, 800, 0, 620, 300, 470, 560, 640, 840, 500, 1200, 650, 1200, 800 ), (int) imagecolorallocate( $image, 46, 125, 50 ) );
 
 		ob_start();
 		imagejpeg( $image, null, 85 );
@@ -274,6 +274,23 @@ final class Gpxrm_Seeder_Command {
 		update_post_meta( $attachment_id, self::MARKER, 'attachment:photo-' . $key );
 
 		return $attachment_id;
+	}
+
+	/**
+	 * Draw a filled polygon, in the form each PHP version takes: PHP 7.4
+	 * needs the number of points, which PHP 8.1 deprecates.
+	 *
+	 * @param \GdImage|resource $image  Image.
+	 * @param array<int, int>   $points X and Y of each point, in turn.
+	 * @param int               $color  Fill color.
+	 * @return void
+	 */
+	private function polygon( $image, array $points, int $color ): void {
+		if ( PHP_VERSION_ID >= 80000 ) {
+			imagefilledpolygon( $image, $points, $color );
+		} else {
+			imagefilledpolygon( $image, $points, intdiv( count( $points ), 2 ), $color );
+		}
 	}
 
 	/**
