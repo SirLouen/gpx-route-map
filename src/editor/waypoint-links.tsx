@@ -4,7 +4,7 @@
  */
 
 import { __, sprintf } from '@wordpress/i18n';
-import { useCallback, useEffect, useState } from '@wordpress/element';
+import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 import {
 	Button,
@@ -13,8 +13,8 @@ import {
 	SelectControl,
 } from '@wordpress/components';
 
-import { kmFromBox, reachKm } from '../view/map-core';
-import type { Bounds, Waypoint } from '../view/types';
+import { computeBoundsFromCoords, kmFromBox, reachKm } from '../view/map-core';
+import type { Bounds, ParsedGpx, Waypoint } from '../view/types';
 
 /** The post type, as registered by Waypoints::POST_TYPE. */
 export const WAYPOINT_POST_TYPE = 'gpxrm_waypoint';
@@ -98,11 +98,14 @@ function siteReadsFiles(): boolean {
  */
 function inUploads( url: string ): boolean {
 	const uploads = siteDefaults().uploadsUrl;
-	if ( 'string' !== typeof uploads || ! uploads || /[?#]/.test( url ) ) {
+	if ( 'string' !== typeof uploads || ! uploads ) {
 		return false;
 	}
 	const bare = ( address: string ) => address.replace( /^https?:/i, '' );
-	return bare( url ).startsWith( `${ bare( uploads ) }/` );
+	return (
+		! /[?#]/.test( url ) &&
+		bare( url ).startsWith( `${ bare( uploads ) }/` )
+	);
 }
 
 /**
@@ -635,10 +638,8 @@ function AddedWaypoints( {
 }
 
 interface Props {
-	/** The waypoints of the block's GPX file, once it has been read. */
-	waypoints: Waypoint[] | undefined;
-	/** The box of the file's track, once it has been read. */
-	box: Bounds | undefined;
+	/** The block's GPX file, once it has been read. */
+	file: ParsedGpx | undefined;
 	/** The block's links. */
 	links: WaypointLinkMap | undefined;
 	/** The posts the block adds to its map. */
@@ -658,8 +659,7 @@ interface Props {
  * The Waypoints panel.
  *
  * @param props               Props.
- * @param props.waypoints     The waypoints of the block's GPX file.
- * @param props.box           The box of the file's track.
+ * @param props.file          The block's GPX file, once it has been read.
  * @param props.links         The block's links.
  * @param props.added         The posts the block adds to its map.
  * @param props.fromLibrary   Whether the file is in the Media Library.
@@ -667,8 +667,7 @@ interface Props {
  * @param props.onAddedChange Called with the new list of added posts.
  */
 export function WaypointLinks( {
-	waypoints,
-	box,
+	file,
 	links,
 	added,
 	fromLibrary,
@@ -676,6 +675,12 @@ export function WaypointLinks( {
 	onAddedChange,
 }: Props ) {
 	const posts = useWaypointChoices();
+	const waypoints = file?.waypoints;
+	// Not on each render: a track can have many thousands of points.
+	const box = useMemo(
+		() => file && computeBoundsFromCoords( file.coords ),
+		[ file ]
+	);
 	// "Add a waypoint" opens a tab of its own; opening the panel, or coming
 	// back to the tab while it is open, lists what was added there.
 	const [ open, setOpen ] = useState( false );
@@ -745,8 +750,7 @@ export function WaypointLinks( {
  *
  * @param props                           Props.
  * @param props.shown                     Whether the block has a GPX file.
- * @param props.waypoints                 The waypoints of the block's GPX file.
- * @param props.box                       The box of the file's track.
+ * @param props.file                      The block's GPX file, once read.
  * @param props.attributes                The block's attributes.
  * @param props.attributes.gpxId          Its Media Library file, if any.
  * @param props.attributes.gpxUrl         Its address.
@@ -756,14 +760,12 @@ export function WaypointLinks( {
  */
 export function WaypointsPanel( {
 	shown,
-	waypoints,
-	box,
+	file,
 	attributes,
 	setAttributes,
 }: {
 	shown: boolean;
-	waypoints: Waypoint[] | undefined;
-	box: Bounds | undefined;
+	file: ParsedGpx | undefined;
 	attributes: {
 		gpxId?: number;
 		gpxUrl?: string;
@@ -780,8 +782,7 @@ export function WaypointsPanel( {
 	}
 	return (
 		<WaypointLinks
-			waypoints={ waypoints }
-			box={ box }
+			file={ file }
 			links={ readLinks( attributes.waypointPosts ) }
 			added={ readAdded( attributes.addedWaypoints ) }
 			fromLibrary={

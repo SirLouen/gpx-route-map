@@ -38,7 +38,7 @@ import {
 import { siteDefaultMaxZoom, MIN_ZOOM, MAX_ZOOM } from './zoom';
 import { providerChoices, readTileProviders } from './tile-providers';
 import { safeGpxUrl } from './gpx-url';
-import { computeBoundsFromCoords, parseGPX } from './view/map-core';
+import { parseGPX } from './view/map-core';
 import { siteStatFields } from './stat-fields';
 import { bakeStats, shouldStore, statsToStore } from './baked-stats';
 import type { FreshStats, GpxStats } from './baked-stats';
@@ -46,7 +46,7 @@ import { MapPreview } from './editor/map-preview';
 import { useMediaUrl } from './editor/media-url';
 import { WaypointsPanel, droppedLinks } from './editor/waypoint-links';
 import type { StoredWaypointLinks } from './editor/waypoint-links';
-import type { Bounds, Waypoint } from './view/types';
+import type { ParsedGpx } from './view/types';
 
 /**
  * Attributes as declared in block.json. A type alias (not an interface) so it
@@ -190,10 +190,8 @@ export default function Edit( {
 	const [ urlDraft, setUrlDraft ] = useState< string | null >( null );
 	const committedUrl = gpxId ? '' : gpxUrl;
 
-	// The file's waypoints and its track's box, for the Waypoints panel;
-	// undefined until read.
-	const [ waypoints, setWaypoints ] = useState< Waypoint[] >();
-	const [ trackBox, setTrackBox ] = useState< Bounds >();
+	// The file as read, for the Waypoints panel; undefined until read.
+	const [ readFile, setReadFile ] = useState< ParsedGpx >();
 
 	const mediaUrl = useMediaUrl( gpxId );
 	const site = siteHeights();
@@ -245,8 +243,7 @@ export default function Edit( {
 		// What an earlier read found no longer counts: the file has changed, or
 		// is read again and may fail this time.
 		freshStatsRef.current = undefined;
-		setWaypoints( undefined );
-		setTrackBox( undefined );
+		setReadFile( undefined );
 		if ( ! bakeUrl ) {
 			// A selected media file whose URL is still loading is not "no
 			// file": clearing its stats here only to bake them again a moment
@@ -270,8 +267,7 @@ export default function Edit( {
 				const next = bakeStats( parsed );
 				if ( ! cancelled ) {
 					freshStatsRef.current = { url: bakeUrl, stats: next };
-					setWaypoints( parsed.waypoints );
-					setTrackBox( computeBoundsFromCoords( parsed.coords ) );
+					setReadFile( parsed );
 				}
 				if (
 					! cancelled &&
@@ -750,8 +746,7 @@ export default function Edit( {
 				</PanelBody>
 				<WaypointsPanel
 					shown={ hasGpx }
-					waypoints={ waypoints }
-					box={ trackBox }
+					file={ readFile }
 					attributes={ attributes }
 					setAttributes={ setAttributes }
 				/>

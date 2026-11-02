@@ -11,6 +11,7 @@ import type {
 	MapLibreGl,
 	ParsedGpx,
 	Waypoint,
+	WaypointPhoto,
 	WaypointPost,
 } from './types';
 import { keyboardMarker } from './marker-keyboard';
@@ -631,45 +632,67 @@ function fitWhileOpen( map: MapLibreMap, popup: MapLibreNs.Popup ): void {
 }
 
 /**
- * Add one DOM marker with a popup for a waypoint.
+ * Add a popup's photo.
  *
- * @param maplibregl MapLibre GL module.
- * @param map        Map instance.
- * @param wpt        The waypoint.
- * @param bg         Map background colour used for the marker ring.
- * @param post       What its Waypoint post changes about it, if anything.
+ * @param parent Popup content.
+ * @param photo  The photo.
  */
-function addWaypointMarker(
-	maplibregl: MapLibreGl,
-	map: MapLibreMap,
-	wpt: Waypoint,
-	bg: string,
-	post?: WaypointPost
-): void {
-	const name = post?.name || wpt.name;
-	const el = markerElement( wpt, post, bg );
+function appendPopupPhoto( parent: HTMLElement, photo: WaypointPhoto ): void {
+	const img = document.createElement( 'img' );
+	img.className = 'gpxrm-popup-photo';
+	img.src = photo.src;
+	if ( photo.srcset ) {
+		img.srcset = photo.srcset;
+		// The popup's content is at most 240px wide.
+		img.sizes = '240px';
+	}
+	// Its size is known before it loads, so the popup does not grow and
+	// shift once it opens.
+	if ( photo.width > 0 && photo.height > 0 ) {
+		img.width = photo.width;
+		img.height = photo.height;
+	}
+	img.alt = photo.alt;
+	img.decoding = 'async';
+	parent.appendChild( img );
+}
 
-	// Popup content is built with DOM APIs (never HTML strings) so
-	// attacker-controlled GPX fields can only ever become text nodes.
+/**
+ * Add a popup's link, if its address is safe to link to.
+ *
+ * @param parent Popup content.
+ * @param link   The address from the GPX file.
+ */
+function appendPopupLink( parent: HTMLElement, link: string ): void {
+	const linkUrl = safeLinkUrl( link );
+	if ( ! linkUrl ) {
+		return;
+	}
+	const anchor = document.createElement( 'a' );
+	anchor.className = 'gpxrm-popup-link';
+	anchor.setAttribute( 'href', linkUrl );
+	anchor.target = '_blank';
+	anchor.rel = 'noopener noreferrer';
+	anchor.textContent = linkUrl;
+	parent.appendChild( anchor );
+}
+
+/**
+ * What a waypoint's popup shows. Built with DOM APIs (never HTML strings) so
+ * attacker-controlled GPX fields can only ever become text nodes.
+ *
+ * @param wpt  The waypoint.
+ * @param name The name it goes by.
+ * @param post What its Waypoint post changes about it, if anything.
+ */
+function popupContent(
+	wpt: Waypoint,
+	name: string,
+	post?: WaypointPost
+): HTMLElement {
 	const content = document.createElement( 'div' );
 	if ( post?.photo ) {
-		const photo = document.createElement( 'img' );
-		photo.className = 'gpxrm-popup-photo';
-		photo.src = post.photo.src;
-		if ( post.photo.srcset ) {
-			photo.srcset = post.photo.srcset;
-			// The popup's content is at most 240px wide.
-			photo.sizes = '240px';
-		}
-		// Its size is known before it loads, so the popup does not grow
-		// and shift once it opens.
-		if ( post.photo.width > 0 && post.photo.height > 0 ) {
-			photo.width = post.photo.width;
-			photo.height = post.photo.height;
-		}
-		photo.alt = post.photo.alt;
-		photo.decoding = 'async';
-		content.appendChild( photo );
+		appendPopupPhoto( content, post.photo );
 	}
 	appendPopupRow( content, 'gpxrm-popup-name', name );
 	if ( post?.desc ) {
@@ -685,25 +708,43 @@ function addWaypointMarker(
 	if ( wpt.type ) {
 		appendPopupRow( content, 'gpxrm-popup-type', wpt.type );
 	}
+	appendPopupLink( content, wpt.link );
+	return content;
+}
 
-	const linkUrl = safeLinkUrl( wpt.link );
-	if ( linkUrl ) {
-		const anchor = document.createElement( 'a' );
-		anchor.className = 'gpxrm-popup-link';
-		anchor.setAttribute( 'href', linkUrl );
-		anchor.target = '_blank';
-		anchor.rel = 'noopener noreferrer';
-		anchor.textContent = linkUrl;
-		content.appendChild( anchor );
-	}
+/** The map a waypoint marker goes on. */
+interface MarkerTarget {
+	maplibregl: MapLibreGl;
+	map: MapLibreMap;
+	/** Map background colour used for the marker ring. */
+	bg: string;
+}
 
+/**
+ * Add one DOM marker with a popup for a waypoint.
+ *
+ * @param target            The map it goes on.
+ * @param target.maplibregl
+ * @param target.map
+ * @param target.bg
+ * @param wpt               The waypoint.
+ * @param post              What its Waypoint post changes about it, if anything.
+ */
+function addWaypointMarker(
+	{ maplibregl, map, bg }: MarkerTarget,
+	wpt: Waypoint,
+	post?: WaypointPost
+): void {
+	const name = post?.name || wpt.name;
 	const popup = new maplibregl.Popup( {
 		offset: 16,
 		closeButton: true,
-	} ).setDOMContent( content );
+	} ).setDOMContent( popupContent( wpt, name, post ) );
 	fitWhileOpen( map, popup );
 
-	const marker = new maplibregl.Marker( { element: el } )
+	const marker = new maplibregl.Marker( {
+		element: markerElement( wpt, post, bg ),
+	} )
 		.setLngLat( [ wpt.lon, wpt.lat ] )
 		.setPopup( popup );
 	keyboardMarker( marker, popup, name );
@@ -731,7 +772,7 @@ export function addWaypointMarkers(
 	)
 ): void {
 	waypoints.forEach( ( wpt ) =>
-		addWaypointMarker( maplibregl, map, wpt, bg, posts[ wpt.index ] )
+		addWaypointMarker( { maplibregl, map, bg }, wpt, posts[ wpt.index ] )
 	);
 }
 
@@ -751,8 +792,7 @@ export function addAddedMarkers(
 ): void {
 	added.forEach( ( post ) =>
 		addWaypointMarker(
-			maplibregl,
-			map,
+			{ maplibregl, map, bg },
 			{
 				lon: post.lon,
 				lat: post.lat,
@@ -763,7 +803,6 @@ export function addAddedMarkers(
 				index: -1,
 				postId: 0,
 			},
-			bg,
 			post
 		)
 	);

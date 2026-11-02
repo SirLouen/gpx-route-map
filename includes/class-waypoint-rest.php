@@ -66,12 +66,13 @@ final class Waypoint_Rest {
 	 * @return array{lat: float, lon: float}|null
 	 */
 	public function coords( array $post ): ?array {
-		$id     = isset( $post['id'] ) && is_int( $post['id'] ) ? $post['id'] : 0;
-		$record = $id > 0 ? get_post( $id ) : null;
-		if ( ! $record instanceof \WP_Post || '' !== $record->post_password || ! current_user_can( 'edit_posts' ) ) {
+		if ( ! current_user_can( 'edit_posts' ) ) {
 			return null;
 		}
 
-		return Waypoint_Coordinates::of( $id );
+		$id     = Waypoint_Links::post_id( $post['id'] ?? 0 );
+		$record = get_post( $id );
+
+		return $record instanceof \WP_Post && '' === $record->post_password ? Waypoint_Coordinates::of( $id ) : null;
 	}
 }

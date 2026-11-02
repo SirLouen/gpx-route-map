@@ -370,9 +370,13 @@ final class Waypoint_Meta_Box {
 	 * @return void
 	 */
 	public function coordinates_notice(): void {
-		$screen = get_current_screen();
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only chooses to show a fixed message.
-		if ( null === $screen || Waypoints::POST_TYPE !== $screen->post_type || ! isset( $_GET[ self::NOTICE_ARG ] ) ) {
+		if ( ! isset( $_GET[ self::NOTICE_ARG ] ) ) {
+			return;
+		}
+
+		$screen = get_current_screen();
+		if ( null === $screen || Waypoints::POST_TYPE !== $screen->post_type ) {
 			return;
 		}
 

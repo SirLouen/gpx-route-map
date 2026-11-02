@@ -133,6 +133,35 @@ export function viewMessages( mapEl: HTMLElement ): ViewMessages {
 }
 
 /**
+ * The track as GeoJSON, a line for each segment with more than one point.
+ *
+ * @param coords        The track's coordinates.
+ * @param segmentStarts Where each segment begins in them.
+ */
+function trackGeoJSON(
+	coords: Coord[],
+	segmentStarts: number[]
+): FeatureCollection {
+	const coordinates = segmentStarts
+		.map( ( startIdx, s ) =>
+			coords
+				.slice( startIdx, segmentStarts[ s + 1 ] ?? coords.length )
+				.map( ( c: Coord ): [ number, number ] => [ c[ 0 ], c[ 1 ] ] )
+		)
+		.filter( ( line ) => line.length > 1 );
+	return {
+		type: 'FeatureCollection',
+		features: [
+			{
+				type: 'Feature',
+				properties: {},
+				geometry: { type: 'MultiLineString', coordinates },
+			},
+		],
+	};
+}
+
+/**
  * Initialize one map instance.
  *
  * The front end builds each map once and leaves it. Aborting `signal` tears
@@ -313,32 +342,9 @@ export async function initInstance(
 			setTimeout( () => placeholder.remove(), 400 );
 		}
 
-		const segmentLines = segmentStarts
-			.map( ( startIdx, s ) =>
-				coords
-					.slice( startIdx, segmentStarts[ s + 1 ] ?? coords.length )
-					.map( ( c: Coord ): [ number, number ] => [
-						c[ 0 ],
-						c[ 1 ],
-					] )
-			)
-			.filter( ( line ) => line.length > 1 );
-		const trackGeoJSON: FeatureCollection = {
-			type: 'FeatureCollection',
-			features: [
-				{
-					type: 'Feature',
-					properties: {},
-					geometry: {
-						type: 'MultiLineString',
-						coordinates: segmentLines,
-					},
-				},
-			],
-		};
 		map.addSource( 'gpxrm-track', {
 			type: 'geojson',
-			data: trackGeoJSON,
+			data: trackGeoJSON( coords, segmentStarts ),
 		} );
 
 		map.addLayer( {
