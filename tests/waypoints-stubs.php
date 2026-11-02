@@ -808,6 +808,19 @@ if ( ! function_exists( 'esc_attr_e' ) ) {
 	}
 }
 
+if ( ! function_exists( 'disabled' ) ) {
+	/**
+	 * Print the disabled attribute when two values match, as WordPress does.
+	 *
+	 * @param mixed $disabled One value.
+	 * @param mixed $current  The other.
+	 * @return void
+	 */
+	function disabled( $disabled, $current = true ): void {
+		echo (string) $disabled === (string) $current ? " disabled='disabled'" : '';
+	}
+}
+
 if ( ! function_exists( 'wp_kses' ) ) {
 	/**
 	 * Stand in for WordPress's kses: only the elements allowed are kept.
