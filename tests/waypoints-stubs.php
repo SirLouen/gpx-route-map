@@ -76,6 +76,235 @@ if ( ! function_exists( 'update_post_meta' ) ) {
 	}
 }
 
+if ( ! function_exists( 'delete_post_meta' ) ) {
+	/**
+	 * Drop a value stored for a post.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $key     Meta key.
+	 * @return bool
+	 */
+	function delete_post_meta( int $post_id, string $key ): bool {
+		unset( $GLOBALS['gpxrm_test_meta'][ $post_id ][ $key ] );
+		return true;
+	}
+}
+
+if ( ! class_exists( 'WP_Post' ) ) {
+	/**
+	 * The fields of a post that Waypoint posts read.
+	 */
+	class WP_Post {
+
+		/**
+		 * Post ID.
+		 *
+		 * @var int
+		 */
+		public $ID;
+
+		/**
+		 * Title.
+		 *
+		 * @var string
+		 */
+		public $post_title;
+
+		/**
+		 * Password, or ''.
+		 *
+		 * @var string
+		 */
+		public $post_password;
+
+		/**
+		 * A post.
+		 *
+		 * @param int    $id       Post ID.
+		 * @param string $title    Title.
+		 * @param string $password Password, or ''.
+		 */
+		public function __construct( int $id, string $title = '', string $password = '' ) {
+			$this->ID            = $id;
+			$this->post_title    = $title;
+			$this->post_password = $password;
+		}
+	}
+}
+
+if ( ! function_exists( 'get_post' ) ) {
+	/**
+	 * A post a test made.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return WP_Post|null
+	 */
+	function get_post( int $post_id ): ?WP_Post {
+		return $GLOBALS['gpxrm_test_posts'][ $post_id ] ?? null;
+	}
+}
+
+if ( ! function_exists( 'update_post_thumbnail_cache' ) ) {
+	/**
+	 * Nothing to cache here.
+	 *
+	 * @param WP_Query $query The query.
+	 * @return void
+	 */
+	function update_post_thumbnail_cache( WP_Query $query ): void {
+		unset( $query );
+	}
+}
+
+if ( ! function_exists( 'get_post_thumbnail_id' ) ) {
+	/**
+	 * No post has a photo here.
+	 *
+	 * @param WP_Post $post The post.
+	 * @return int
+	 */
+	function get_post_thumbnail_id( WP_Post $post ): int {
+		unset( $post );
+		return 0;
+	}
+}
+
+if ( ! function_exists( 'get_the_title' ) ) {
+	/**
+	 * A post's title.
+	 *
+	 * @param WP_Post $post The post.
+	 * @return string
+	 */
+	function get_the_title( WP_Post $post ): string {
+		return $post->post_title;
+	}
+}
+
+if ( ! function_exists( 'wp_strip_all_tags' ) ) {
+	/**
+	 * Text without its tags.
+	 *
+	 * @param string $text Text.
+	 * @return string
+	 */
+	function wp_strip_all_tags( string $text ): string {
+		return strip_tags( $text );
+	}
+}
+
+if ( ! function_exists( 'wpautop' ) ) {
+	/**
+	 * Stand in for WordPress's paragraphs: the text as it is.
+	 *
+	 * @param string $text Text.
+	 * @return string
+	 */
+	function wpautop( string $text ): string {
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'wp_verify_nonce' ) ) {
+	/**
+	 * Only the nonce the tests send is valid.
+	 *
+	 * @param string $nonce  Nonce.
+	 * @param string $action Ignored.
+	 * @return bool
+	 */
+	function wp_verify_nonce( string $nonce, string $action ): bool {
+		unset( $action );
+		return 'valid' === $nonce;
+	}
+}
+
+if ( ! function_exists( 'wp_is_post_revision' ) ) {
+	/**
+	 * No post is a revision here.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	function wp_is_post_revision( int $post_id ): bool {
+		unset( $post_id );
+		return false;
+	}
+}
+
+if ( ! function_exists( 'wp_unslash' ) ) {
+	/**
+	 * Text without the slashes WordPress adds to a request.
+	 *
+	 * @param mixed $value Value.
+	 * @return mixed
+	 */
+	function wp_unslash( $value ) {
+		return is_string( $value ) ? stripslashes( $value ) : $value;
+	}
+}
+
+if ( ! function_exists( 'wp_slash' ) ) {
+	/**
+	 * Text with the slashes update_post_meta() takes off.
+	 *
+	 * @param string $value Text.
+	 * @return string
+	 */
+	function wp_slash( string $value ): string {
+		return addslashes( $value );
+	}
+}
+
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	/**
+	 * Stand in for WordPress's: the text, trimmed.
+	 *
+	 * @param string $text Text.
+	 * @return string
+	 */
+	function sanitize_text_field( string $text ): string {
+		return trim( $text );
+	}
+}
+
+if ( ! function_exists( 'sanitize_key' ) ) {
+	/**
+	 * Stand in for WordPress's: lower case letters, digits, - and _.
+	 *
+	 * @param string $key Key.
+	 * @return string
+	 */
+	function sanitize_key( string $key ): string {
+		return (string) preg_replace( '/[^a-z0-9_\-]/', '', strtolower( $key ) );
+	}
+}
+
+if ( ! function_exists( 'add_query_arg' ) ) {
+	/**
+	 * An address with one more argument.
+	 *
+	 * @param string $key   Argument.
+	 * @param string $value Its value.
+	 * @param string $url   Address.
+	 * @return string
+	 */
+	function add_query_arg( string $key, string $value, string $url ): string {
+		return $url . ( false === strpos( $url, '?' ) ? '?' : '&' ) . $key . '=' . $value;
+	}
+}
+
+if ( ! function_exists( 'wp_get_upload_dir' ) ) {
+	/**
+	 * Where uploads live.
+	 *
+	 * @return array{baseurl: string}
+	 */
+	function wp_get_upload_dir(): array {
+		return array( 'baseurl' => 'https://example.test/wp-content/uploads' );
+	}
+}
+
 if ( ! function_exists( 'wp_kses' ) ) {
 	/**
 	 * Stand in for WordPress's kses: only the elements allowed are kept.

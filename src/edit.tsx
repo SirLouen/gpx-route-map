@@ -46,7 +46,7 @@ import { MapPreview } from './editor/map-preview';
 import { useMediaUrl } from './editor/media-url';
 import { WaypointsPanel, droppedLinks } from './editor/waypoint-links';
 import type { StoredWaypointLinks } from './editor/waypoint-links';
-import type { Waypoint } from './view/types';
+import type { ParsedGpx } from './view/types';
 
 /**
  * Attributes as declared in block.json. A type alias (not an interface) so it
@@ -67,6 +67,7 @@ export type GpxBlockAttributes = {
 	units: string;
 	stats?: GpxStats;
 	waypointPosts?: StoredWaypointLinks;
+	addedWaypoints?: number[];
 };
 
 /**
@@ -189,8 +190,8 @@ export default function Edit( {
 	const [ urlDraft, setUrlDraft ] = useState< string | null >( null );
 	const committedUrl = gpxId ? '' : gpxUrl;
 
-	// The file's waypoints, for the Waypoints panel; undefined until read.
-	const [ waypoints, setWaypoints ] = useState< Waypoint[] >();
+	// The file as read, for the Waypoints panel; undefined until read.
+	const [ readFile, setReadFile ] = useState< ParsedGpx >();
 
 	const mediaUrl = useMediaUrl( gpxId );
 	const site = siteHeights();
@@ -242,7 +243,7 @@ export default function Edit( {
 		// What an earlier read found no longer counts: the file has changed, or
 		// is read again and may fail this time.
 		freshStatsRef.current = undefined;
-		setWaypoints( undefined );
+		setReadFile( undefined );
 		if ( ! bakeUrl ) {
 			// A selected media file whose URL is still loading is not "no
 			// file": clearing its stats here only to bake them again a moment
@@ -266,7 +267,7 @@ export default function Edit( {
 				const next = bakeStats( parsed );
 				if ( ! cancelled ) {
 					freshStatsRef.current = { url: bakeUrl, stats: next };
-					setWaypoints( parsed.waypoints );
+					setReadFile( parsed );
 				}
 				if (
 					! cancelled &&
@@ -745,7 +746,7 @@ export default function Edit( {
 				</PanelBody>
 				<WaypointsPanel
 					shown={ hasGpx }
-					waypoints={ waypoints }
+					file={ readFile }
 					attributes={ attributes }
 					setAttributes={ setAttributes }
 				/>

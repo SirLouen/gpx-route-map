@@ -380,6 +380,76 @@ describe( 'initInstance', () => {
 	);
 
 	// Without WebGL MapLibre throws, but the figures only need the file.
+	describe( 'with posts added to the map', () => {
+		/**
+		 * A bar that shows the waypoints figure, as the server prints it.
+		 *
+		 * @param mapEl The map element.
+		 */
+		const addBar = ( mapEl: HTMLElement ) => {
+			const bar = document.createElement( 'dl' );
+			bar.innerHTML = '<dd data-gpxrm-stat="waypoints">—</dd>';
+			mapEl.after( bar );
+			return bar.querySelector( 'dd' );
+		};
+
+		it( 'counts a drawn post with the waypoints of the file', async () => {
+			vi.stubGlobal( 'fetch', answeringFetch() );
+			const { lib, maps } = fakeMapLibre();
+			const { mapEl } = mount();
+			const figure = addBar( mapEl );
+			mapEl.dataset.gpxrmAdded = JSON.stringify( [
+				{ lat: 43.05, lon: -6, name: 'Near' },
+				{ lat: 43.01, lon: -6, name: 'In the file', at: [ 0 ] },
+			] );
+
+			await buildFully( mapEl, lib, maps );
+
+			expect( figure?.textContent ).toBe( '2' );
+		} );
+
+		it( 'opens on a post near the route, not one far from it', async () => {
+			vi.stubGlobal( 'fetch', answeringFetch() );
+			const { lib, maps } = fakeMapLibre();
+			const { mapEl } = mount();
+			mapEl.dataset.gpxrmAdded = JSON.stringify( [
+				{ lat: 43.05, lon: -6, name: 'Near' },
+				{ lat: 6, lon: 43, name: 'Swapped' },
+			] );
+
+			await buildFully( mapEl, lib, maps );
+
+			expect( maps[ 0 ].options.bounds ).toEqual( [
+				[ -6, 43 ],
+				[ -6, 43.05 ],
+			] );
+		} );
+
+		it( 'still needs a track in the file', async () => {
+			const noTrack = '<gpx><wpt lat="43.01" lon="-6.0"></wpt></gpx>';
+			vi.stubGlobal(
+				'fetch',
+				vi.fn( () =>
+					Promise.resolve( {
+						ok: true,
+						status: 200,
+						text: () => Promise.resolve( noTrack ),
+					} as Response )
+				)
+			);
+			const { lib, maps } = fakeMapLibre();
+			const { mapEl } = mount();
+			mapEl.dataset.gpxrmAdded = JSON.stringify( [
+				{ lat: 43.05, lon: -6, name: 'Near' },
+			] );
+
+			await initInstance( mapEl, lib );
+
+			expect( maps ).toHaveLength( 0 );
+			expect( mapEl.textContent ).toContain( 'No track or route points' );
+		} );
+	} );
+
 	it( 'fills in the stats even when the map cannot be built', async () => {
 		vi.stubGlobal( 'fetch', answeringFetch() );
 		const { lib } = fakeMapLibre();

@@ -59,6 +59,30 @@
 	}
 }
 
+// The Waypoints panel's list of posts added to a map.
+.gpxrm-added-heading {
+	margin: 16px 0 8px;
+	font-size: 13px;
+}
+
+.gpxrm-added-list {
+	margin: 0 0 12px;
+
+	li {
+		margin-bottom: 8px;
+	}
+}
+
+.gpxrm-added-title,
+.gpxrm-added-note {
+	display: block;
+}
+
+.gpxrm-added-note {
+	font-size: 12px;
+	opacity: 0.75;
+}
+
 // The live preview. Its map, stats and profile are the front end's own
 // markup and styles; this only frames them in the editor.
 // Its own stacking context: the shield sits above the map's controls, while

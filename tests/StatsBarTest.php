@@ -19,9 +19,10 @@ use Gpxrm\Renderer;
  * @param mixed                $raw_stats The stored `stats` attribute.
  * @param array<int, string>   $fields    Stats to show.
  * @param array<string, mixed> $units     Unit conversion.
+ * @param int                  $added     Waypoints the map adds to the file's.
  * @return array<string, string>
  */
-function gpxrm_stats_bar( $raw_stats, array $fields, array $units = array() ): array {
+function gpxrm_stats_bar( $raw_stats, array $fields, array $units = array(), int $added = 0 ): array {
 	$normalize = new ReflectionMethod( Renderer::class, 'normalize_stats' );
 	$normalize->setAccessible( true );
 	$render = new ReflectionMethod( Renderer::class, 'stats_html' );
@@ -36,7 +37,8 @@ function gpxrm_stats_bar( $raw_stats, array $fields, array $units = array() ): a
 			'eleFactor'  => 1.0,
 			'eleLabel'   => 'm',
 		),
-		$fields
+		$fields,
+		$added
 	);
 	preg_match_all( '/data-gpxrm-stat="([a-z]+)">([^<]*)</', $html, $matches, PREG_SET_ORDER );
 
@@ -117,5 +119,22 @@ test(
 	'a min just below sea level shows as 0, not -0',
 	function () {
 		expect( gpxrm_stats_bar( array( 'min' => -0.4 ) + GPXRM_STATS, array( 'min' ) ) )->toBe( array( 'min' => '0 m' ) );
+	}
+);
+
+// The stored count stays the file's: storing more marks a post as changed just
+// by opening it, so the figure is added up as it is printed.
+test(
+	'the waypoints a map adds count with the file\'s',
+	function () {
+		expect( gpxrm_stats_bar( GPXRM_STATS, array( 'waypoints' ), array(), 2 ) )->toBe( array( 'waypoints' => '3' ) );
+		expect( gpxrm_stats_bar( GPXRM_STATS, array( 'waypoints' ) ) )->toBe( array( 'waypoints' => '1' ) );
+	}
+);
+
+test(
+	'stats nobody stored stay unknown, however many waypoints a map adds',
+	function () {
+		expect( gpxrm_stats_bar( null, array( 'waypoints' ), array(), 2 ) )->toBe( array( 'waypoints' => '—' ) );
 	}
 );

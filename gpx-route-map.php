@@ -28,6 +28,7 @@ require_once GPXRM_PLUGIN_DIR . 'includes/class-renderer.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-dashicons.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-gpx-link-reader.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoints.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-coordinates.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-links.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-values.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-description.php';
@@ -40,6 +41,7 @@ require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-settings.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-meta-box.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-columns.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-edit-screen.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-rest.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-plugin.php';
 
 /**

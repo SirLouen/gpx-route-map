@@ -15,9 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * What one map shows for its waypoints linked to Waypoint posts, by their
- * position in its GPX file.
+ * position in its GPX file, and for the posts added to it at their own
+ * coordinates.
  *
  * @phpstan-import-type Marker from Waypoints
+ * @phpstan-import-type Added from Waypoints
  */
 final class Waypoint_Map_Markers {
 
@@ -30,15 +32,24 @@ final class Waypoint_Map_Markers {
 	private $markers;
 
 	/**
-	 * What a map shows for its linked waypoints. Nothing while the feature
-	 * is off.
+	 * What the map shows for the posts added to it, in order.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 * @phpstan-var array<int, Added>
+	 */
+	private $added;
+
+	/**
+	 * What a map shows for its linked waypoints and added posts. Nothing
+	 * while the feature is off.
 	 *
 	 * @param int             $attachment_id The map's GPX attachment, or 0.
 	 * @param string          $gpx_url       The map's GPX URL.
 	 * @param array<int, int> $chosen        Links the block or shortcode made.
+	 * @param array<int, int> $added         Posts it adds at their own coordinates.
 	 * @return self
 	 */
-	public static function for_map( int $attachment_id, string $gpx_url, array $chosen ): self {
+	public static function for_map( int $attachment_id, string $gpx_url, array $chosen, array $added = array() ): self {
 		if ( ! Waypoints::enabled() ) {
 			return new self( array() );
 		}
@@ -52,17 +63,22 @@ final class Waypoint_Map_Markers {
 		$links = $chosen + ( $attachment_id > 0 ? ( new Gpx_File_Links( $attachment_id ) )->links() : array() );
 		ksort( $links );
 
-		return new self( ( new Waypoint_Posts( $links ) )->markers() );
+		$posts = new Waypoint_Posts( $links, $added );
+
+		return new self( $posts->markers(), $posts->added() );
 	}
 
 	/**
-	 * What a map shows for its linked waypoints.
+	 * What a map shows for its linked waypoints and added posts.
 	 *
 	 * @param array<int, array<string, mixed>> $markers What the map shows, by position.
+	 * @param array<int, array<string, mixed>> $added   What it shows for added posts, in order.
 	 * @phpstan-param array<int, Marker> $markers
+	 * @phpstan-param array<int, Added> $added
 	 */
-	public function __construct( array $markers ) {
+	public function __construct( array $markers, array $added = array() ) {
 		$this->markers = $markers;
+		$this->added   = $added;
 	}
 
 	/**
@@ -76,13 +92,39 @@ final class Waypoint_Map_Markers {
 	}
 
 	/**
+	 * What the map shows for the posts added to it, in order.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 * @phpstan-return array<int, Added>
+	 */
+	public function added(): array {
+		return $this->added;
+	}
+
+	/**
+	 * How many waypoints the added posts bring to the map: those no waypoint
+	 * of the file links to, as a post shows once. The map corrects this when
+	 * it finds such a waypoint is not one it can draw.
+	 *
+	 * @return int
+	 */
+	public function added_count(): int {
+		$count = 0;
+		foreach ( $this->added as $post ) {
+			$count += isset( $post['at'] ) ? 0 : 1;
+		}
+
+		return $count;
+	}
+
+	/**
 	 * Whether any of the map's waypoints is drawn as an icon, which needs the
 	 * Dashicons font.
 	 *
 	 * @return bool
 	 */
 	public function uses_icons(): bool {
-		foreach ( $this->markers as $marker ) {
+		foreach ( array_merge( $this->markers, $this->added ) as $marker ) {
 			if ( 'icon' === ( $marker['marker'] ?? '' ) ) {
 				return true;
 			}
@@ -100,5 +142,15 @@ final class Waypoint_Map_Markers {
 	 */
 	public function json(): string {
 		return (string) wp_json_encode( (object) $this->markers, JSON_HEX_AMP );
+	}
+
+	/**
+	 * JSON of what the map shows for the posts added to it, for a data
+	 * attribute: a list, in order.
+	 *
+	 * @return string
+	 */
+	public function added_json(): string {
+		return (string) wp_json_encode( $this->added, JSON_HEX_AMP );
 	}
 }

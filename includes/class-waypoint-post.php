@@ -15,7 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Reads what a map shows for a published Waypoint post: its title, its
- * description, its photo and its marker settings.
+ * description, its photo and its marker settings, and where it stands when a
+ * map adds it at its own coordinates.
  *
  * @phpstan-import-type Marker from Waypoints
  */
@@ -66,6 +67,15 @@ final class Waypoint_Post {
 		);
 
 		return $marker->to_array();
+	}
+
+	/**
+	 * Where the post stands, if it says.
+	 *
+	 * @return array{lat: float, lon: float}|null
+	 */
+	public function coordinates(): ?array {
+		return Waypoint_Coordinates::of( $this->post->ID );
 	}
 
 	/**

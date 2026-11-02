@@ -134,6 +134,52 @@ test(
 );
 
 test(
+	'a block adds posts to a map as a list of IDs, in order',
+	function () {
+		expect( Waypoint_Links::added_from_attribute( array( 49, '40', 49, 0, -2, 'x', null, 1.5 ) ) )->toBe( array( 49, 40 ) );
+		expect( Waypoint_Links::added_from_attribute( array( 3 => 49 ) ) )->toBe( array( 49 ) );
+		// The attribute's type lets a bare string through.
+		expect( Waypoint_Links::added_from_attribute( '49' ) )->toBe( array() );
+		expect( Waypoint_Links::added_from_attribute( null ) )->toBe( array() );
+	}
+);
+
+test(
+	'a block adds no more posts than the cap',
+	function () {
+		expect( Waypoint_Links::added_from_attribute( range( 1, Waypoints::MAX_LINKS + 5 ) ) )->toHaveCount( Waypoints::MAX_LINKS );
+	}
+);
+
+test(
+	'a shortcode adds posts with an @ before their ID',
+	function () {
+		expect( Waypoint_Links::added_from_shortcode( '1:12, @27, 3:40, @ 9,@27' ) )->toBe( array( 27, 9 ) );
+		expect( Waypoint_Links::added_from_shortcode( '@1:5, @x, @, 27, 1:12' ) )->toBe( array() );
+		expect( Waypoint_Links::added_from_shortcode( '' ) )->toBe( array() );
+	}
+);
+
+test(
+	'a post added to a shortcode changes none of its links by position',
+	function () {
+		expect( Waypoint_Links::from_shortcode( '1:7, @8' ) )->toBe( array( 0 => 7 ) );
+	}
+);
+
+test(
+	'the block declares added posts with no rule that one bad value could fail',
+	function () {
+		/** @var array{attributes: array<string, mixed>} $block */
+		$block = json_decode( (string) file_get_contents( dirname( __DIR__ ) . '/src/block.json' ), true );
+
+		// With "items", WordPress drops the whole attribute over one bad value,
+		// and the editor's preview request fails.
+		expect( $block['attributes']['addedWaypoints'] )->toBe( array( 'type' => 'array' ) );
+	}
+);
+
+test(
 	'the shortcode takes a waypoints attribute, empty by default',
 	function () {
 		expect( Plugin::shortcode_defaults()['waypoints'] )->toBe( '' );
@@ -256,6 +302,13 @@ test(
 	function () {
 		expect( Plugin::editor_defaults()['waypointFiles'] )->toBe( Gpx_Link_Reader::available() );
 		expect( Gpx_Link_Reader::available() )->toBeTrue();
+	}
+);
+
+test(
+	'the editor is told where uploads live, to know a pasted file of the Media Library',
+	function () {
+		expect( Plugin::editor_defaults()['uploadsUrl'] )->toBe( 'https://example.test/wp-content/uploads' );
 	}
 );
 

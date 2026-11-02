@@ -1,14 +1,20 @@
 /**
  * The block's Waypoints panel: link each waypoint of the GPX file to a
- * Waypoint post.
+ * Waypoint post, and add posts at their own coordinates.
  */
 
 import { __, sprintf } from '@wordpress/i18n';
-import { useCallback, useEffect, useState } from '@wordpress/element';
+import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { ExternalLink, PanelBody, SelectControl } from '@wordpress/components';
+import {
+	Button,
+	ExternalLink,
+	PanelBody,
+	SelectControl,
+} from '@wordpress/components';
 
-import type { Waypoint } from '../view/types';
+import { computeBoundsFromCoords, kmFromBox, reachKm } from '../view/map-core';
+import type { Bounds, ParsedGpx, Waypoint } from '../view/types';
 
 /** The post type, as registered by Waypoints::POST_TYPE. */
 export const WAYPOINT_POST_TYPE = 'gpxrm_waypoint';
@@ -20,9 +26,9 @@ export const WAYPOINT_POST_TYPE = 'gpxrm_waypoint';
 export type WaypointLinkMap = Record< string, number >;
 
 /**
- * The links as a block stores them. Saving a post for a user without the
- * unfiltered_html capability re-encodes block attributes in PHP, which
- * writes an object keyed 0, 1, 2… as a list.
+ * The links as a block stores them. Saving a post through the REST API, as the
+ * block editor does, re-encodes block attributes in PHP, which writes an
+ * object keyed 0, 1, 2… as a list.
  */
 export type StoredWaypointLinks = WaypointLinkMap | number[];
 
@@ -39,7 +45,7 @@ const QUERY = {
 	status: 'publish,future,draft,pending',
 	orderby: 'title',
 	order: 'asc',
-	_fields: 'id,title,status',
+	_fields: 'id,title,status,gpxrm_coords',
 };
 
 /** The fields of a Waypoint post the panel reads. */
@@ -47,21 +53,24 @@ interface WaypointRecord {
 	id: number;
 	status: string;
 	title?: { rendered?: string };
+	/** Where it stands, or null without coordinates. */
+	gpxrm_coords?: { lat: number; lon: number } | null;
+}
+
+/** What the server says about Waypoint posts on this site. */
+interface SiteDefaults {
+	waypoints?: unknown;
+	waypointFiles?: unknown;
+	uploadsUrl?: unknown;
 }
 
 /**
  * What the server says about Waypoint posts on this site.
  */
-function siteDefaults(): { waypoints?: unknown; waypointFiles?: unknown } {
+function siteDefaults(): SiteDefaults {
 	return (
-		(
-			window as unknown as {
-				gpxrmDefaults?: {
-					waypoints?: unknown;
-					waypointFiles?: unknown;
-				};
-			}
-		 ).gpxrmDefaults ?? {}
+		( window as unknown as { gpxrmDefaults?: SiteDefaults } )
+			.gpxrmDefaults ?? {}
 	);
 }
 
@@ -78,6 +87,25 @@ export function waypointsEnabled(): boolean {
  */
 function siteReadsFiles(): boolean {
 	return false !== siteDefaults().waypointFiles;
+}
+
+/**
+ * Whether a pasted address is one of the site's own uploads, which the server
+ * takes for the Media Library file it is, by either scheme. A query or a
+ * fragment makes it another address, which the server looks up in vain.
+ *
+ * @param url The address.
+ */
+function inUploads( url: string ): boolean {
+	const uploads = siteDefaults().uploadsUrl;
+	if ( 'string' !== typeof uploads || ! uploads ) {
+		return false;
+	}
+	const bare = ( address: string ) => address.replace( /^https?:/i, '' );
+	return (
+		! /[?#]/.test( url ) &&
+		bare( url ).startsWith( `${ bare( uploads ) }/` )
+	);
 }
 
 /**
@@ -142,6 +170,38 @@ export function readLinks( stored: unknown ): WaypointLinkMap | undefined {
 		}
 	}
 	return Object.keys( links ).length ? links : undefined;
+}
+
+/**
+ * The posts a block adds to its map, keeping only well formed IDs, each once.
+ *
+ * @param stored The block's attribute.
+ */
+export function readAdded( stored: unknown ): number[] {
+	return Array.isArray( stored )
+		? Array.from( new Set( stored.map( postId ).filter( Boolean ) ) )
+		: [];
+}
+
+/**
+ * A new list of added posts with one added or removed.
+ *
+ * @param added Current list.
+ * @param post  The post.
+ * @param on    Whether to add it, at the end, or remove it.
+ * @return The new list, or undefined when none are left, so the attribute
+ *         goes back to unset rather than an empty list.
+ */
+export function withAdded(
+	added: number[],
+	post: number,
+	on: boolean
+): number[] | undefined {
+	const next = added.filter( ( id ) => id !== post );
+	if ( on ) {
+		next.push( post );
+	}
+	return next.length ? next : undefined;
 }
 
 /**
@@ -401,11 +461,189 @@ function WaypointSelect( {
 	);
 }
 
+/**
+ * The posts the map shows at a waypoint of the file: the block's links, and
+ * the file's where the map reads them and the block links nothing there.
+ *
+ * @param waypoints The waypoints of the file.
+ * @param links     The block's links.
+ * @param readsFile Whether the map reads the file's links.
+ */
+function linkedPosts(
+	waypoints: Waypoint[] | undefined,
+	links: WaypointLinkMap | undefined,
+	readsFile: boolean
+): number[] {
+	const fromFile = readsFile
+		? ( waypoints ?? [] )
+				.filter( ( waypoint ) => ! links?.[ waypoint.index ] )
+				.map( ( waypoint ) => waypoint.postId )
+				.filter( Boolean )
+		: [];
+	return [ ...Object.values( links ?? {} ), ...fromFile ];
+}
+
+/**
+ * What an added post's row says about where it will show: why it will not,
+ * or how far it lies from the route, when it lies outside the route's box.
+ * In kilometres whatever the site's units, as it is a check for the author.
+ *
+ * @param post The post, if the panel found it.
+ * @param box  The box of the file's track, once it has been read.
+ */
+function addedNote(
+	post: WaypointRecord | undefined,
+	box: Bounds | undefined
+): string {
+	if ( ! post ) {
+		return '';
+	}
+	const coords = post.gpxrm_coords;
+	if ( ! coords ) {
+		return __(
+			'Not shown on the map until it has coordinates.',
+			'gpx-route-map'
+		);
+	}
+	const km = box ? kmFromBox( box, coords.lat, coords.lon ) : 0;
+	if ( ! box || ! km ) {
+		return '';
+	}
+	const distance = Math.max( 1, Math.round( km ) );
+	return km > reachKm( box )
+		? sprintf(
+				/* translators: %d: a distance in kilometres. */
+				__(
+					'%d km from the route, so the map does not open on it',
+					'gpx-route-map'
+				),
+				distance
+			)
+		: sprintf(
+				/* translators: %d: a distance in kilometres. */
+				__( '%d km from the route', 'gpx-route-map' ),
+				distance
+			);
+}
+
+/**
+ * The posts added to the map, and the select that adds another.
+ *
+ * @param props          Props.
+ * @param props.added    The posts added to the map.
+ * @param props.linked   The posts the map shows at a waypoint of the file.
+ * @param props.posts    The posts the panel offers.
+ * @param props.box      The box of the file's track, once it has been read.
+ * @param props.onChange Called with the new list.
+ */
+function AddedWaypoints( {
+	added,
+	linked,
+	posts,
+	box,
+	onChange,
+}: {
+	added: number[];
+	linked: number[];
+	posts: WaypointChoices;
+	box: Bounds | undefined;
+	onChange: ( added: number[] | undefined ) => void;
+} ) {
+	const { byId } = posts;
+	if ( ! byId ) {
+		return null;
+	}
+	const placed = posts.choices.filter(
+		( { value } ) => byId.get( Number( value ) )?.gpxrm_coords
+	);
+	const offered = placed.filter(
+		( { value } ) => ! [ ...added, ...linked ].includes( Number( value ) )
+	);
+	return (
+		<>
+			<h3 className="gpxrm-added-heading">
+				{ __( 'Added waypoints', 'gpx-route-map' ) }
+			</h3>
+			<p>
+				{ __(
+					'Waypoints shown at their own coordinates, with or without a matching waypoint in the GPX file.',
+					'gpx-route-map'
+				) }
+			</p>
+			{ !! added.length && (
+				<ul className="gpxrm-added-list">
+					{ added.map( ( id ) => {
+						const post = byId.get( id );
+						const title = post ? titleOf( post ) : notFound( id );
+						const note = addedNote( post, box );
+						return (
+							<li key={ id }>
+								<span className="gpxrm-added-title">
+									{ title }
+								</span>
+								{ note && (
+									<span className="gpxrm-added-note">
+										{ note }
+									</span>
+								) }
+								<Button
+									variant="link"
+									isDestructive
+									label={ sprintf(
+										/* translators: %s: a Waypoint post's title. */
+										__( 'Remove %s', 'gpx-route-map' ),
+										title
+									) }
+									onClick={ () =>
+										onChange(
+											withAdded( added, id, false )
+										)
+									}
+								>
+									{ __( 'Remove', 'gpx-route-map' ) }
+								</Button>
+							</li>
+						);
+					} ) }
+				</ul>
+			) }
+			{ !! offered.length && (
+				<SelectControl
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+					label={ __( 'Add to this map', 'gpx-route-map' ) }
+					value=""
+					options={ [
+						{
+							label: __( 'Choose a waypoint', 'gpx-route-map' ),
+							value: '',
+						},
+						...offered,
+					] }
+					onChange={ ( value ) =>
+						onChange( withAdded( added, Number( value ), true ) )
+					}
+				/>
+			) }
+			{ ! placed.length && (
+				<p>
+					{ __(
+						"No waypoint has coordinates yet. Add them on a Waypoint's screen.",
+						'gpx-route-map'
+					) }
+				</p>
+			) }
+		</>
+	);
+}
+
 interface Props {
-	/** The waypoints of the block's GPX file, once it has been read. */
-	waypoints: Waypoint[] | undefined;
+	/** The block's GPX file, once it has been read. */
+	file: ParsedGpx | undefined;
 	/** The block's links. */
 	links: WaypointLinkMap | undefined;
+	/** The posts the block adds to its map. */
+	added: number[];
 	/**
 	 * Whether the file is in the Media Library, the only place the server
 	 * reads the links a GPX file holds.
@@ -413,24 +651,36 @@ interface Props {
 	fromLibrary: boolean;
 	/** Called with the new links. */
 	onChange: ( links: WaypointLinkMap | undefined ) => void;
+	/** Called with the new list of added posts. */
+	onAddedChange: ( added: number[] | undefined ) => void;
 }
 
 /**
  * The Waypoints panel.
  *
- * @param props             Props.
- * @param props.waypoints   The waypoints of the block's GPX file.
- * @param props.links       The block's links.
- * @param props.fromLibrary Whether the file is in the Media Library.
- * @param props.onChange    Called with the new links.
+ * @param props               Props.
+ * @param props.file          The block's GPX file, once it has been read.
+ * @param props.links         The block's links.
+ * @param props.added         The posts the block adds to its map.
+ * @param props.fromLibrary   Whether the file is in the Media Library.
+ * @param props.onChange      Called with the new links.
+ * @param props.onAddedChange Called with the new list of added posts.
  */
 export function WaypointLinks( {
-	waypoints,
+	file,
 	links,
+	added,
 	fromLibrary,
 	onChange,
+	onAddedChange,
 }: Props ) {
 	const posts = useWaypointChoices();
+	const waypoints = file?.waypoints;
+	// Not on each render: a track can have many thousands of points.
+	const box = useMemo(
+		() => file && computeBoundsFromCoords( file.coords ),
+		[ file ]
+	);
 	// "Add a waypoint" opens a tab of its own; opening the panel, or coming
 	// back to the tab while it is open, lists what was added there.
 	const [ open, setOpen ] = useState( false );
@@ -478,6 +728,13 @@ export function WaypointLinks( {
 					}
 				/>
 			) ) }
+			<AddedWaypoints
+				added={ added }
+				linked={ linkedPosts( waypoints, links, readsFile ) }
+				posts={ posts }
+				box={ box }
+				onChange={ onAddedChange }
+			/>
 			<p>
 				<ExternalLink href="post-new.php?post_type=gpxrm_waypoint">
 					{ __( 'Add a waypoint', 'gpx-route-map' ) }
@@ -491,25 +748,33 @@ export function WaypointLinks( {
  * The Waypoints panel, while the block has a GPX file and the site has
  * turned Waypoint posts on.
  *
- * @param props                          Props.
- * @param props.shown                    Whether the block has a GPX file.
- * @param props.waypoints                The waypoints of the block's GPX file.
- * @param props.attributes               The block's attributes.
- * @param props.attributes.gpxId         Its Media Library file, if any.
- * @param props.attributes.waypointPosts Its links, as stored.
- * @param props.setAttributes            Sets the block's attributes.
+ * @param props                           Props.
+ * @param props.shown                     Whether the block has a GPX file.
+ * @param props.file                      The block's GPX file, once read.
+ * @param props.attributes                The block's attributes.
+ * @param props.attributes.gpxId          Its Media Library file, if any.
+ * @param props.attributes.gpxUrl         Its address.
+ * @param props.attributes.waypointPosts  Its links, as stored.
+ * @param props.attributes.addedWaypoints The posts it adds, as stored.
+ * @param props.setAttributes             Sets the block's attributes.
  */
 export function WaypointsPanel( {
 	shown,
-	waypoints,
+	file,
 	attributes,
 	setAttributes,
 }: {
 	shown: boolean;
-	waypoints: Waypoint[] | undefined;
-	attributes: { gpxId?: number; waypointPosts?: StoredWaypointLinks };
+	file: ParsedGpx | undefined;
+	attributes: {
+		gpxId?: number;
+		gpxUrl?: string;
+		waypointPosts?: StoredWaypointLinks;
+		addedWaypoints?: number[];
+	};
 	setAttributes: ( next: {
-		waypointPosts: WaypointLinkMap | undefined;
+		waypointPosts?: WaypointLinkMap | undefined;
+		addedWaypoints?: number[] | undefined;
 	} ) => void;
 } ) {
 	if ( ! shown || ! waypointsEnabled() ) {
@@ -517,10 +782,16 @@ export function WaypointsPanel( {
 	}
 	return (
 		<WaypointLinks
-			waypoints={ waypoints }
+			file={ file }
 			links={ readLinks( attributes.waypointPosts ) }
-			fromLibrary={ !! attributes.gpxId }
+			added={ readAdded( attributes.addedWaypoints ) }
+			fromLibrary={
+				!! attributes.gpxId || inUploads( attributes.gpxUrl ?? '' )
+			}
 			onChange={ ( links ) => setAttributes( { waypointPosts: links } ) }
+			onAddedChange={ ( added ) =>
+				setAttributes( { addedWaypoints: added } )
+			}
 		/>
 	);
 }

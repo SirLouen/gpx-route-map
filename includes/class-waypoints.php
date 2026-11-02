@@ -23,10 +23,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * A map links a waypoint of its GPX file to a Waypoint post in two ways: its
  * block picks one for it, by the waypoint's position in the file, or the file
  * itself names the post, inside the waypoint's <extensions>. A pick made in
- * the block wins over the file.
+ * the block wins over the file. A block or a shortcode can also add a post
+ * that has coordinates, to show at them, with or without a waypoint in the
+ * file.
  *
  * @phpstan-type Photo array{src: string, width: int, height: int, alt: string, srcset?: string}
  * @phpstan-type Marker array{name?: string, desc?: string, photo?: Photo, marker?: string, thumb?: string, icon?: string, color?: string, background?: string}
+ * @phpstan-type Added array{name: string, lat: float, lon: float, at?: array<int, int>, desc?: string, photo?: Photo, marker?: string, thumb?: string, icon?: string, color?: string, background?: string}
  */
 class Waypoints {
 
@@ -55,6 +58,8 @@ class Waypoints {
 	const META_ICON        = '_gpxrm_icon';
 	const META_COLOR       = '_gpxrm_icon_color';
 	const META_BACKGROUND  = '_gpxrm_icon_background';
+	const META_LAT         = '_gpxrm_lat';
+	const META_LON         = '_gpxrm_lon';
 
 	/**
 	 * Where a GPX attachment keeps the links read from its file.
@@ -94,6 +99,7 @@ class Waypoints {
 	public function register(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		( new Waypoint_Edit_Screen() )->register();
+		( new Waypoint_Rest() )->register();
 	}
 
 	/**

@@ -770,16 +770,19 @@ class Renderer {
 
 		// What the map shows for waypoints linked to Waypoint posts. Only maps
 		// with some carry the attribute, so every other map is as it was.
-		$markers   = Waypoint_Map_Markers::for_map( $a['gpx_id'], $a['gpx_url'], $a['waypoint_posts'] );
+		$markers   = Waypoint_Map_Markers::for_map( $a['gpx_id'], $a['gpx_url'], $a['waypoint_posts'], $a['added_waypoints'] );
 		$waypoints = array() === $markers->all()
 			? ''
 			: sprintf( ' data-gpxrm-waypoints="%s"', esc_attr( $markers->json() ) );
+		$added     = array() === $markers->added()
+			? ''
+			: sprintf( ' data-gpxrm-added="%s"', esc_attr( $markers->added_json() ) );
 		if ( $markers->uses_icons() ) {
 			wp_enqueue_style( 'dashicons' );
 		}
 
 		$map = sprintf(
-			'<div class="gpxrm-map" style="%1$s" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d"%6$s data-gpxrm-i18n="%7$s" data-gpxrm-map-ui="%8$s" data-gpxrm-units="%9$s"%10$s%13$s role="application" aria-label="%11$s">%12$s</div>',
+			'<div class="gpxrm-map" style="%1$s" data-gpxrm-gpx="%2$s" data-gpxrm-tile-url="%3$s" data-gpxrm-attribution="%4$s" data-gpxrm-max-zoom="%5$d"%6$s data-gpxrm-i18n="%7$s" data-gpxrm-map-ui="%8$s" data-gpxrm-units="%9$s"%10$s%13$s%14$s role="application" aria-label="%11$s">%12$s</div>',
 			esc_attr( self::height_style( $a ) ),
 			esc_url( $a['gpx_url'] ),
 			esc_attr( $tile_url ),
@@ -792,10 +795,11 @@ class Renderer {
 			$download,
 			esc_attr__( 'Interactive route map', 'gpx-route-map' ),
 			self::placeholder_html(),
-			$waypoints
+			$waypoints,
+			$added
 		);
 
-		$stats_html     = $a['show_stats'] ? self::stats_html( $stats, $units, $a['stat_fields'] ) : '';
+		$stats_html     = $a['show_stats'] ? self::stats_html( $stats, $units, $a['stat_fields'], $markers->added_count() ) : '';
 		$elevation_html = $a['show_elevation'] ? self::elevation_html() : '';
 
 		return sprintf(
@@ -811,7 +815,7 @@ class Renderer {
 	 * Normalize block attributes and shortcode atts into one shape.
 	 *
 	 * @param array<string, mixed> $atts Raw attributes.
-	 * @return array{gpx_url: string, gpx_id: int, height: int, height_tablet: int, height_mobile: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, provider: string, stats: array{distance: float, gain: float, loss: float, max: float, min: float|null, waypoints: int}|null, units: string, stat_fields: array<int, string>, waypoint_posts: array<int, int>}
+	 * @return array{gpx_url: string, gpx_id: int, height: int, height_tablet: int, height_mobile: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, provider: string, stats: array{distance: float, gain: float, loss: float, max: float, min: float|null, waypoints: int}|null, units: string, stat_fields: array<int, string>, waypoint_posts: array<int, int>, added_waypoints: array<int, int>}
 	 */
 	private static function normalize( array $atts ): array {
 		$gpx_url = '';
@@ -854,20 +858,21 @@ class Renderer {
 			: self::default_max_zoom();
 
 		return array(
-			'gpx_url'        => $gpx_url,
-			'gpx_id'         => $gpx_id,
-			'height'         => self::clamp( $height, self::MIN_HEIGHT, self::MAX_HEIGHT ),
-			'height_tablet'  => $tablet,
-			'height_mobile'  => $mobile,
-			'show_stats'     => self::normalize_visibility( $atts['showStats'] ?? '', self::default_show_stats() ),
-			'show_elevation' => self::normalize_visibility( $atts['showElevation'] ?? '', self::default_show_elevation() ),
-			'show_download'  => self::normalize_visibility( $atts['showDownload'] ?? '', self::default_show_download() ),
-			'stat_fields'    => self::normalize_stat_fields( $atts['statFields'] ?? '', self::default_stat_fields() ),
-			'max_zoom'       => self::clamp( $max_zoom, self::MIN_ZOOM, self::MAX_ZOOM ),
-			'provider'       => self::map_provider( $atts['provider'] ?? '' ),
-			'stats'          => self::normalize_stats( $atts['stats'] ?? null ),
-			'units'          => self::normalize_units( $atts['units'] ?? '' ),
-			'waypoint_posts' => Waypoint_Links::from_attribute( $atts['waypointPosts'] ?? null ),
+			'gpx_url'         => $gpx_url,
+			'gpx_id'          => $gpx_id,
+			'height'          => self::clamp( $height, self::MIN_HEIGHT, self::MAX_HEIGHT ),
+			'height_tablet'   => $tablet,
+			'height_mobile'   => $mobile,
+			'show_stats'      => self::normalize_visibility( $atts['showStats'] ?? '', self::default_show_stats() ),
+			'show_elevation'  => self::normalize_visibility( $atts['showElevation'] ?? '', self::default_show_elevation() ),
+			'show_download'   => self::normalize_visibility( $atts['showDownload'] ?? '', self::default_show_download() ),
+			'stat_fields'     => self::normalize_stat_fields( $atts['statFields'] ?? '', self::default_stat_fields() ),
+			'max_zoom'        => self::clamp( $max_zoom, self::MIN_ZOOM, self::MAX_ZOOM ),
+			'provider'        => self::map_provider( $atts['provider'] ?? '' ),
+			'stats'           => self::normalize_stats( $atts['stats'] ?? null ),
+			'units'           => self::normalize_units( $atts['units'] ?? '' ),
+			'waypoint_posts'  => Waypoint_Links::from_attribute( $atts['waypointPosts'] ?? null ),
+			'added_waypoints' => Waypoint_Links::added_from_attribute( $atts['addedWaypoints'] ?? null ),
 		);
 	}
 
@@ -1063,9 +1068,10 @@ class Renderer {
 	 * @param array{distance: float, gain: float, loss: float, max: float, min: float|null, waypoints: int}|null $stats  Stored stats or null.
 	 * @param array{distFactor: float, distLabel: string, eleFactor: float, eleLabel: string}                    $units  Unit conversion.
 	 * @param array<int, string>                                                                                 $fields Stats to include.
+	 * @param int                                                                                                $added  Waypoints the map adds to the file's, which are never stored: a stored count that differs from the file's marks a post as changed just by opening it.
 	 * @return string
 	 */
-	private static function stats_html( ?array $stats, array $units, array $fields ): string {
+	private static function stats_html( ?array $stats, array $units, array $fields, int $added = 0 ): string {
 		$distance  = static function ( float $km ) use ( $units ): string {
 			return number_format_i18n( $km * $units['distFactor'], 2 ) . ' ' . $units['distLabel'];
 		};
@@ -1079,7 +1085,7 @@ class Renderer {
 			'loss'      => array( __( 'Elevation loss', 'gpx-route-map' ), null === $stats ? '—' : '−' . $elevation( $stats['loss'] ) ),
 			'max'       => array( __( 'Max elevation', 'gpx-route-map' ), null === $stats ? '—' : $elevation( $stats['max'] ) ),
 			'min'       => array( __( 'Min elevation', 'gpx-route-map' ), null === $stats || null === $stats['min'] ? '—' : $elevation( $stats['min'] ) ),
-			'waypoints' => array( __( 'Waypoints', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( $stats['waypoints'] ) ),
+			'waypoints' => array( __( 'Waypoints', 'gpx-route-map' ), null === $stats ? '—' : number_format_i18n( $stats['waypoints'] + $added ) ),
 		);
 
 		$items = '';

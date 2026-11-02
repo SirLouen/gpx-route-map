@@ -957,6 +957,8 @@ class Plugin {
 			);
 		}
 
+		$uploads = wp_get_upload_dir();
+
 		return Renderer::default_heights() + array(
 			'maxZoom'       => Renderer::default_max_zoom(),
 			'statFields'    => Renderer::default_stat_fields(),
@@ -964,6 +966,8 @@ class Plugin {
 			'tileProvider'  => Renderer::site_provider_in_use(),
 			'waypoints'     => Waypoints::enabled(),
 			'waypointFiles' => Gpx_Link_Reader::available(),
+			// To tell whether a pasted address is a file in the Media Library.
+			'uploadsUrl'    => is_string( $uploads['baseurl'] ?? null ) ? $uploads['baseurl'] : '',
 		);
 	}
 
@@ -1054,7 +1058,9 @@ class Plugin {
 	 *   provider  Map provider, e.g. "opentopomap" (defaults to the site setting).
 	 *   units     "metric" or "imperial" (defaults to the site setting).
 	 *   waypoints Waypoint posts for the file's waypoints, as "number:post ID"
-	 *             pairs counting from 1, e.g. "1:12,3:40". Needs Waypoints on.
+	 *             pairs counting from 1, and posts to show at their own
+	 *             coordinates, as "@post ID", e.g. "1:12,3:40,@27". Needs
+	 *             Waypoints on.
 	 *
 	 * @param array<int|string, string>|string $atts Shortcode attributes.
 	 * @return string
@@ -1067,17 +1073,18 @@ class Plugin {
 		);
 
 		$mapped = array(
-			'height'        => (int) $atts['height'],
-			'heightTablet'  => (int) $atts['height_tablet'],
-			'heightMobile'  => (int) $atts['height_mobile'],
-			'showStats'     => $atts['stats'],
-			'showElevation' => $atts['elevation'],
-			'showDownload'  => $atts['download'],
-			'statFields'    => $atts['fields'],
-			'maxZoom'       => (int) $atts['maxzoom'],
-			'provider'      => strtolower( trim( (string) $atts['provider'] ) ),
-			'units'         => (string) $atts['units'],
-			'waypointPosts' => Waypoint_Links::from_shortcode( (string) $atts['waypoints'] ),
+			'height'         => (int) $atts['height'],
+			'heightTablet'   => (int) $atts['height_tablet'],
+			'heightMobile'   => (int) $atts['height_mobile'],
+			'showStats'      => $atts['stats'],
+			'showElevation'  => $atts['elevation'],
+			'showDownload'   => $atts['download'],
+			'statFields'     => $atts['fields'],
+			'maxZoom'        => (int) $atts['maxzoom'],
+			'provider'       => strtolower( trim( (string) $atts['provider'] ) ),
+			'units'          => (string) $atts['units'],
+			'waypointPosts'  => Waypoint_Links::from_shortcode( (string) $atts['waypoints'] ),
+			'addedWaypoints' => Waypoint_Links::added_from_shortcode( (string) $atts['waypoints'] ),
 		);
 
 		if ( is_numeric( $atts['id'] ) ) {

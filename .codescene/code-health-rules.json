@@ -1,5 +1,5 @@
 {
-	"usage": "The plugin's classes are WordPress hook callbacks, which WordPress calls with post IDs, hook names, column keys and option values, as ints and strings, so those two rules measure WordPress's signatures rather than the plugin's design.",
+	"usage": "The plugin's classes are WordPress hook callbacks, which WordPress calls with post IDs, hook names, column keys and option values, as ints and strings, so those two rules measure WordPress's signatures rather than the plugin's design. So do the test stubs, which copy WordPress's signatures behind function_exists() checks. The block's Waypoints panel works on the post IDs and positions a block stores, and a wrapper around a number would add nothing.",
 	"rule_sets": [
 		{
 			"matching_content_path": "includes/*.php",
@@ -10,6 +10,32 @@
 				},
 				{
 					"name": "String Heavy Function Arguments",
+					"weight": 0.0
+				}
+			]
+		},
+		{
+			"matching_content_path": "tests/waypoints-stubs.php",
+			"rules": [
+				{
+					"name": "Global Conditionals",
+					"weight": 0.0
+				},
+				{
+					"name": "Primitive Obsession",
+					"weight": 0.0
+				},
+				{
+					"name": "String Heavy Function Arguments",
+					"weight": 0.0
+				}
+			]
+		},
+		{
+			"matching_content_path": "src/editor/waypoint-links.tsx",
+			"rules": [
+				{
+					"name": "Primitive Obsession",
 					"weight": 0.0
 				}
 			]

@@ -4,9 +4,10 @@
 
 import {
 	parseGPX,
-	computeBoundsFromCoords,
+	openingBounds,
 	buildRasterStyle,
 	createMap,
+	addAddedMarkers,
 	addWaypointMarkers,
 	TRACK_COLOR,
 	TRACK_CASING,
@@ -16,6 +17,7 @@ import {
 } from './map-core';
 import { keyboardMarker } from './marker-keyboard';
 import { readMapUi } from './map-ui';
+import { drawnAdded, readAddedWaypoints } from './waypoint-posts';
 import type { FeatureCollection } from 'geojson';
 import type { GeoJSONSource } from 'maplibre-gl';
 
@@ -131,6 +133,35 @@ export function viewMessages( mapEl: HTMLElement ): ViewMessages {
 }
 
 /**
+ * The track as GeoJSON, a line for each segment with more than one point.
+ *
+ * @param coords        The track's coordinates.
+ * @param segmentStarts Where each segment begins in them.
+ */
+function trackGeoJSON(
+	coords: Coord[],
+	segmentStarts: number[]
+): FeatureCollection {
+	const coordinates = segmentStarts
+		.map( ( startIdx, s ) =>
+			coords
+				.slice( startIdx, segmentStarts[ s + 1 ] ?? coords.length )
+				.map( ( c: Coord ): [ number, number ] => [ c[ 0 ], c[ 1 ] ] )
+		)
+		.filter( ( line ) => line.length > 1 );
+	return {
+		type: 'FeatureCollection',
+		features: [
+			{
+				type: 'Feature',
+				properties: {},
+				geometry: { type: 'MultiLineString', coordinates },
+			},
+		],
+	};
+}
+
+/**
  * Initialize one map instance.
  *
  * The front end builds each map once and leaves it. Aborting `signal` tears
@@ -208,7 +239,8 @@ export async function initInstance(
 	// cannot build the map still shows them.
 	const units = readUnits( mapEl );
 	const stats = routeStats( coords, segStarts, hasEle );
-	fillStats( root, stats, waypoints.length, units );
+	const added = drawnAdded( readAddedWaypoints( mapEl ), waypoints );
+	fillStats( root, stats, waypoints.length + added.length, units );
 
 	const tileUrl = mapEl.dataset.gpxrmTileUrl || DEFAULT_TILE_URL;
 	const attribution = mapEl.dataset.gpxrmAttribution || DEFAULT_ATTRIBUTION;
@@ -216,7 +248,7 @@ export async function initInstance(
 	const tileMaxZoom = readTileMaxZoom( mapEl );
 
 	const style = buildRasterStyle( tileUrl, attribution, tileMaxZoom );
-	const bounds = computeBoundsFromCoords( coords );
+	const bounds = openingBounds( coords, added );
 	const map = createMap( {
 		maplibregl,
 		container: mapEl,
@@ -310,32 +342,9 @@ export async function initInstance(
 			setTimeout( () => placeholder.remove(), 400 );
 		}
 
-		const segmentLines = segmentStarts
-			.map( ( startIdx, s ) =>
-				coords
-					.slice( startIdx, segmentStarts[ s + 1 ] ?? coords.length )
-					.map( ( c: Coord ): [ number, number ] => [
-						c[ 0 ],
-						c[ 1 ],
-					] )
-			)
-			.filter( ( line ) => line.length > 1 );
-		const trackGeoJSON: FeatureCollection = {
-			type: 'FeatureCollection',
-			features: [
-				{
-					type: 'Feature',
-					properties: {},
-					geometry: {
-						type: 'MultiLineString',
-						coordinates: segmentLines,
-					},
-				},
-			],
-		};
 		map.addSource( 'gpxrm-track', {
 			type: 'geojson',
-			data: trackGeoJSON,
+			data: trackGeoJSON( coords, segmentStarts ),
 		} );
 
 		map.addLayer( {
@@ -403,6 +412,7 @@ export async function initInstance(
 		addPin( coords[ coords.length - 1 ], '#ef4444', msg.end );
 
 		addWaypointMarkers( maplibregl, map, waypoints, TRACK_CASING );
+		addAddedMarkers( maplibregl, map, added, TRACK_CASING );
 
 		map.on( 'click', 'gpxrm-track-hit', ( e ) => {
 			if ( ! e.lngLat || ! profile ) {

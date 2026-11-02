@@ -25,11 +25,14 @@ const fields = new Map<
 	string,
 	{ onChange: ( value: string ) => void; onBlur: () => void }
 >();
+/** Buttons as last rendered, by label. */
+const buttons = new Map< string, { onClick: () => void } >();
 /** Waypoint posts the site has, or null while they load. */
 let posts: Array< {
 	id: number;
 	status: string;
 	title: { rendered: string };
+	gpxrm_coords?: { lat: number; lon: number } | null;
 } > | null;
 /** Media Library files, by ID. */
 let media: Record< number, string >;
@@ -93,11 +96,17 @@ vi.mock( '@wordpress/components', () => {
 		fields.set( props.label, props );
 		return null;
 	};
+	const button = ( props: { label?: string; onClick: () => void } ) => {
+		if ( props.label ) {
+			buttons.set( props.label, props );
+		}
+		return null;
+	};
 	return {
 		PanelBody: panel,
 		RangeControl: none,
 		TextControl: text,
-		Button: none,
+		Button: button,
 		Placeholder: none,
 		ToolbarGroup: pass,
 		ToolbarButton: none,
@@ -215,6 +224,7 @@ beforeEach( () => {
 	writes = [];
 	selects.clear();
 	fields.clear();
+	buttons.clear();
 	media = {};
 	queries = [];
 	refreshed = [];
@@ -446,6 +456,226 @@ describe( 'The Waypoints panel', () => {
 			gpxUrl: 'https://example.test/b.gpx',
 			gpxId: undefined,
 		} );
+	} );
+} );
+
+describe( 'Added waypoints', () => {
+	const NEAR = { lat: 43.1, lon: -6 };
+	const FAR = { lat: 44, lon: -6 };
+
+	beforeEach( () => {
+		posts = [
+			{
+				id: 10,
+				status: 'publish',
+				title: { rendered: 'Near' },
+				gpxrm_coords: NEAR,
+			},
+			{
+				id: 11,
+				status: 'publish',
+				title: { rendered: 'Far' },
+				gpxrm_coords: FAR,
+			},
+			{
+				id: 12,
+				status: 'publish',
+				title: { rendered: 'Nowhere' },
+				gpxrm_coords: null,
+			},
+		];
+	} );
+
+	/** The labels the select of posts to add offers. */
+	const offered = () =>
+		selects.get( 'Add to this map' )?.options.map( ( { label } ) => label );
+
+	it( 'asks the site for each post’s coordinates', async () => {
+		await open();
+		expect( ( queries.at( -1 ) ?? [] )[ 2 ] ).toHaveProperty(
+			'_fields',
+			'id,title,status,gpxrm_coords'
+		);
+	} );
+
+	it( 'offers only posts that have coordinates', async () => {
+		await open();
+		expect( offered() ).toEqual( [ 'Choose a waypoint', 'Near', 'Far' ] );
+	} );
+
+	it( 'stores a post chosen, keeping those added before it', async () => {
+		await open( { addedWaypoints: [ 11 ] } );
+		choose( 'Add to this map', '10' );
+		expect( writes.at( -1 ) ).toEqual( { addedWaypoints: [ 11, 10 ] } );
+	} );
+
+	it( 'stores nothing when a post is merely opened', async () => {
+		await open( { addedWaypoints: [ 10 ] } );
+		expect( writes ).toEqual( [] );
+	} );
+
+	it( 'removes a post, and goes back to unset with none left', async () => {
+		await open( { addedWaypoints: [ 10, 11 ] } );
+		flushSync( () => buttons.get( 'Remove Near' )?.onClick() );
+		expect( writes.at( -1 ) ).toEqual( { addedWaypoints: [ 11 ] } );
+
+		flushSync( () => buttons.get( 'Remove Far' )?.onClick() );
+		expect( writes.at( -1 ) ).toEqual( { addedWaypoints: undefined } );
+	} );
+
+	it( 'shows for a file without waypoints', async () => {
+		const noWaypoints = GPX.replace( /<wpt.*<\/wpt>/, '' );
+		vi.stubGlobal(
+			'fetch',
+			vi.fn( () =>
+				Promise.resolve( {
+					ok: true,
+					status: 200,
+					text: () => Promise.resolve( noWaypoints ),
+				} as Response )
+			)
+		);
+		await open();
+		expect( offered() ).toEqual( [ 'Choose a waypoint', 'Near', 'Far' ] );
+	} );
+
+	it( 'offers no post the map already shows', async () => {
+		media[ 7 ] = 'https://example.test/a.gpx';
+		posts?.push(
+			{
+				id: 13,
+				status: 'publish',
+				title: { rendered: 'Third' },
+				gpxrm_coords: NEAR,
+			},
+			{
+				id: 14,
+				status: 'publish',
+				title: { rendered: 'Fourth' },
+				gpxrm_coords: NEAR,
+			}
+		);
+		await open( {
+			gpxId: 7,
+			waypointPosts: { 0: 10 },
+			addedWaypoints: [ 13 ],
+		} );
+		// 10 by the block, 11 by the file and 13 already added.
+		expect( offered() ).toEqual( [ 'Choose a waypoint', 'Fourth' ] );
+	} );
+
+	it( 'says how far a post lies from the route', async () => {
+		await open( { addedWaypoints: [ 10, 11 ] } );
+		expect( container.textContent ).toContain( '10 km from the route' );
+		expect( container.textContent ).toContain(
+			'110 km from the route, so the map does not open on it'
+		);
+	} );
+
+	it( 'says nothing of a post inside the route’s box', async () => {
+		( posts ?? [] )[ 0 ].gpxrm_coords = { lat: 43.005, lon: -6 };
+		await open( { addedWaypoints: [ 10 ] } );
+		expect( container.textContent ).not.toContain( 'from the route' );
+	} );
+
+	it( 'says nothing of the distance before the file is read', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn( () => Promise.reject( new Error( 'offline' ) ) )
+		);
+		await open( { addedWaypoints: [ 10 ] } );
+		expect( container.textContent ).toContain( 'Near' );
+		expect( container.textContent ).not.toContain( 'from the route' );
+	} );
+
+	it( 'says a post shows only once it has coordinates', async () => {
+		await open( { addedWaypoints: [ 12 ] } );
+		expect( container.textContent ).toContain(
+			'Not shown on the map until it has coordinates.'
+		);
+	} );
+
+	it( 'keeps a post that is gone, so it can be removed', async () => {
+		await open( { addedWaypoints: [ 99 ] } );
+		expect( container.textContent ).toContain( '#99 (not found)' );
+		flushSync( () => buttons.get( 'Remove #99 (not found)' )?.onClick() );
+		expect( writes.at( -1 ) ).toEqual( { addedWaypoints: undefined } );
+	} );
+
+	it( 'calls no added post gone while the posts load', async () => {
+		posts = null;
+		await open( { addedWaypoints: [ 10 ] } );
+		expect( container.textContent ).not.toContain( 'not found' );
+	} );
+
+	it( 'says when no waypoint has coordinates yet', async () => {
+		( posts ?? [] ).forEach( ( post ) => {
+			post.gpxrm_coords = null;
+		} );
+		await open();
+		expect( selects.has( 'Add to this map' ) ).toBe( false );
+		expect( container.textContent ).toContain(
+			'No waypoint has coordinates yet.'
+		);
+	} );
+
+	it( 'does not say so when they are all on the map already', async () => {
+		await open( { addedWaypoints: [ 10, 11 ] } );
+		expect( selects.has( 'Add to this map' ) ).toBe( false );
+		expect( container.textContent ).not.toContain(
+			'No waypoint has coordinates yet.'
+		);
+	} );
+
+	it( 'keeps them when the block shows another file', async () => {
+		await open( { addedWaypoints: [ 10 ] } );
+		flushSync( () =>
+			fields
+				.get( 'or GPX file URL' )
+				?.onChange( 'https://example.test/b.gpx' )
+		);
+		flushSync( () => fields.get( 'or GPX file URL' )?.onBlur() );
+		expect( writes.at( -1 ) ).not.toHaveProperty( 'addedWaypoints' );
+	} );
+} );
+
+// The server treats a pasted address of one of the site's own uploads as the
+// Media Library file, so it reads the links that file holds.
+describe( 'a pasted address of a file in the Media Library', () => {
+	const UPLOADS = 'https://example.test/wp-content/uploads';
+
+	beforeEach( () => {
+		( window as unknown as { gpxrmDefaults?: object } ).gpxrmDefaults = {
+			waypoints: true,
+			uploadsUrl: UPLOADS,
+		};
+	} );
+
+	it.each( [
+		[ 'of this site', `${ UPLOADS }/2026/10/a.gpx` ],
+		[
+			'by the other scheme',
+			'http://example.test/wp-content/uploads/a.gpx',
+		],
+	] )( 'reads the links of a file %s', async ( _label, gpxUrl ) => {
+		await open( { gpxUrl } );
+		expect( selects.get( '2. Refuge' )?.options[ 0 ].label ).toBe(
+			'As in the GPX file: Refuge post'
+		);
+		expect( container.textContent ).not.toContain( 'Media Library' );
+	} );
+
+	it.each( [
+		[
+			'on another site',
+			'https://elsewhere.test/wp-content/uploads/a.gpx',
+		],
+		[ 'with a query', `${ UPLOADS }/a.gpx?v=2` ],
+		[ 'with a fragment', `${ UPLOADS }/a.gpx#top` ],
+		[ 'beside the uploads', `${ UPLOADS }-old/a.gpx` ],
+	] )( 'does not read those of a file %s', async ( _label, gpxUrl ) => {
+		await open( { gpxUrl } );
+		expect( selects.get( '2. Refuge' )?.options[ 0 ].label ).toBe( 'None' );
 	} );
 } );
 
