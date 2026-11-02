@@ -275,23 +275,6 @@ test(
 	}
 );
 
-/**
- * A map the box could offer.
- *
- * @param int $host The post.
- * @return array<string, mixed>
- */
-function gpxrm_addable_map( int $host ): array {
-	return array(
-		'host'    => $host,
-		'ordinal' => 0,
-		'hash'    => str_repeat( 'd', 40 ),
-		'number'  => 1,
-		'of'      => 1,
-		'file'    => 'https://example.test/uploads/route.gpx',
-	);
-}
-
 test(
 	'the box offers maps in posts the user can edit, other than patterns',
 	function () {
