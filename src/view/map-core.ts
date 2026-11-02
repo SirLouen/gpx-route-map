@@ -53,6 +53,82 @@ function onMap( lat: number, lon: number ): boolean {
 }
 
 /**
+ * Give the points of a stretch between two elevation readings their share of
+ * its slope, by distance. A jump between segments has no length, as on the
+ * profile's axis.
+ *
+ * @param coords The track's coordinates, changed in place.
+ * @param from   Index of the reading the stretch starts at.
+ * @param to     Index of the reading it ends at.
+ * @param starts Indices where a segment begins.
+ */
+function fillBetween(
+	coords: Coord[],
+	from: number,
+	to: number,
+	starts: Set< number >
+): void {
+	const along = [ 0 ];
+	for ( let i = from + 1; i <= to; i++ ) {
+		along.push(
+			along[ along.length - 1 ] +
+				( starts.has( i )
+					? 0
+					: haversine(
+							coords[ i - 1 ][ 1 ],
+							coords[ i - 1 ][ 0 ],
+							coords[ i ][ 1 ],
+							coords[ i ][ 0 ]
+						) )
+		);
+	}
+	const length = along[ along.length - 1 ];
+	const rise = coords[ to ][ 2 ] - coords[ from ][ 2 ];
+	for ( let i = from + 1; i < to; i++ ) {
+		const share = length ? along[ i - from ] / length : 0;
+		coords[ i ][ 2 ] = coords[ from ][ 2 ] + rise * share;
+	}
+}
+
+/**
+ * Give the points a file leaves without an elevation one from the readings
+ * around them. Left at 0, each would be a drop to sea level and back: fake
+ * climbing in the stats and a spike in the profile. Between two readings this
+ * adds no climbing and no new high or low; before the first reading and after
+ * the last a point holds the nearest. A track with no readings stays at 0.
+ *
+ * @param coords        The track's coordinates, changed in place.
+ * @param segmentStarts Indices where a segment begins.
+ * @param hasEle        Whether each point's elevation came from the file.
+ */
+function fillElevationGaps(
+	coords: Coord[],
+	segmentStarts: number[],
+	hasEle: boolean[]
+): void {
+	const first = hasEle.indexOf( true );
+	if ( -1 === first ) {
+		return;
+	}
+	const starts = new Set( segmentStarts );
+	let last = first;
+	for ( let i = first + 1; i < coords.length; i++ ) {
+		if ( hasEle[ i ] ) {
+			if ( i > last + 1 ) {
+				fillBetween( coords, last, i, starts );
+			}
+			last = i;
+		}
+	}
+	for ( let i = 0; i < first; i++ ) {
+		coords[ i ][ 2 ] = coords[ first ][ 2 ];
+	}
+	for ( let i = last + 1; i < coords.length; i++ ) {
+		coords[ i ][ 2 ] = coords[ last ][ 2 ];
+	}
+}
+
+/**
  * The points of a track or route that can go on the map, and where each of
  * its segments starts.
  *
@@ -78,9 +154,11 @@ function readPoints(
 		lastSegment = segment;
 		const eleEl = pt.querySelector( 'ele' );
 		const ele = eleEl ? parseFloat( eleEl.textContent ?? '' ) : NaN;
-		coords.push( [ lon, lat, Number.isNaN( ele ) ? 0 : ele ] );
-		hasEle.push( Number.isFinite( ele ) );
+		const known = Number.isFinite( ele );
+		coords.push( [ lon, lat, known ? ele : 0 ] );
+		hasEle.push( known );
 	} );
+	fillElevationGaps( coords, segmentStarts, hasEle );
 	return { coords, segmentStarts, hasEle };
 }
 
