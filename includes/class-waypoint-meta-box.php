@@ -17,15 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * The box a Waypoint post's own settings are edited in, on its classic edit
  * screen, and how they save: its description, its marker, and the icon and
  * colours of an icon marker. It ends with the post's ID and the GPX extension
- * that links a file's waypoint to it. Its coordinates save here too, with its
- * other settings, from the fields under the map in Waypoint_Maps_Box.
+ * that links a file's waypoint to it.
  */
 final class Waypoint_Meta_Box {
-
-	/**
-	 * The address argument that says coordinates could not be saved.
-	 */
-	const NOTICE_ARG = 'gpxrm_coords';
 
 	/**
 	 * Add the box to the edit screen.
@@ -266,84 +260,6 @@ final class Waypoint_Meta_Box {
 				update_post_meta( $post_id, $key, wp_slash( $value ) );
 			}
 		}
-
-		$this->save_coordinates( $post_id );
-	}
-
-	/**
-	 * Save the coordinates: stored when good, cleared when both fields are
-	 * empty, and when they cannot be read, kept as they were, for a notice
-	 * to say so rather than lose them. A form without the fields, rendered
-	 * before they existed, clears nothing.
-	 *
-	 * @param int $post_id Post ID.
-	 * @return void
-	 */
-	private function save_coordinates( int $post_id ): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- may_save() checks the nonce.
-		if ( ! isset( $_POST['gpxrm_lat'] ) && ! isset( $_POST['gpxrm_lon'] ) ) {
-			return;
-		}
-
-		$coordinates = Waypoint_Coordinates::parse( self::posted( 'gpxrm_lat' ), self::posted( 'gpxrm_lon' ) );
-		if ( null === $coordinates ) {
-			add_filter( 'redirect_post_location', array( $this, 'flag_invalid_coordinates' ) );
-			return;
-		}
-
-		if ( '' === $coordinates['lat'] ) {
-			delete_post_meta( $post_id, Waypoints::META_LAT );
-			delete_post_meta( $post_id, Waypoints::META_LON );
-			return;
-		}
-
-		update_post_meta( $post_id, Waypoints::META_LAT, $coordinates['lat'] );
-		update_post_meta( $post_id, Waypoints::META_LON, $coordinates['lon'] );
-	}
-
-	/**
-	 * Say in the address WordPress returns to that the coordinates were not
-	 * saved.
-	 *
-	 * @param string $location The address.
-	 * @return string
-	 */
-	public function flag_invalid_coordinates( string $location ): string {
-		return add_query_arg( self::NOTICE_ARG, 'invalid', $location );
-	}
-
-	/**
-	 * Take that from the address once it has been read.
-	 *
-	 * @param array<int, string> $args Arguments WordPress removes.
-	 * @return array<int, string>
-	 */
-	public function removable_args( array $args ): array {
-		$args[] = self::NOTICE_ARG;
-		return $args;
-	}
-
-	/**
-	 * Say that the coordinates were not saved, beside WordPress's own notice
-	 * that the post was.
-	 *
-	 * @return void
-	 */
-	public function coordinates_notice(): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only chooses to show a fixed message.
-		if ( ! isset( $_GET[ self::NOTICE_ARG ] ) ) {
-			return;
-		}
-
-		$screen = get_current_screen();
-		if ( null === $screen || Waypoints::POST_TYPE !== $screen->post_type ) {
-			return;
-		}
-
-		wp_admin_notice(
-			__( 'The coordinates were not saved. Enter a latitude from -90 to 90 and a longitude from -180 to 180 in decimal degrees, such as 50.75 and 5.93. This waypoint keeps its earlier coordinates.', 'gpx-route-map' ),
-			array( 'type' => 'warning' )
-		);
 	}
 
 	/**

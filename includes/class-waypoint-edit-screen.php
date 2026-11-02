@@ -42,8 +42,8 @@ final class Waypoint_Edit_Screen {
 		add_action( 'save_post_' . Waypoints::POST_TYPE, array( $saver, 'queue' ) );
 		add_action( 'wp_after_insert_post', array( $saver, 'write' ), 100 );
 		add_action( 'admin_notices', array( $report, 'show' ) );
-		add_filter( 'removable_query_args', array( $box, 'removable_args' ) );
-		add_action( 'admin_notices', array( $box, 'coordinates_notice' ) );
+		add_filter( 'removable_query_args', array( $saver, 'removable_args' ) );
+		add_action( 'admin_notices', array( $saver, 'coordinates_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_assets' ) );
 		add_filter( 'manage_' . Waypoints::POST_TYPE . '_posts_columns', array( $columns, 'columns' ) );
 		add_action( 'manage_' . Waypoints::POST_TYPE . '_posts_custom_column', array( $columns, 'column' ), 10, 2 );
