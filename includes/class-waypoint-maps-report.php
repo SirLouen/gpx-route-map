@@ -247,7 +247,11 @@ final class Waypoint_Maps_Report {
 	 */
 	private static function undo_note( int $host ): string {
 		$post = get_post( $host );
-		if ( ! $post instanceof \WP_Post || ! wp_revisions_enabled( $post ) || ! post_type_supports( $post->post_type, 'revisions' ) ) {
+		if ( ! $post instanceof \WP_Post ) {
+			return '';
+		}
+
+		if ( ! wp_revisions_enabled( $post ) || ! post_type_supports( $post->post_type, 'revisions' ) ) {
 			return '';
 		}
 

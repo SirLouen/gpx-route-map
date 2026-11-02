@@ -84,7 +84,7 @@ final class Waypoint_Map_Rows {
 				$by_host[ $host ] = $places;
 			}
 
-			$addable = array_merge( $addable, self::addable_in( $maps, $waypoint, $host, $hash ) );
+			array_push( $addable, ...self::addable_in( $maps, $waypoint, $host, $hash ) );
 		}
 
 		// Otherwise each host below is a query of its own.
@@ -144,7 +144,11 @@ final class Waypoint_Map_Rows {
 	private static function addable_in( array $maps, int $waypoint, int $host, string $hash ): array {
 		$found = array();
 		foreach ( array_values( $maps ) as $index => $map ) {
-			if ( 'block' === $map['kind'] && '' !== $map['file_url'] && array() === self::places( $map, $waypoint ) ) {
+			if ( 'block' !== $map['kind'] ) {
+				continue;
+			}
+
+			if ( '' !== $map['file_url'] && array() === self::places( $map, $waypoint ) ) {
 				$found[] = array(
 					'host'    => $host,
 					'ordinal' => $map['ordinal'],
@@ -207,7 +211,9 @@ final class Waypoint_Map_Rows {
 	/**
 	 * Where one map shows a Waypoint post: at each waypoint of the file linked
 	 * to it, which a link in the block can take from the file, and at its own
-	 * coordinates when added.
+	 * coordinates when added. A block link that repeats the file's counts as
+	 * the file's: without it the file would link the post all the same, so
+	 * removing it could not take the post off the map.
 	 *
 	 * @param array<string, mixed> $map      The map.
 	 * @param int                  $waypoint The Waypoint post.
@@ -218,8 +224,9 @@ final class Waypoint_Map_Rows {
 	private static function places( array $map, int $waypoint ): array {
 		$places = array();
 		foreach ( array_keys( $map['links'], $waypoint, true ) as $position ) {
+			$in_file  = ( $map['file_links'][ $position ] ?? 0 ) === $waypoint;
 			$places[] = array(
-				'where'    => isset( $map['own'][ $position ] ) ? 'own' : 'file',
+				'where'    => $in_file || ! isset( $map['own'][ $position ] ) ? 'file' : 'own',
 				'position' => $position,
 			);
 		}
