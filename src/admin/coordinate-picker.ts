@@ -61,6 +61,12 @@ interface PickerMap {
 	showRoute: ( url: string ) => void;
 }
 
+/** The form, and the map once it is there. */
+interface Picking {
+	form: Form;
+	map: PickerMap | null;
+}
+
 /**
  * A number in decimal degrees, by the rule the server saves by: a dot or a
  * comma, and only the digits 0 to 9. See Waypoint_Coordinates::number().
@@ -312,6 +318,87 @@ function buildMap(
 }
 
 /**
+ * Keep the rest of the form and the pin in step with the fields.
+ *
+ * @param picking The picker.
+ */
+function followFields( picking: Picking ): void {
+	syncForm( picking.form );
+	picking.map?.showPlace( placeIn( picking.form ) );
+}
+
+/**
+ * Put a place in the fields.
+ *
+ * @param picking The picker.
+ * @param lat     The latitude's text.
+ * @param lon     The longitude's text.
+ */
+function fillFields( picking: Picking, lat: string, lon: string ): void {
+	picking.form.lat.value = lat;
+	picking.form.lon.value = lon;
+	followFields( picking );
+}
+
+/**
+ * Bring the place in the fields to the middle of the map, if there is one.
+ *
+ * @param picking The picker.
+ */
+function centreOnPlace( picking: Picking ): void {
+	const place = placeIn( picking.form );
+	if ( place ) {
+		picking.map?.centre( place );
+	}
+}
+
+/**
+ * Show the route of the map chosen. With none chosen, a route that took the
+ * view elsewhere has gone, so go back to the place.
+ *
+ * @param picking The picker.
+ */
+function followChoice( picking: Picking ): void {
+	const route = chosenRoute( picking.form );
+	syncForm( picking.form );
+	picking.map?.showRoute( route );
+	if ( ! route ) {
+		centreOnPlace( picking );
+	}
+}
+
+/**
+ * Listen to the form.
+ *
+ * @param picking The picker.
+ */
+function bindForm( picking: Picking ): void {
+	const { form } = picking;
+	[ form.lat, form.lon ].forEach( ( input ) => {
+		input.addEventListener( 'input', () => followFields( picking ) );
+		input.addEventListener( 'change', () => centreOnPlace( picking ) );
+	} );
+	form.clear?.addEventListener( 'click', () =>
+		fillFields( picking, '', '' )
+	);
+	form.add?.addEventListener( 'change', () => followChoice( picking ) );
+}
+
+/**
+ * Say the map could not load. The fields work all the same.
+ *
+ * @param root The picker's element.
+ */
+function showFailure( root: HTMLElement ): void {
+	const mapEl = root.querySelector< HTMLElement >( '.gpxrm-picker-map' );
+	const failed = root.querySelector< HTMLElement >( '.gpxrm-picker-failed' );
+	if ( mapEl && failed ) {
+		mapEl.hidden = true;
+		failed.hidden = false;
+	}
+}
+
+/**
  * Tie the map and the form together.
  *
  * @param root The picker's element.
@@ -326,54 +413,22 @@ export function initPicker(
 		return;
 	}
 
-	let picker: PickerMap | null = null;
-
-	const followFields = () => {
-		syncForm( form );
-		picker?.showPlace( placeIn( form ) );
-	};
-
-	const fill = ( lat: string, lon: string ) => {
-		form.lat.value = lat;
-		form.lon.value = lon;
-		followFields();
-	};
-
-	[ form.lat, form.lon ].forEach( ( input ) => {
-		input.addEventListener( 'input', followFields );
-		input.addEventListener( 'change', () => {
-			const place = placeIn( form );
-			if ( place ) {
-				picker?.centre( place );
-			}
-		} );
-	} );
-	form.clear?.addEventListener( 'click', () => fill( '', '' ) );
-	form.add?.addEventListener( 'change', () => {
-		syncForm( form );
-		picker?.showRoute( chosenRoute( form ) );
-	} );
-
+	const picking: Picking = { form, map: null };
+	bindForm( picking );
 	syncForm( form );
 
 	load()
 		.then( ( maplibregl ) => {
-			picker = buildMap( root, form, maplibregl, ( lat, lon ) =>
-				fill( formatDegrees( lat ), formatDegrees( lon ) )
+			picking.map = buildMap( root, form, maplibregl, ( lat, lon ) =>
+				fillFields(
+					picking,
+					formatDegrees( lat ),
+					formatDegrees( lon )
+				)
 			);
 			if ( chosenRoute( form ) ) {
-				picker.showRoute( chosenRoute( form ) );
+				picking.map.showRoute( chosenRoute( form ) );
 			}
 		} )
-		.catch( () => {
-			const mapEl =
-				root.querySelector< HTMLElement >( '.gpxrm-picker-map' );
-			const failed = root.querySelector< HTMLElement >(
-				'.gpxrm-picker-failed'
-			);
-			if ( mapEl && failed ) {
-				mapEl.hidden = true;
-				failed.hidden = false;
-			}
-		} );
+		.catch( () => showFailure( root ) );
 }

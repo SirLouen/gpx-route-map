@@ -300,7 +300,7 @@ final class Waypoint_Maps_Box {
 			</select>
 		</p>
 		<p class="gpxrm-maps-add-place description" hidden><?php esc_html_e( 'Now click the map above to choose this waypoint\'s place.', 'gpx-route-map' ); ?></p>
-		<p class="description"><?php esc_html_e( 'Choosing a map shows its route above. Click Update to add this waypoint to it, at its own coordinates. To place it on one of a file\'s waypoints, use the Waypoints panel of the map\'s block.', 'gpx-route-map' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Choosing a map shows its route above. This waypoint joins it when you save, at its own coordinates. To place it on one of a file\'s waypoints, use the Waypoints panel of the map\'s block.', 'gpx-route-map' ); ?></p>
 		<?php
 	}
 

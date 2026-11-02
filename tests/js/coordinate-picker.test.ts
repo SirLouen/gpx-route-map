@@ -134,10 +134,11 @@ function wrapped( lng: number ): number {
 /**
  * The box as the server prints it.
  *
- * @param lat The stored latitude.
- * @param lon The stored longitude.
+ * @param stored     The stored place.
+ * @param stored.lat Its latitude.
+ * @param stored.lon Its longitude.
  */
-function mount( lat = '', lon = '' ) {
+function mount( { lat, lon } = { lat: '', lon: '' } ) {
 	document.body.innerHTML = `
 		<div id="gpxrm-waypoint-maps">
 			<fieldset class="gpxrm-picker" data-gpxrm-tile-url="https://tiles.test/{z}/{x}/{y}.png" data-gpxrm-attribution="Tiles" data-gpxrm-tile-max-zoom="19" data-gpxrm-pin-label="Waypoint's place">
@@ -202,11 +203,12 @@ function choose( add: HTMLSelectElement, value: string ) {
 /**
  * Click the map.
  *
- * @param map The map.
- * @param lng Longitude.
- * @param lat Latitude.
+ * @param map    The map.
+ * @param at     Where.
+ * @param at.lng Longitude.
+ * @param at.lat Latitude.
  */
-function clickMap( map: FakeMap, lng: number, lat: number ) {
+function clickMap( map: FakeMap, { lng, lat }: { lng: number; lat: number } ) {
 	map.fire( 'click', {
 		lngLat: { wrap: () => ( { lng: wrapped( lng ), lat } ) },
 	} );
@@ -305,7 +307,7 @@ describe( 'formatDegrees', () => {
 describe( 'the picker', () => {
 	it( 'opens on the stored place, with its pin', async () => {
 		const { lib, maps, markers } = fakeMapLibre();
-		const { root } = mount( '50.75', '5.93' );
+		const { root } = mount( { lat: '50.75', lon: '5.93' } );
 
 		initPicker( root, () => Promise.resolve( lib ) );
 		await settle();
@@ -358,7 +360,7 @@ describe( 'the picker', () => {
 
 		initPicker( root, () => Promise.resolve( lib ) );
 		await settle();
-		clickMap( maps[ 0 ], -6.123456789, 43.5 );
+		clickMap( maps[ 0 ], { lng: -6.123456789, lat: 43.5 } );
 
 		expect( lat.value ).toBe( '43.5' );
 		expect( lon.value ).toBe( '-6.1234568' );
@@ -372,8 +374,8 @@ describe( 'the picker', () => {
 
 		initPicker( root, () => Promise.resolve( lib ) );
 		await settle();
-		clickMap( maps[ 0 ], -6, 43 );
-		clickMap( maps[ 0 ], -7, 44 );
+		clickMap( maps[ 0 ], { lng: -6, lat: 43 } );
+		clickMap( maps[ 0 ], { lng: -7, lat: 44 } );
 
 		expect( markers ).toHaveLength( 1 );
 		expect( markers[ 0 ].lngLat ).toEqual( [ -7, 44 ] );
@@ -385,14 +387,14 @@ describe( 'the picker', () => {
 
 		initPicker( root, () => Promise.resolve( lib ) );
 		await settle();
-		clickMap( maps[ 0 ], 190, 10 );
+		clickMap( maps[ 0 ], { lng: 190, lat: 10 } );
 
 		expect( lon.value ).toBe( '-170' );
 	} );
 
 	it( 'fills the fields when the pin is dragged', async () => {
 		const { lib, markers } = fakeMapLibre();
-		const { root, lat, lon } = mount( '50.75', '5.93' );
+		const { root, lat, lon } = mount( { lat: '50.75', lon: '5.93' } );
 
 		initPicker( root, () => Promise.resolve( lib ) );
 		await settle();
@@ -433,7 +435,7 @@ describe( 'the picker', () => {
 
 	it( 'takes the pin away when the fields stop being a place', async () => {
 		const { lib, markers } = fakeMapLibre();
-		const { root, lat } = mount( '50.75', '5.93' );
+		const { root, lat } = mount( { lat: '50.75', lon: '5.93' } );
 
 		initPicker( root, () => Promise.resolve( lib ) );
 		await settle();
@@ -444,7 +446,10 @@ describe( 'the picker', () => {
 
 	it( 'clears the place with one button, which only shows with something to clear', async () => {
 		const { lib, markers } = fakeMapLibre();
-		const { root, lat, lon, clear } = mount( '50.75', '5.93' );
+		const { root, lat, lon, clear } = mount( {
+			lat: '50.75',
+			lon: '5.93',
+		} );
 
 		initPicker( root, () => Promise.resolve( lib ) );
 		await settle();
@@ -466,7 +471,7 @@ describe( 'the picker', () => {
 		await settle();
 		expect( own.disabled ).toBe( true );
 
-		clickMap( maps[ 0 ], -6, 43 );
+		clickMap( maps[ 0 ], { lng: -6, lat: 43 } );
 		expect( own.disabled ).toBe( false );
 
 		clear.click();
@@ -484,7 +489,7 @@ describe( 'the picker', () => {
 		choose( add, '100:b:0:abc' );
 		expect( hint.hidden ).toBe( false );
 
-		clickMap( maps[ 0 ], -6, 43 );
+		clickMap( maps[ 0 ], { lng: -6, lat: 43 } );
 		expect( hint.hidden ).toBe( true );
 	} );
 
@@ -547,6 +552,38 @@ describe( 'the picker', () => {
 			features: unknown[];
 		};
 		expect( route.features ).toEqual( [] );
+	} );
+
+	it( 'goes back to the place when no map is chosen any more', async () => {
+		const { lib, maps } = fakeMapLibre();
+		const { root, add } = mount( { lat: '50.75', lon: '5.93' } );
+
+		initPicker( root, () => Promise.resolve( lib ) );
+		await settle();
+		maps[ 0 ].fire( 'load' );
+		choose( add, '100:b:0:abc' );
+		await settle();
+		choose( add, '' );
+		await settle();
+
+		expect( maps[ 0 ].eased.at( -1 ) ).toEqual( {
+			center: [ 5.93, 50.75 ],
+		} );
+	} );
+
+	it( 'stays where it is with no map chosen and no place', async () => {
+		const { lib, maps } = fakeMapLibre();
+		const { root, add } = mount();
+
+		initPicker( root, () => Promise.resolve( lib ) );
+		await settle();
+		maps[ 0 ].fire( 'load' );
+		choose( add, '100:b:0:abc' );
+		await settle();
+		choose( add, '' );
+		await settle();
+
+		expect( maps[ 0 ].eased ).toEqual( [] );
 	} );
 
 	it( 'shows only the last of two routes asked for', async () => {
@@ -631,7 +668,7 @@ describe( 'the picker', () => {
 
 		initPicker( root, () => Promise.resolve( lib ) );
 		await settle();
-		clickMap( maps[ 0 ], -6, 43 );
+		clickMap( maps[ 0 ], { lng: -6, lat: 43 } );
 
 		expect( lat.value ).toBe( '43' );
 	} );

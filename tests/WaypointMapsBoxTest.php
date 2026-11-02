@@ -299,6 +299,17 @@ test(
 	}
 );
 
+// A new waypoint has a Publish button, and a draft a Save Draft one.
+test(
+	'the box names no button a waypoint may not have',
+	function () {
+		$html = gpxrm_box( array( 'addable' => array( gpxrm_addable_map( 100 ) ) ), new WP_Post( 12, 'Summit' ) );
+
+		expect( $html )->not->toContain( 'Click Update' );
+		expect( $html )->toContain( 'when you save' );
+	}
+);
+
 test(
 	'each map to add to says where its route is, for the map above to show',
 	function () {
