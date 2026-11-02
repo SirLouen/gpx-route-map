@@ -23,7 +23,7 @@ jobs:
             - name: Set up PHP
               uses: shivammathur/setup-php@v2
               with:
-                  php-version: '8.3'
+                  php-version: '8.4'
                   coverage: none
                   tools: composer
 
@@ -39,7 +39,7 @@ jobs:
             - name: Coding standards (phpcs.xml.dist)
               run: phpcs
 
-            - name: Static analysis (PHPStan max, on PHP 8.3 and as PHP 7.4)
+            - name: Static analysis (PHPStan max, on PHP 8.4 and as PHP 7.4)
               run: composer analyse -- --no-progress
 
             - name: Unit tests (Pest)
