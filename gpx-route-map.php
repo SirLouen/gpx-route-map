@@ -47,6 +47,10 @@ require_once GPXRM_PLUGIN_DIR . 'includes/class-post-maps.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-map-hosts.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-map-rows.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-maps-box.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-map-link-edit.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-map-host-writer.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-maps-report.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-maps-save.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-plugin.php';
 
 /**

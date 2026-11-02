@@ -118,6 +118,34 @@ if ( ! class_exists( 'WP_Post' ) ) {
 		public $post_password;
 
 		/**
+		 * Content.
+		 *
+		 * @var string
+		 */
+		public $post_content = '';
+
+		/**
+		 * Excerpt.
+		 *
+		 * @var string
+		 */
+		public $post_excerpt = '';
+
+		/**
+		 * Address name.
+		 *
+		 * @var string
+		 */
+		public $post_name = '';
+
+		/**
+		 * When it last changed.
+		 *
+		 * @var string
+		 */
+		public $post_modified = '';
+
+		/**
 		 * Type.
 		 *
 		 * @var string
@@ -148,13 +176,15 @@ if ( ! class_exists( 'WP_Post' ) ) {
 
 if ( ! function_exists( 'get_post' ) ) {
 	/**
-	 * A post a test made.
+	 * A post a test made, as an object or, given ARRAY_A, as an array.
 	 *
-	 * @param int $post_id Post ID.
-	 * @return WP_Post|null
+	 * @param int    $post_id Post ID.
+	 * @param string $output  How to give it.
+	 * @return WP_Post|array<string, mixed>|null
 	 */
-	function get_post( int $post_id ): ?WP_Post {
-		return $GLOBALS['gpxrm_test_posts'][ $post_id ] ?? null;
+	function get_post( int $post_id, string $output = 'OBJECT' ) {
+		$post = $GLOBALS['gpxrm_test_posts'][ $post_id ] ?? null;
+		return null !== $post && 'ARRAY_A' === $output ? get_object_vars( $post ) : $post;
 	}
 }
 
@@ -187,11 +217,12 @@ if ( ! function_exists( 'get_the_title' ) ) {
 	/**
 	 * A post's title.
 	 *
-	 * @param WP_Post $post The post.
+	 * @param WP_Post|int $post The post, or its ID.
 	 * @return string
 	 */
-	function get_the_title( WP_Post $post ): string {
-		return $post->post_title;
+	function get_the_title( $post ): string {
+		$found = is_int( $post ) ? $GLOBALS['gpxrm_test_posts'][ $post ] : $post;
+		return $found->post_title;
 	}
 }
 
@@ -260,13 +291,18 @@ if ( ! function_exists( 'wp_unslash' ) ) {
 
 if ( ! function_exists( 'wp_slash' ) ) {
 	/**
-	 * Text with the slashes update_post_meta() takes off.
+	 * Text with the slashes update_post_meta() takes off, in text alone or in
+	 * an array.
 	 *
-	 * @param string $value Text.
-	 * @return string
+	 * @param mixed $value Value.
+	 * @return mixed
 	 */
-	function wp_slash( string $value ): string {
-		return addslashes( $value );
+	function wp_slash( $value ) {
+		if ( is_array( $value ) ) {
+			return array_map( 'wp_slash', $value );
+		}
+
+		return is_string( $value ) ? addslashes( $value ) : $value;
 	}
 }
 
@@ -527,6 +563,234 @@ if ( ! function_exists( 'absint' ) ) {
 	 */
 	function absint( string $value ): int {
 		return abs( (int) $value );
+	}
+}
+
+if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
+	define( 'HOUR_IN_SECONDS', 3600 );
+}
+
+if ( ! function_exists( 'clean_post_cache' ) ) {
+	/**
+	 * Keep which posts were cleaned, for a test to see.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	function clean_post_cache( int $post_id ): void {
+		$GLOBALS['gpxrm_test_cleaned'][] = $post_id;
+	}
+}
+
+if ( ! function_exists( 'wp_cache_delete' ) ) {
+	/**
+	 * Keep what was dropped from the cache, for a test to see.
+	 *
+	 * @param int    $key   Key.
+	 * @param string $group Group.
+	 * @return bool
+	 */
+	function wp_cache_delete( int $key, string $group ): bool {
+		$GLOBALS['gpxrm_test_evicted'][ $group ][] = $key;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'get_current_user_id' ) ) {
+	/**
+	 * The user a test logged in.
+	 *
+	 * @return int
+	 */
+	function get_current_user_id(): int {
+		return $GLOBALS['gpxrm_test_user'] ?? 1;
+	}
+}
+
+if ( ! function_exists( 'get_userdata' ) ) {
+	/**
+	 * A user a test named.
+	 *
+	 * @param int $user_id User ID.
+	 * @return object|false
+	 */
+	function get_userdata( int $user_id ) {
+		$name = $GLOBALS['gpxrm_test_users'][ $user_id ] ?? null;
+		return null === $name ? false : (object) array( 'display_name' => $name );
+	}
+}
+
+if ( ! function_exists( 'wp_save_post_revision' ) ) {
+	/**
+	 * Save a revision, through the filter a real one goes through, starting
+	 * from what WordPress's content filters leave of a post.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return int
+	 */
+	function wp_save_post_revision( int $post_id ): int {
+		$GLOBALS['gpxrm_test_revisions'][] = apply_filters(
+			'wp_insert_post_data',
+			array(
+				'post_type'    => 'revision',
+				'post_parent'  => $post_id,
+				'post_content' => 'filtered',
+				'post_title'   => 'filtered',
+				'post_excerpt' => 'filtered',
+			),
+			array()
+		);
+
+		return 1;
+	}
+}
+
+if ( ! function_exists( 'wp_update_post' ) ) {
+	/**
+	 * Save a post, through the filter a real save goes through, starting from
+	 * what WordPress's content filters leave of a post, then save a revision
+	 * as a real save does. A test can make a hook throw once the row is
+	 * written, with $GLOBALS['gpxrm_test_save_throws'].
+	 *
+	 * @param array<string, mixed> $postarr  The post, slashed.
+	 * @param bool                 $wp_error Ignored.
+	 * @return int
+	 * @throws RuntimeException When a test asks for it.
+	 */
+	function wp_update_post( array $postarr, bool $wp_error = false ): int {
+		unset( $wp_error );
+		$GLOBALS['gpxrm_test_saves'][] = $postarr;
+		$data                          = apply_filters(
+			'wp_insert_post_data',
+			array(
+				'post_content'  => 'filtered',
+				'post_title'    => 'filtered',
+				'post_excerpt'  => 'filtered',
+				'post_name'     => 'filtered',
+				'post_status'   => 'publish',
+				'post_modified' => 'now',
+			),
+			$postarr
+		);
+
+		$post = $GLOBALS['gpxrm_test_posts'][ $postarr['ID'] ];
+		foreach ( $data as $field => $value ) {
+			$post->$field = wp_unslash( $value );
+		}
+
+		if ( ! empty( $GLOBALS['gpxrm_test_save_throws'] ) ) {
+			throw new RuntimeException( 'A hook threw.' );
+		}
+
+		wp_save_post_revision( $postarr['ID'] );
+
+		return $postarr['ID'];
+	}
+}
+
+if ( ! function_exists( 'set_transient' ) ) {
+	/**
+	 * Keep a value for a test to read.
+	 *
+	 * @param string $key   Key.
+	 * @param mixed  $value Value.
+	 * @param int    $time  Ignored.
+	 * @return bool
+	 */
+	function set_transient( string $key, $value, int $time = 0 ): bool {
+		unset( $time );
+		$GLOBALS['gpxrm_test_transients'][ $key ] = $value;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'get_transient' ) ) {
+	/**
+	 * A value kept, or false.
+	 *
+	 * @param string $key Key.
+	 * @return mixed
+	 */
+	function get_transient( string $key ) {
+		return $GLOBALS['gpxrm_test_transients'][ $key ] ?? false;
+	}
+}
+
+if ( ! function_exists( 'delete_transient' ) ) {
+	/**
+	 * Drop a value kept.
+	 *
+	 * @param string $key Key.
+	 * @return bool
+	 */
+	function delete_transient( string $key ): bool {
+		unset( $GLOBALS['gpxrm_test_transients'][ $key ] );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_admin_notice' ) ) {
+	/**
+	 * Keep a notice, for a test to see.
+	 *
+	 * @param string               $message Message.
+	 * @param array<string, mixed> $args    How to show it.
+	 * @return void
+	 */
+	function wp_admin_notice( string $message, array $args ): void {
+		$GLOBALS['gpxrm_test_notices'][] = array( $message, $args );
+	}
+}
+
+if ( ! function_exists( 'get_current_screen' ) ) {
+	/**
+	 * The screen a test is on.
+	 *
+	 * @return object|null
+	 */
+	function get_current_screen() {
+		return $GLOBALS['gpxrm_test_screen'] ?? null;
+	}
+}
+
+if ( ! function_exists( 'wp_revisions_enabled' ) ) {
+	/**
+	 * Whether a post keeps revisions: yes, unless a test says otherwise.
+	 *
+	 * @param WP_Post $post The post.
+	 * @return bool
+	 */
+	function wp_revisions_enabled( WP_Post $post ): bool {
+		unset( $post );
+		return empty( $GLOBALS['gpxrm_test_no_revisions'] );
+	}
+}
+
+if ( ! function_exists( 'post_type_supports' ) ) {
+	/**
+	 * Every post type here supports everything.
+	 *
+	 * @param string $type    Post type.
+	 * @param string $feature Feature.
+	 * @return bool
+	 */
+	function post_type_supports( string $type, string $feature ): bool {
+		unset( $type, $feature );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_nonce_field' ) ) {
+	/**
+	 * Print a nonce field.
+	 *
+	 * @param string $action Ignored.
+	 * @param string $name   Field name.
+	 * @return void
+	 */
+	function wp_nonce_field( string $action, string $name ): void {
+		unset( $action );
+		echo '<input type="hidden" name="' . esc_attr( $name ) . '" value="valid">';
 	}
 }
 

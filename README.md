@@ -69,7 +69,11 @@ includes/
   class-waypoint-links.php        Waypoint links from a block or a shortcode
   class-waypoint-coordinates.php  Reads a Waypoint post's coordinates, as typed and as stored
   class-waypoint-rest.php         A Waypoint post's coordinates in the REST API
-  class-waypoint-maps-box.php     The box listing the maps that show a Waypoint post
+  class-waypoint-maps-box.php     The box listing the maps that show a Waypoint post, and changing them
+  class-waypoint-maps-save.php    Saves that box, after the Waypoint's own save
+  class-waypoint-maps-report.php  What an Update tells the user about the maps it changed
+  class-map-host-writer.php       Writes a change to the post that holds a map, and nothing else
+  class-map-link-edit.php         Changes one map's links, byte for byte
   class-waypoint-map-rows.php     Those maps, kept to what the user may see
   class-map-hosts.php             The posts that hold a map
   class-post-maps.php             The maps of one post, in blocks and shortcodes

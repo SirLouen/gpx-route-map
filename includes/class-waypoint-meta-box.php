@@ -282,11 +282,11 @@ final class Waypoint_Meta_Box {
 
 		$fields = Waypoint_Values::sanitize_fields(
 			array(
-				'description' => $this->posted( 'gpxrm_description' ),
-				'marker'      => sanitize_key( $this->posted( 'gpxrm_marker' ) ),
-				'icon'        => sanitize_key( $this->posted( 'gpxrm_icon' ) ),
-				'color'       => sanitize_text_field( $this->posted( 'gpxrm_icon_color' ) ),
-				'background'  => sanitize_text_field( $this->posted( 'gpxrm_icon_background' ) ),
+				'description' => self::posted( 'gpxrm_description' ),
+				'marker'      => sanitize_key( self::posted( 'gpxrm_marker' ) ),
+				'icon'        => sanitize_key( self::posted( 'gpxrm_icon' ) ),
+				'color'       => sanitize_text_field( self::posted( 'gpxrm_icon_color' ) ),
+				'background'  => sanitize_text_field( self::posted( 'gpxrm_icon_background' ) ),
 			)
 		);
 
@@ -325,7 +325,7 @@ final class Waypoint_Meta_Box {
 			return;
 		}
 
-		$coordinates = Waypoint_Coordinates::parse( $this->posted( 'gpxrm_lat' ), $this->posted( 'gpxrm_lon' ) );
+		$coordinates = Waypoint_Coordinates::parse( self::posted( 'gpxrm_lat' ), self::posted( 'gpxrm_lon' ) );
 		if ( null === $coordinates ) {
 			add_filter( 'redirect_post_location', array( $this, 'flag_invalid_coordinates' ) );
 			return;
@@ -387,16 +387,28 @@ final class Waypoint_Meta_Box {
 	}
 
 	/**
-	 * Whether this request saves the box: it was sent from it, for this post,
-	 * it is not an autosave or a revision, and the user can edit the post. A
-	 * plugin that saves another waypoint during the request must not give it
-	 * this form's fields.
+	 * Whether this request saves the box.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return bool
 	 */
 	private function may_save( int $post_id ): bool {
-		if ( ! wp_verify_nonce( sanitize_text_field( $this->posted( Waypoints::NONCE ) ), Waypoints::NONCE_ACTION ) ) {
+		return self::form_sent( Waypoints::NONCE, Waypoints::NONCE_ACTION, $post_id );
+	}
+
+	/**
+	 * Whether a box's form was sent for this post: it carries the box's nonce,
+	 * this is not an autosave or a revision, and the user can edit the post. A
+	 * plugin that saves another waypoint during the request must not give it
+	 * this form's fields.
+	 *
+	 * @param string $nonce   The nonce's field.
+	 * @param string $action  The nonce's action.
+	 * @param int    $post_id Post ID.
+	 * @return bool
+	 */
+	public static function form_sent( string $nonce, string $action, int $post_id ): bool {
+		if ( ! wp_verify_nonce( sanitize_text_field( self::posted( $nonce ) ), $action ) ) {
 			return false;
 		}
 
@@ -404,7 +416,7 @@ final class Waypoint_Meta_Box {
 			return false;
 		}
 
-		if ( (int) $this->posted( 'post_ID' ) !== $post_id ) {
+		if ( (int) self::posted( 'post_ID' ) !== $post_id ) {
 			return false;
 		}
 
@@ -418,8 +430,8 @@ final class Waypoint_Meta_Box {
 	 * @param string $key Field name.
 	 * @return string
 	 */
-	private function posted( string $key ): string {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- may_save() checks the nonce; callers sanitize.
+	public static function posted( string $key ): string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- form_sent() checks the nonce; callers sanitize.
 		$value = isset( $_POST[ $key ] ) ? wp_unslash( $_POST[ $key ] ) : '';
 		return is_string( $value ) ? $value : '';
 	}

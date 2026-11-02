@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * inside [caption], or in a wrapper that prints its content as text, counts
  * though it does not show.
  *
- * @phpstan-type Map array{kind: string, ordinal: int, start: int, file_id: int, file_url: string, own: array<int, int>, links: array<int, int>, added: array<int, int>}
+ * @phpstan-type Map array{kind: string, ordinal: int, start: int, file_id: int, file_url: string, own: array<int, int>, file_links: array<int, int>, links: array<int, int>, added: array<int, int>}
  */
 class Post_Maps {
 
@@ -163,18 +163,20 @@ class Post_Maps {
 		$own  = Waypoint_Links::from_attribute( $attrs['waypointPosts'] ?? null );
 
 		// The map's own links win over the file's, as on the map.
-		$links = $own + $this->links_in( $file['id'], $file['url'] );
+		$file_links = $this->links_in( $file['id'], $file['url'] );
+		$links      = $own + $file_links;
 		ksort( $links );
 
 		return array(
-			'kind'     => $kind,
-			'ordinal'  => $ordinal,
-			'start'    => $start,
-			'file_id'  => $file['id'],
-			'file_url' => $file['url'],
-			'own'      => $own,
-			'links'    => $links,
-			'added'    => Waypoint_Links::added_from_attribute( $attrs['addedWaypoints'] ?? null ),
+			'kind'       => $kind,
+			'ordinal'    => $ordinal,
+			'start'      => $start,
+			'file_id'    => $file['id'],
+			'file_url'   => $file['url'],
+			'own'        => $own,
+			'file_links' => $file_links,
+			'links'      => $links,
+			'added'      => Waypoint_Links::added_from_attribute( $attrs['addedWaypoints'] ?? null ),
 		);
 	}
 

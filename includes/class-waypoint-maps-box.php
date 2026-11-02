@@ -15,9 +15,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * The box that lists the maps showing a Waypoint post, from a block, a
- * shortcode or the GPX file, or at its own coordinates. It changes no post.
+ * shortcode or the GPX file, or at its own coordinates, and changes those in
+ * blocks: Waypoint_Maps_Save writes what its form asks for.
+ *
+ * A field holds which map it is about, by post and place among the post's map
+ * blocks, with a hash of the post's content: a map added above it would
+ * otherwise send the change to the wrong one. The GPX file is only a label,
+ * as one file can be on a map by ID and on another by address.
  *
  * @phpstan-import-type Row from Waypoint_Map_Rows
+ * @phpstan-import-type Addable from Waypoint_Map_Rows
  */
 final class Waypoint_Maps_Box {
 
@@ -65,10 +72,12 @@ final class Waypoint_Maps_Box {
 	 *
 	 * @param array<string, mixed> $found The rows, and what they leave out.
 	 * @param \WP_Post             $post  The waypoint.
-	 * @phpstan-param array{rows: array<int, Row>, hidden: int, unreadable: int} $found
+	 * @phpstan-param array{rows: array<int, Row>, hidden: int, unreadable: int, addable: array<int, Addable>} $found
 	 * @return void
 	 */
 	public function output( array $found, \WP_Post $post ): void {
+		wp_nonce_field( Waypoints::MAPS_NONCE_ACTION, Waypoints::MAPS_NONCE );
+
 		if ( 'publish' !== $post->post_status || '' !== $post->post_password ) {
 			echo '<p class="description">' . esc_html__( 'Maps show this waypoint only once it is published without a password.', 'gpx-route-map' ) . '</p>';
 		}
@@ -83,6 +92,7 @@ final class Waypoint_Maps_Box {
 			echo '<p>' . esc_html__( 'No map shows this waypoint yet.', 'gpx-route-map' ) . '</p>';
 		}
 
+		$this->add_field( $found['addable'], $has_coordinates );
 		$this->notes( $found['hidden'], $found['unreadable'] );
 	}
 
@@ -114,6 +124,7 @@ final class Waypoint_Maps_Box {
 				<tr>
 					<th scope="col"><?php esc_html_e( 'Map', 'gpx-route-map' ); ?></th>
 					<th scope="col"><?php esc_html_e( 'Where it shows', 'gpx-route-map' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Change', 'gpx-route-map' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -149,8 +160,143 @@ final class Waypoint_Maps_Box {
 					<span class="gpxrm-map-details"><?php esc_html_e( 'In a synced pattern, which shows wherever the pattern is used.', 'gpx-route-map' ); ?></span>
 				<?php endif; ?>
 			</td>
+			<td><?php $this->control( $row, $has_coordinates ); ?></td>
 		</tr>
 		<?php
+	}
+
+	/**
+	 * Output what can be done about a row: why nothing, or what.
+	 *
+	 * @param array<string, mixed> $row             The row.
+	 * @param bool                 $has_coordinates Whether the waypoint has coordinates.
+	 * @phpstan-param Row $row
+	 * @return void
+	 */
+	private function control( array $row, bool $has_coordinates ): void {
+		$reason = self::read_only_reason( $row );
+		if ( '' !== $reason ) {
+			echo esc_html( $reason );
+			return;
+		}
+
+		$title = wp_strip_all_tags( get_the_title( $row['host'] ) );
+		?>
+		<select name="<?php echo esc_attr( 'gpxrm_maps[' . self::field( $row ) . ']' ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: a post's title. */ __( 'Change for the map in %s', 'gpx-route-map' ), $title ) ); ?>">
+			<option value="keep"><?php esc_html_e( 'Keep', 'gpx-route-map' ); ?></option>
+			<?php if ( 'own' === $row['where'] && $has_coordinates ) : ?>
+				<option value="own"><?php esc_html_e( 'At its own coordinates', 'gpx-route-map' ); ?></option>
+			<?php endif; ?>
+			<option value="remove"><?php esc_html_e( 'Remove from this map', 'gpx-route-map' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Why a row cannot be changed from here, if it cannot.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 * @phpstan-param Row $row
+	 * @return string
+	 */
+	private static function read_only_reason( array $row ): string {
+		if ( ! $row['can_edit'] ) {
+			return __( 'You can\'t edit this post.', 'gpx-route-map' );
+		}
+
+		if ( 'block' !== $row['kind'] ) {
+			return __( 'In a shortcode. Edit it in the post.', 'gpx-route-map' );
+		}
+
+		if ( 'wp_block' === get_post_type( $row['host'] ) ) {
+			return __( 'In a synced pattern. Edit it in the pattern.', 'gpx-route-map' );
+		}
+
+		return 'file' === $row['where']
+			? __( 'Set in the GPX file. Override it in the map\'s block, or edit the file.', 'gpx-route-map' )
+			: '';
+	}
+
+	/**
+	 * The name of a row's field, without the box's own.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 * @phpstan-param Row $row
+	 * @return string
+	 */
+	private static function field( array $row ): string {
+		$from = 'added' === $row['where'] ? 'a' : 'p' . $row['position'];
+
+		return sprintf( '%d:b:%d:%s:%s', $row['host'], $row['ordinal'], $row['hash'], $from );
+	}
+
+	/**
+	 * Output the choice of a map to add the waypoint to, when it has
+	 * coordinates to show at.
+	 *
+	 * @param array<int, array<string, mixed>> $maps            The maps it could go on.
+	 * @param bool                             $has_coordinates Whether it has coordinates.
+	 * @phpstan-param array<int, Addable> $maps
+	 * @return void
+	 */
+	private function add_field( array $maps, bool $has_coordinates ): void {
+		if ( ! $has_coordinates ) {
+			echo '<p class="description">' . esc_html__( 'Add coordinates above to add this waypoint to a map from here.', 'gpx-route-map' ) . '</p>';
+			return;
+		}
+
+		$offered = Waypoint_Map_Rows::addable( $maps );
+		if ( array() === $offered ) {
+			return;
+		}
+		?>
+		<p class="gpxrm-maps-add">
+			<label for="gpxrm_maps_add"><?php esc_html_e( 'Add to a map', 'gpx-route-map' ); ?></label>
+			<select id="gpxrm_maps_add" name="gpxrm_maps_add">
+				<option value=""><?php esc_html_e( 'Choose a map', 'gpx-route-map' ); ?></option>
+				<?php foreach ( $offered as $map ) : ?>
+					<option value="<?php echo esc_attr( sprintf( '%d:b:%d:%s', $map['host'], $map['ordinal'], $map['hash'] ) ); ?>"><?php echo esc_html( self::add_label( $map ) ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</p>
+		<p class="description"><?php esc_html_e( 'Shows this waypoint at its own coordinates on that map. To place it on one of a file\'s waypoints, use the Waypoints panel of the map\'s block.', 'gpx-route-map' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * How the choice of a map names it.
+	 *
+	 * @param array<string, mixed> $map The map.
+	 * @phpstan-param Addable $map
+	 * @return string
+	 */
+	private static function add_label( array $map ): string {
+		$parts = array(
+			wp_strip_all_tags( get_the_title( $map['host'] ) ),
+			wp_basename( $map['file'] ),
+		);
+
+		if ( $map['of'] > 1 ) {
+			$parts[] = self::map_number( $map['number'], $map['of'] );
+		}
+
+		return implode( ' · ', $parts );
+	}
+
+	/**
+	 * Which of a post's maps one is.
+	 *
+	 * @param int $number Which it is, from 1.
+	 * @param int $of     How many the post has.
+	 * @return string
+	 */
+	private static function map_number( int $number, int $of ): string {
+		return sprintf(
+			/* translators: 1: which of a post's maps this is, 2: how many maps the post has. */
+			__( 'Map %1$d of %2$d', 'gpx-route-map' ),
+			$number,
+			$of
+		);
 	}
 
 	/**
@@ -192,12 +338,7 @@ final class Waypoint_Maps_Box {
 		);
 
 		if ( $row['of'] > 1 ) {
-			$parts[] = sprintf(
-				/* translators: 1: which of a post's maps this is, 2: how many maps the post has. */
-				__( 'Map %1$d of %2$d', 'gpx-route-map' ),
-				$row['number'],
-				$row['of']
-			);
+			$parts[] = self::map_number( $row['number'], $row['of'] );
 		}
 
 		return implode( ' · ', array_filter( $parts, 'is_string' ) );

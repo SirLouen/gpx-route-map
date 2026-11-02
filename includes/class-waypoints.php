@@ -90,6 +90,9 @@ class Waypoints {
 	const NONCE        = 'gpxrm_waypoint_nonce';
 	const NONCE_ACTION = 'gpxrm_waypoint_save';
 
+	const MAPS_NONCE        = 'gpxrm_maps_nonce';
+	const MAPS_NONCE_ACTION = 'gpxrm_maps_save';
+
 	/**
 	 * Register the hooks. Each one checks whether the feature is on when it
 	 * runs, so turning it on or off takes effect on the next request.

@@ -31,12 +31,17 @@ final class Waypoint_Edit_Screen {
 	public function register(): void {
 		$box     = new Waypoint_Meta_Box();
 		$maps    = new Waypoint_Maps_Box();
+		$saver   = new Waypoint_Maps_Save();
+		$report  = new Waypoint_Maps_Report();
 		$columns = new Waypoint_Columns();
 
 		add_filter( 'use_block_editor_for_post_type', array( $this, 'use_block_editor' ), 10, 2 );
 		add_action( 'add_meta_boxes_' . Waypoints::POST_TYPE, array( $box, 'add' ) );
 		add_action( 'add_meta_boxes_' . Waypoints::POST_TYPE, array( $maps, 'add' ) );
 		add_action( 'save_post_' . Waypoints::POST_TYPE, array( $box, 'save' ) );
+		add_action( 'save_post_' . Waypoints::POST_TYPE, array( $saver, 'queue' ) );
+		add_action( 'wp_after_insert_post', array( $saver, 'write' ), 100 );
+		add_action( 'admin_notices', array( $report, 'show' ) );
 		add_filter( 'removable_query_args', array( $box, 'removable_args' ) );
 		add_action( 'admin_notices', array( $box, 'coordinates_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_assets' ) );
