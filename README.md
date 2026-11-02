@@ -69,6 +69,11 @@ includes/
   class-waypoint-links.php        Waypoint links from a block or a shortcode
   class-waypoint-coordinates.php  Reads a Waypoint post's coordinates, as typed and as stored
   class-waypoint-rest.php         A Waypoint post's coordinates in the REST API
+  class-waypoint-maps-box.php     The box listing the maps that show a Waypoint post
+  class-waypoint-map-rows.php     Those maps, kept to what the user may see
+  class-map-hosts.php             The posts that hold a map
+  class-post-maps.php             The maps of one post, in blocks and shortcodes
+  class-map-tokens.php            Finds map blocks with WordPress's tokenizer
   class-gpx-file-links.php        A Media Library GPX file's own links, cached
   class-gpx-link-reader.php       Reads those links from the file, as a stream
   class-waypoint-map-markers.php  What one map is told about its linked waypoints

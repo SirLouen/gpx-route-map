@@ -1087,14 +1087,25 @@ class Plugin {
 			'addedWaypoints' => Waypoint_Links::added_from_shortcode( (string) $atts['waypoints'] ),
 		);
 
+		return Renderer::render( self::shortcode_file( $atts ) + $mapped );
+	}
+
+	/**
+	 * The file a shortcode names, as the attributes a map takes: `id`, then a
+	 * numeric `gpx`, then `gpx` as an address.
+	 *
+	 * @param array<mixed> $atts Shortcode attributes, with their defaults.
+	 * @return array{gpxId?: int, gpxUrl?: string}
+	 */
+	public static function shortcode_file( array $atts ): array {
 		if ( is_numeric( $atts['id'] ) ) {
-			$mapped['gpxId'] = (int) $atts['id'];
-		} elseif ( is_numeric( $atts['gpx'] ) ) {
-			$mapped['gpxId'] = (int) $atts['gpx'];
-		} else {
-			$mapped['gpxUrl'] = (string) $atts['gpx'];
+			return array( 'gpxId' => (int) $atts['id'] );
 		}
 
-		return Renderer::render( $mapped );
+		if ( is_numeric( $atts['gpx'] ) ) {
+			return array( 'gpxId' => (int) $atts['gpx'] );
+		}
+
+		return array( 'gpxUrl' => is_string( $atts['gpx'] ) ? $atts['gpx'] : '' );
 	}
 }

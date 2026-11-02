@@ -54,18 +54,30 @@ final class Waypoint_Map_Markers {
 			return new self( array() );
 		}
 
-		// A pasted address of a file in the Media Library is the same file.
-		if ( $attachment_id <= 0 && '' !== $gpx_url ) {
-			$attachment_id = attachment_url_to_postid( $gpx_url );
-		}
-
 		// The block's own links win over the file's.
-		$links = $chosen + ( $attachment_id > 0 ? ( new Gpx_File_Links( $attachment_id ) )->links() : array() );
+		$links = $chosen + self::file_links( $attachment_id, $gpx_url );
 		ksort( $links );
 
 		$posts = new Waypoint_Posts( $links, $added );
 
 		return new self( $posts->markers(), $posts->added() );
+	}
+
+	/**
+	 * What a map's GPX file links, as a Media Library file. Nothing for a file
+	 * on another site, which is never fetched.
+	 *
+	 * @param int    $attachment_id The map's GPX attachment, or 0.
+	 * @param string $gpx_url       The map's GPX URL.
+	 * @return array<int, int> Post IDs by waypoint position.
+	 */
+	public static function file_links( int $attachment_id, string $gpx_url ): array {
+		// A pasted address of a file in the Media Library is the same file.
+		if ( $attachment_id <= 0 && '' !== $gpx_url ) {
+			$attachment_id = attachment_url_to_postid( $gpx_url );
+		}
+
+		return $attachment_id > 0 ? ( new Gpx_File_Links( $attachment_id ) )->links() : array();
 	}
 
 	/**

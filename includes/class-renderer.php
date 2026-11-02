@@ -812,27 +812,39 @@ class Renderer {
 	}
 
 	/**
+	 * The file a map shows: its Media Library file, or when that is gone, its
+	 * address.
+	 *
+	 * @param array<mixed> $atts Raw attributes.
+	 * @return array{url: string, id: int} The file's address, '' for none, and
+	 *         its attachment, 0 for none.
+	 */
+	public static function file_of( array $atts ): array {
+		$attachment_id = ( isset( $atts['gpxId'] ) && is_numeric( $atts['gpxId'] ) ) ? (int) $atts['gpxId'] : 0;
+		$url           = $attachment_id > 0 ? wp_get_attachment_url( $attachment_id ) : false;
+		if ( is_string( $url ) ) {
+			return array(
+				'url' => $url,
+				'id'  => $attachment_id,
+			);
+		}
+
+		$pasted = $atts['gpxUrl'] ?? '';
+
+		return array(
+			'url' => is_string( $pasted ) && '' !== $pasted ? esc_url_raw( $pasted ) : '',
+			'id'  => 0,
+		);
+	}
+
+	/**
 	 * Normalize block attributes and shortcode atts into one shape.
 	 *
 	 * @param array<string, mixed> $atts Raw attributes.
 	 * @return array{gpx_url: string, gpx_id: int, height: int, height_tablet: int, height_mobile: int, show_stats: bool, show_elevation: bool, show_download: bool, max_zoom: int, provider: string, stats: array{distance: float, gain: float, loss: float, max: float, min: float|null, waypoints: int}|null, units: string, stat_fields: array<int, string>, waypoint_posts: array<int, int>, added_waypoints: array<int, int>}
 	 */
 	private static function normalize( array $atts ): array {
-		$gpx_url = '';
-		$gpx_id  = 0;
-
-		$attachment_id = ( isset( $atts['gpxId'] ) && is_numeric( $atts['gpxId'] ) ) ? (int) $atts['gpxId'] : 0;
-		if ( $attachment_id > 0 ) {
-			$url = wp_get_attachment_url( $attachment_id );
-			if ( is_string( $url ) ) {
-				$gpx_url = $url;
-				$gpx_id  = $attachment_id;
-			}
-		}
-
-		if ( '' === $gpx_url && isset( $atts['gpxUrl'] ) && is_string( $atts['gpxUrl'] ) && '' !== $atts['gpxUrl'] ) {
-			$gpx_url = esc_url_raw( $atts['gpxUrl'] );
-		}
+		$file = self::file_of( $atts );
 
 		// A height of 0 (or none at all) means "use whatever the site says", so
 		// changing the site setting resizes every map that has not set its own.
@@ -858,8 +870,8 @@ class Renderer {
 			: self::default_max_zoom();
 
 		return array(
-			'gpx_url'         => $gpx_url,
-			'gpx_id'          => $gpx_id,
+			'gpx_url'         => $file['url'],
+			'gpx_id'          => $file['id'],
 			'height'          => self::clamp( $height, self::MIN_HEIGHT, self::MAX_HEIGHT ),
 			'height_tablet'   => $tablet,
 			'height_mobile'   => $mobile,

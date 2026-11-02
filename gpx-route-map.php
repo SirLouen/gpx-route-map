@@ -42,6 +42,11 @@ require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-meta-box.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-columns.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-edit-screen.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-rest.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-map-tokens.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-post-maps.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-map-hosts.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-map-rows.php';
+require_once GPXRM_PLUGIN_DIR . 'includes/class-waypoint-maps-box.php';
 require_once GPXRM_PLUGIN_DIR . 'includes/class-plugin.php';
 
 /**
