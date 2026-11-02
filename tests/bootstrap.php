@@ -150,14 +150,19 @@ if ( ! function_exists( 'esc_attr' ) ) {
 
 if ( ! function_exists( 'current_user_can' ) ) {
 	/**
-	 * Whether a test gave the user this capability. None by default: the
-	 * renderer's capability and asset calls are not what these tests exercise.
+	 * Whether a test gave the user this capability, as "edit_posts", or over
+	 * one post, as "edit_post:12". None by default: the renderer's capability
+	 * and asset calls are not what these tests exercise.
 	 *
 	 * @param mixed ...$args The capability, and what it applies to.
 	 * @return bool
 	 */
 	function current_user_can( ...$args ): bool {
-		return in_array( $args[0] ?? '', $GLOBALS['gpxrm_test_caps'] ?? array(), true );
+		$caps = $GLOBALS['gpxrm_test_caps'] ?? array();
+		$cap  = $args[0] ?? '';
+		$post = $args[1] ?? '';
+
+		return in_array( $cap, $caps, true ) || in_array( "{$cap}:{$post}", $caps, true );
 	}
 }
 
@@ -351,6 +356,11 @@ if ( ! function_exists( 'generate_block_asset_handle' ) ) {
 
 require_once __DIR__ . '/waypoints-stubs.php';
 require_once __DIR__ . '/wp-query-stub.php';
+require_once __DIR__ . '/wpdb-stub.php';
+require_once __DIR__ . '/wp/class-wp-block-parser-block.php';
+require_once __DIR__ . '/wp/class-wp-block-parser-frame.php';
+require_once __DIR__ . '/wp/class-wp-block-parser.php';
+require_once __DIR__ . '/wp/wp-functions.php';
 
 require_once dirname( __DIR__ ) . '/includes/class-renderer.php';
 require_once dirname( __DIR__ ) . '/includes/class-dashicons.php';
@@ -370,4 +380,9 @@ require_once dirname( __DIR__ ) . '/includes/class-waypoint-meta-box.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoint-columns.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoint-edit-screen.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoint-rest.php';
+require_once dirname( __DIR__ ) . '/includes/class-map-tokens.php';
+require_once dirname( __DIR__ ) . '/includes/class-post-maps.php';
+require_once dirname( __DIR__ ) . '/includes/class-map-hosts.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-map-rows.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-maps-box.php';
 require_once dirname( __DIR__ ) . '/includes/class-plugin.php';

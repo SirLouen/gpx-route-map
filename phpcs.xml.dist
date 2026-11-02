@@ -8,6 +8,8 @@
 	<exclude-pattern>/node_modules/</exclude-pattern>
 	<exclude-pattern>/vendor/</exclude-pattern>
 	<exclude-pattern>/tools/</exclude-pattern>
+	<!-- WordPress's own code, copied verbatim for the tests. -->
+	<exclude-pattern>/tests/wp/</exclude-pattern>
 	<!-- Translations compiled by `wp i18n make-php` (pnpm run i18n:php). -->
 	<exclude-pattern>*.l10n.php</exclude-pattern>
 

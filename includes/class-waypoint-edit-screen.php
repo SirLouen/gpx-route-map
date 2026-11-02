@@ -15,7 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Sets up the screens Waypoint posts are edited and listed on: the classic
- * edit screen with Waypoint_Meta_Box, the list with Waypoint_Columns,
+ * edit screen with Waypoint_Meta_Box and Waypoint_Maps_Box, the list with
+ * Waypoint_Columns,
  * and the styles and script both use. Also loads the icon font into the block
  * editor's canvas, where the live preview draws icon markers.
  */
@@ -29,10 +30,12 @@ final class Waypoint_Edit_Screen {
 	 */
 	public function register(): void {
 		$box     = new Waypoint_Meta_Box();
+		$maps    = new Waypoint_Maps_Box();
 		$columns = new Waypoint_Columns();
 
 		add_filter( 'use_block_editor_for_post_type', array( $this, 'use_block_editor' ), 10, 2 );
 		add_action( 'add_meta_boxes_' . Waypoints::POST_TYPE, array( $box, 'add' ) );
+		add_action( 'add_meta_boxes_' . Waypoints::POST_TYPE, array( $maps, 'add' ) );
 		add_action( 'save_post_' . Waypoints::POST_TYPE, array( $box, 'save' ) );
 		add_filter( 'removable_query_args', array( $box, 'removable_args' ) );
 		add_action( 'admin_notices', array( $box, 'coordinates_notice' ) );

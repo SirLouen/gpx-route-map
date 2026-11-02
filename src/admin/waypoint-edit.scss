@@ -111,3 +111,15 @@
 .column-gpxrm_id {
 	width: 64px;
 }
+
+// The Maps box.
+.gpxrm-map-details {
+	display: block;
+	color: #646970;
+	font-weight: 400;
+}
+
+.gpxrm-maps + .gpxrm-maps-pages,
+.gpxrm-maps + .description {
+	margin-top: 12px;
+}

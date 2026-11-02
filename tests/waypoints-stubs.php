@@ -118,6 +118,20 @@ if ( ! class_exists( 'WP_Post' ) ) {
 		public $post_password;
 
 		/**
+		 * Type.
+		 *
+		 * @var string
+		 */
+		public $post_type = 'post';
+
+		/**
+		 * Status.
+		 *
+		 * @var string
+		 */
+		public $post_status = 'publish';
+
+		/**
 		 * A post.
 		 *
 		 * @param int    $id       Post ID.
@@ -302,6 +316,205 @@ if ( ! function_exists( 'wp_get_upload_dir' ) ) {
 	 */
 	function wp_get_upload_dir(): array {
 		return array( 'baseurl' => 'https://example.test/wp-content/uploads' );
+	}
+}
+
+if ( ! function_exists( 'wp_get_attachment_url' ) ) {
+	/**
+	 * The address a test gave an attachment, or false for none.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return string|false
+	 */
+	function wp_get_attachment_url( int $attachment_id ) {
+		return $GLOBALS['gpxrm_test_attachments'][ $attachment_id ] ?? false;
+	}
+}
+
+if ( ! function_exists( 'get_post_types' ) ) {
+	/**
+	 * The post types of a default site, with the Waypoint type.
+	 *
+	 * @param array<string, mixed> $args Ignored.
+	 * @return array<string, string>
+	 */
+	function get_post_types( array $args ): array {
+		unset( $args );
+		return array(
+			'post'           => 'post',
+			'page'           => 'page',
+			'attachment'     => 'attachment',
+			'wp_block'       => 'wp_block',
+			'wp_navigation'  => 'wp_navigation',
+			'gpxrm_waypoint' => 'gpxrm_waypoint',
+		);
+	}
+}
+
+if ( ! function_exists( 'get_post_stati' ) ) {
+	/**
+	 * The statuses of a default site that are not internal.
+	 *
+	 * @param array<string, mixed> $args Ignored.
+	 * @return array<string, string>
+	 */
+	function get_post_stati( array $args ): array {
+		unset( $args );
+		return array(
+			'publish' => 'publish',
+			'future'  => 'future',
+			'draft'   => 'draft',
+			'pending' => 'pending',
+			'private' => 'private',
+		);
+	}
+}
+
+if ( ! function_exists( '_prime_post_caches' ) ) {
+	/**
+	 * Keep which posts were primed, for a test to see.
+	 *
+	 * @param array<int, int> $ids Post IDs.
+	 * @return void
+	 */
+	function _prime_post_caches( array $ids ): void {
+		$GLOBALS['gpxrm_test_primed'] = $ids;
+	}
+}
+
+if ( ! function_exists( '_n' ) ) {
+	/**
+	 * The singular or the plural, in English.
+	 *
+	 * @param string $single Singular.
+	 * @param string $plural Plural.
+	 * @param int    $number Number.
+	 * @return string
+	 */
+	function _n( string $single, string $plural, int $number ): string {
+		return 1 === $number ? $single : $plural;
+	}
+}
+
+if ( ! function_exists( '_draft_or_post_title' ) ) {
+	/**
+	 * A post's title, for a post a test made.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string
+	 */
+	function _draft_or_post_title( int $post_id ): string {
+		return esc_html( $GLOBALS['gpxrm_test_posts'][ $post_id ]->post_title );
+	}
+}
+
+if ( ! function_exists( 'get_post_type' ) ) {
+	/**
+	 * A post's type, for a post a test made: a post unless it says.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string
+	 */
+	function get_post_type( int $post_id ): string {
+		return $GLOBALS['gpxrm_test_posts'][ $post_id ]->post_type ?? 'post';
+	}
+}
+
+if ( ! function_exists( 'get_post_status' ) ) {
+	/**
+	 * A post's status, for a post a test made: published unless it says.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string
+	 */
+	function get_post_status( int $post_id ): string {
+		return $GLOBALS['gpxrm_test_posts'][ $post_id ]->post_status ?? 'publish';
+	}
+}
+
+if ( ! function_exists( 'get_post_type_object' ) ) {
+	/**
+	 * A post type, labelled as its name.
+	 *
+	 * @param string $type Post type.
+	 * @return object
+	 */
+	function get_post_type_object( string $type ) {
+		return (object) array( 'labels' => (object) array( 'singular_name' => ucfirst( $type ) ) );
+	}
+}
+
+if ( ! function_exists( 'get_post_status_object' ) ) {
+	/**
+	 * A post status, labelled as its name.
+	 *
+	 * @param string $status Status.
+	 * @return object
+	 */
+	function get_post_status_object( string $status ) {
+		return (object) array( 'label' => ucfirst( $status ) );
+	}
+}
+
+if ( ! function_exists( 'get_edit_post_link' ) ) {
+	/**
+	 * Where a post is edited.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string
+	 */
+	function get_edit_post_link( int $post_id ): string {
+		return "https://example.test/edit/{$post_id}";
+	}
+}
+
+if ( ! function_exists( 'get_permalink' ) ) {
+	/**
+	 * Where a post is read.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string
+	 */
+	function get_permalink( int $post_id ): string {
+		return "https://example.test/read/{$post_id}";
+	}
+}
+
+if ( ! function_exists( 'is_post_publicly_viewable' ) ) {
+	/**
+	 * Whether a post is published, for a post a test made.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	function is_post_publicly_viewable( int $post_id ): bool {
+		return 'publish' === get_post_status( $post_id );
+	}
+}
+
+if ( ! function_exists( 'wp_basename' ) ) {
+	/**
+	 * The last part of a path.
+	 *
+	 * @param string $path Path.
+	 * @return string
+	 */
+	function wp_basename( string $path ): string {
+		return basename( $path );
+	}
+}
+
+if ( ! function_exists( 'esc_html_e' ) ) {
+	/**
+	 * Print text, escaped.
+	 *
+	 * @param string $text   Text.
+	 * @param string $domain Ignored.
+	 * @return void
+	 */
+	function esc_html_e( string $text, string $domain = 'default' ): void {
+		unset( $domain );
+		echo esc_html( $text );
 	}
 }
 

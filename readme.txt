@@ -177,6 +177,8 @@ Then link a map's waypoints to them, in either of two ways. In the block's Waypo
 
 A Waypoint post can also go on a map at its own coordinates, with or without a matching waypoint in the GPX file. Enter its latitude and longitude on its screen, in decimal degrees, such as 50.75 and 5.93. Then add it under "Added waypoints" in the block's Waypoints panel, or with `@` and its ID in the shortcode's `waypoints` attribute. It counts among the map's waypoints, and a post linked to a waypoint of the same file as well shows only once. The map opens to include an added waypoint within 20 km of the area the route covers, or within the distance across that area if that is further. Beyond that it is still on the map, and the panel says how far it lies, which also catches a latitude and longitude typed the wrong way round.
 
+Each Waypoint post's screen has a Maps box that lists the maps showing it, linked from a block, a shortcode or the GPX file, or added at its own coordinates, so you can see where a waypoint is used. It lists maps in the content of posts, pages and synced patterns, not ones added by a widget, a theme file or another plugin, and it says how many more are in posts you can't view. Looking through them can take the screen a moment longer on a site with thousands of maps.
+
 = Can I link a GPX file hosted on another site? =
 
 Only if that host allows cross-origin (CORS) requests, because the visitor's browser fetches the file directly, and most external sites don't send the required header. The front end then shows "Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead." even though the link opens fine in a browser tab. Uploading the file to your Media Library is the reliable option.

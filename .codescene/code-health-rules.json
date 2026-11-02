@@ -1,5 +1,5 @@
 {
-	"usage": "The plugin's classes are WordPress hook callbacks, which WordPress calls with post IDs, hook names, column keys and option values, as ints and strings, so those two rules measure WordPress's signatures rather than the plugin's design. So do the test stubs, which copy WordPress's signatures behind function_exists() checks. The block's Waypoints panel works on the post IDs and positions a block stores, and a wrapper around a number would add nothing.",
+	"usage": "The plugin's classes are WordPress hook callbacks, which WordPress calls with post IDs, hook names, column keys and option values, as ints and strings, so those two rules measure WordPress's signatures rather than the plugin's design. So do the test stubs, which copy WordPress's signatures behind function_exists() checks. The block's Waypoints panel works on the post IDs and positions a block stores, and a wrapper around a number would add nothing. tests/wp holds WordPress's own parser, copied verbatim for the tests, so nothing in it is the plugin's to change.",
 	"rule_sets": [
 		{
 			"matching_content_path": "includes/*.php",
@@ -36,6 +36,51 @@
 			"rules": [
 				{
 					"name": "Primitive Obsession",
+					"weight": 0.0
+				}
+			]
+		},
+		{
+			"matching_content_path": "tests/wp/*.php",
+			"rules": [
+				{
+					"name": "Brain Method",
+					"weight": 0.0
+				},
+				{
+					"name": "Bumpy Road Ahead",
+					"weight": 0.0
+				},
+				{
+					"name": "Complex Conditional",
+					"weight": 0.0
+				},
+				{
+					"name": "Complex Method",
+					"weight": 0.0
+				},
+				{
+					"name": "Deep, Nested Complexity",
+					"weight": 0.0
+				},
+				{
+					"name": "Excess Number of Function Arguments",
+					"weight": 0.0
+				},
+				{
+					"name": "Large Method",
+					"weight": 0.0
+				},
+				{
+					"name": "Overall Code Complexity",
+					"weight": 0.0
+				},
+				{
+					"name": "Primitive Obsession",
+					"weight": 0.0
+				},
+				{
+					"name": "String Heavy Function Arguments",
 					"weight": 0.0
 				}
 			]
