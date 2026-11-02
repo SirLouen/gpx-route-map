@@ -164,6 +164,72 @@ describe( 'parseGPX', () => {
 		expect( hasEle ).toEqual( [ true, false, false, true ] );
 	} );
 
+	// Read as 0, each would be a drop to sea level and back: fake climbing in
+	// the stats, and a spike in the profile.
+	it( 'fills a missing elevation from the readings either side, by distance', () => {
+		const { coords, hasEle } = parseGPX(
+			'<trk><trkseg>' +
+				'<trkpt lat="43.000" lon="-6.0"><ele>100</ele></trkpt>' +
+				'<trkpt lat="43.001" lon="-6.0"></trkpt>' +
+				'<trkpt lat="43.003" lon="-6.0"></trkpt>' +
+				'<trkpt lat="43.004" lon="-6.0"><ele>200</ele></trkpt>' +
+				'</trkseg></trk>'
+		);
+		expect( coords[ 1 ][ 2 ] ).toBeCloseTo( 125, 5 );
+		expect( coords[ 2 ][ 2 ] ).toBeCloseTo( 175, 5 );
+		expect( hasEle ).toEqual( [ true, false, false, true ] );
+	} );
+
+	it( 'holds the nearest reading before the first and after the last', () => {
+		const { coords } = parseGPX(
+			'<trk><trkseg>' +
+				'<trkpt lat="43.000" lon="-6.0"></trkpt>' +
+				'<trkpt lat="43.001" lon="-6.0"><ele>120</ele></trkpt>' +
+				'<trkpt lat="43.002" lon="-6.0"><ele>140</ele></trkpt>' +
+				'<trkpt lat="43.003" lon="-6.0"></trkpt>' +
+				'</trkseg></trk>'
+		);
+		expect( coords.map( ( c ) => c[ 2 ] ) ).toEqual( [
+			120, 120, 140, 140,
+		] );
+	} );
+
+	// The profile's axis gives the jump between two segments no length.
+	it( 'counts no distance between segments when filling a gap', () => {
+		const { coords } = parseGPX(
+			'<trk><trkseg>' +
+				'<trkpt lat="43.000" lon="-6.0"><ele>100</ele></trkpt>' +
+				'<trkpt lat="43.001" lon="-6.0"></trkpt>' +
+				'</trkseg><trkseg>' +
+				'<trkpt lat="44.000" lon="-7.0"></trkpt>' +
+				'<trkpt lat="44.001" lon="-7.0"><ele>200</ele></trkpt>' +
+				'</trkseg></trk>'
+		);
+		expect( coords[ 1 ][ 2 ] ).toBeCloseTo( 150, 0 );
+		expect( coords[ 2 ][ 2 ] ).toBeCloseTo( 150, 0 );
+	} );
+
+	it( 'keeps the reading when points in a gap share one position', () => {
+		const { coords } = parseGPX(
+			'<trk><trkseg>' +
+				'<trkpt lat="43.0" lon="-6.0"><ele>100</ele></trkpt>' +
+				'<trkpt lat="43.0" lon="-6.0"></trkpt>' +
+				'<trkpt lat="43.0" lon="-6.0"><ele>110</ele></trkpt>' +
+				'</trkseg></trk>'
+		);
+		expect( coords[ 1 ][ 2 ] ).toBe( 100 );
+	} );
+
+	it( 'leaves a track with no readings at 0', () => {
+		const { coords } = parseGPX(
+			'<trk><trkseg>' +
+				'<trkpt lat="43.0" lon="-6.0"></trkpt>' +
+				'<trkpt lat="43.001" lon="-6.0"></trkpt>' +
+				'</trkseg></trk>'
+		);
+		expect( coords.map( ( c ) => c[ 2 ] ) ).toEqual( [ 0, 0 ] );
+	} );
+
 	it( 'defaults missing elevation to 0', () => {
 		const { coords } = parseGPX(
 			'<trk><trkseg>' +

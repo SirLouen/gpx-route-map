@@ -17,8 +17,8 @@ export interface RouteStats {
 /**
  * Aggregate route statistics from coordinates.
  *
- * The min elevation leaves out points without one, which read 0; with none
- * at all it is 0, as the max is.
+ * The min elevation comes from the points the file gives one; with none at
+ * all it is 0, as the max is.
  *
  * @param coords    Coordinates.
  * @param segStarts Indices where a new segment begins.
