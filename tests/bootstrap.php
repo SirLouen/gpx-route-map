@@ -38,12 +38,37 @@ if ( ! function_exists( 'add_filter' ) ) {
 	 * The plugin documents seven filters; without somewhere to register one
 	 * they could not be tested at all.
 	 *
-	 * @param string   $hook_name Hook name.
-	 * @param callable $callback  Callback.
+	 * @param string   $hook_name     Hook name.
+	 * @param callable $callback      Callback.
+	 * @param int      $priority      Ignored: filters run in the order added.
+	 * @param int      $accepted_args Ignored: callbacks take what they declare.
 	 * @return void
 	 */
-	function add_filter( string $hook_name, callable $callback ): void {
+	function add_filter( string $hook_name, callable $callback, int $priority = 10, int $accepted_args = 1 ): void {
+		unset( $priority, $accepted_args );
 		$GLOBALS['gpxrm_test_filters'][ $hook_name ][] = $callback;
+	}
+}
+
+if ( ! function_exists( 'remove_filter' ) ) {
+	/**
+	 * Take a callback back out of the test-local hook registry.
+	 *
+	 * @param string   $hook_name Hook name.
+	 * @param callable $callback  Callback.
+	 * @param int      $priority  Ignored.
+	 * @return void
+	 */
+	function remove_filter( string $hook_name, callable $callback, int $priority = 10 ): void {
+		unset( $priority );
+		$GLOBALS['gpxrm_test_filters'][ $hook_name ] = array_values(
+			array_filter(
+				$GLOBALS['gpxrm_test_filters'][ $hook_name ] ?? array(),
+				static function ( $added ) use ( $callback ): bool {
+					return $added !== $callback;
+				}
+			)
+		);
 	}
 }
 
@@ -385,4 +410,8 @@ require_once dirname( __DIR__ ) . '/includes/class-post-maps.php';
 require_once dirname( __DIR__ ) . '/includes/class-map-hosts.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoint-map-rows.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoint-maps-box.php';
+require_once dirname( __DIR__ ) . '/includes/class-map-link-edit.php';
+require_once dirname( __DIR__ ) . '/includes/class-map-host-writer.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-maps-report.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-maps-save.php';
 require_once dirname( __DIR__ ) . '/includes/class-plugin.php';

@@ -179,6 +179,10 @@ A Waypoint post can also go on a map at its own coordinates, with or without a m
 
 Each Waypoint post's screen has a Maps box that lists the maps showing it, linked from a block, a shortcode or the GPX file, or added at its own coordinates, so you can see where a waypoint is used. It lists maps in the content of posts, pages and synced patterns, not ones added by a widget, a theme file or another plugin, and it says how many more are in posts you can't view. A link to a waypoint that is not published yet is listed too, and the box says maps show it once it is. Looking through them can take the screen a moment longer on a site with thousands of maps.
 
+You can also change a map's links from there. For a map in a block, remove the waypoint from it or move it to its own coordinates, or choose another map to add it to, then click Update. To place a waypoint on one of a file's waypoints, use the block's Waypoints panel. Maps in shortcodes and synced patterns, and links held in a GPX file, are changed where they are written, and the box says so.
+
+Each change updates the other post: its modified date moves, it gets a new revision where it keeps them, and it counts as a save, so a plugin that reacts to saves can react to this one. So that nothing is overwritten, a post that is open in an editor is not changed, even by you, and that can last a couple of minutes after you leave it. Nor is a post edited after you opened the Waypoint's screen: reload the screen and try again. The notice after you click Update says what was changed and what was not. A tab left open for over an hour can still undo a change when it is saved, which is what the post's revisions are for.
+
 = Can I link a GPX file hosted on another site? =
 
 Only if that host allows cross-origin (CORS) requests, because the visitor's browser fetches the file directly, and most external sites don't send the required header. The front end then shows "Could not load GPX file: its host does not allow cross-origin (CORS) requests. Upload the file to this site instead." even though the link opens fine in a browser tab. Uploading the file to your Media Library is the reliable option.

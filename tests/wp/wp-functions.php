@@ -1,6 +1,6 @@
 <?php
 /**
- * WordPress's own functions that read blocks and shortcodes, copied verbatim
+ * WordPress's own functions that read and write blocks and shortcodes, copied verbatim
  * from the 6.8 tag, the oldest version the plugin supports, so that the code
  * reading maps out of a post is tested against the real thing. Test-only: this
  * folder is not shipped. Required by bootstrap.php.
@@ -171,4 +171,33 @@ function shortcode_parse_atts( $text ) {
 	}
 
 	return $atts;
+}
+
+/**
+ * Given an array of attributes, returns a string in the serialized attributes
+ * format prepared for post content.
+ *
+ * The serialized result is a JSON-encoded string, with unicode escape sequence
+ * substitution for characters which might otherwise interfere with embedding
+ * the result in an HTML comment.
+ *
+ * This function must produce output that remains in sync with the output of
+ * the serializeAttributes JavaScript function in the block editor in order
+ * to ensure consistent operation between PHP and JavaScript.
+ *
+ * @since 5.3.1
+ *
+ * @param array $block_attributes Attributes object.
+ * @return string Serialized attributes.
+ */
+function serialize_block_attributes( $block_attributes ) {
+	$encoded_attributes = wp_json_encode( $block_attributes, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+	$encoded_attributes = preg_replace( '/--/', '\\u002d\\u002d', $encoded_attributes );
+	$encoded_attributes = preg_replace( '/</', '\\u003c', $encoded_attributes );
+	$encoded_attributes = preg_replace( '/>/', '\\u003e', $encoded_attributes );
+	$encoded_attributes = preg_replace( '/&/', '\\u0026', $encoded_attributes );
+	// Regex: /\\"/
+	$encoded_attributes = preg_replace( '/\\\\"/', '\\u0022', $encoded_attributes );
+
+	return $encoded_attributes;
 }

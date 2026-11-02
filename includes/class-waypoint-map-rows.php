@@ -21,7 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @phpstan-import-type Map from Post_Maps
  * @phpstan-type Place array{where: string, position: int}
- * @phpstan-type Row array{where: string, position: int, host: int, number: int, of: int, file: string, can_edit: bool}
+ * @phpstan-type Found array{where: string, position: int, number: int, of: int, file: string, kind: string, ordinal: int, hash: string}
+ * @phpstan-type Row array{where: string, position: int, number: int, of: int, file: string, kind: string, ordinal: int, hash: string, host: int, can_edit: bool}
+ * @phpstan-type Addable array{host: int, ordinal: int, hash: string, number: int, of: int, file: string}
  */
 final class Waypoint_Map_Rows {
 
@@ -31,11 +33,22 @@ final class Waypoint_Map_Rows {
 	const PER_PAGE = 100;
 
 	/**
+	 * How many maps the box offers to add a Waypoint post to.
+	 */
+	const MAX_ADDABLE = 200;
+
+	/**
+	 * How many posts to hold in memory at a time when asking which can be
+	 * edited.
+	 */
+	const ADDABLE_CHUNK = 200;
+
+	/**
 	 * The rows for a Waypoint post, from every post holding a map.
 	 *
 	 * @param int $waypoint The Waypoint post.
-	 * @return array{rows: array<int, array<string, mixed>>, hidden: int, unreadable: int}
-	 * @phpstan-return array{rows: array<int, Row>, hidden: int, unreadable: int}
+	 * @return array{rows: array<int, array<string, mixed>>, hidden: int, unreadable: int, addable: array<int, array<string, mixed>>}
+	 * @phpstan-return array{rows: array<int, Row>, hidden: int, unreadable: int, addable: array<int, Addable>}
 	 */
 	public static function for_waypoint( int $waypoint ): array {
 		return self::from_contents( $waypoint, Map_Hosts::contents() );
@@ -48,14 +61,15 @@ final class Waypoint_Map_Rows {
 	 * @param iterable       $contents Post content, by post ID.
 	 * @param Post_Maps|null $reader   What reads each post's maps.
 	 * @phpstan-param iterable<int, string> $contents
-	 * @return array{rows: array<int, array<string, mixed>>, hidden: int, unreadable: int} `hidden`
-	 *         counts maps in posts the user cannot read, and `unreadable` posts that could not be
-	 *         read at all.
-	 * @phpstan-return array{rows: array<int, Row>, hidden: int, unreadable: int}
+	 * @return array{rows: array<int, array<string, mixed>>, hidden: int, unreadable: int, addable: array<int, array<string, mixed>>} `hidden`
+	 *         counts maps in posts the user cannot read, `unreadable` posts that could not be
+	 *         read at all, and `addable` is what addable() goes through.
+	 * @phpstan-return array{rows: array<int, Row>, hidden: int, unreadable: int, addable: array<int, Addable>}
 	 */
 	public static function from_contents( int $waypoint, iterable $contents, ?Post_Maps $reader = null ): array {
 		$reader     = $reader ?? new Post_Maps();
 		$by_host    = array();
+		$addable    = array();
 		$unreadable = 0;
 		foreach ( $contents as $host => $content ) {
 			$maps = $reader->read( $content );
@@ -64,16 +78,22 @@ final class Waypoint_Map_Rows {
 				continue;
 			}
 
-			$places = self::places_in( $maps, $waypoint );
+			$hash   = sha1( $content );
+			$places = self::places_in( $maps, $waypoint, $hash );
 			if ( array() !== $places ) {
 				$by_host[ $host ] = $places;
 			}
+
+			$addable = array_merge( $addable, self::addable_in( $maps, $waypoint, $host, $hash ) );
 		}
 
 		// Otherwise each host below is a query of its own.
 		_prime_post_caches( array_keys( $by_host ), false, false );
 
-		return self::visible( $by_host ) + array( 'unreadable' => $unreadable );
+		return self::visible( $by_host ) + array(
+			'unreadable' => $unreadable,
+			'addable'    => $addable,
+		);
 	}
 
 	/**
@@ -82,11 +102,12 @@ final class Waypoint_Map_Rows {
 	 *
 	 * @param array<int, array<string, mixed>> $maps     The post's maps.
 	 * @param int                              $waypoint The Waypoint post.
+	 * @param string                           $hash     The hash of the post's content.
 	 * @phpstan-param array<int, Map> $maps
 	 * @return array<int, array<string, mixed>>
-	 * @phpstan-return array<int, array{where: string, position: int, number: int, of: int, file: string}>
+	 * @phpstan-return array<int, Found>
 	 */
-	private static function places_in( array $maps, int $waypoint ): array {
+	private static function places_in( array $maps, int $waypoint, string $hash ): array {
 		$found = array();
 		foreach ( array_values( $maps ) as $index => $map ) {
 			if ( '' === $map['file_url'] ) {
@@ -95,14 +116,92 @@ final class Waypoint_Map_Rows {
 
 			foreach ( self::places( $map, $waypoint ) as $place ) {
 				$found[] = $place + array(
-					'number' => $index + 1,
-					'of'     => count( $maps ),
-					'file'   => $map['file_url'],
+					'number'  => $index + 1,
+					'of'      => count( $maps ),
+					'file'    => $map['file_url'],
+					'kind'    => $map['kind'],
+					'ordinal' => $map['ordinal'],
+					'hash'    => $hash,
 				);
 			}
 		}
 
 		return $found;
+	}
+
+	/**
+	 * The maps of a post a Waypoint post could be added to: block maps with a
+	 * file that do not show it already.
+	 *
+	 * @param array<int, array<string, mixed>> $maps     The post's maps.
+	 * @param int                              $waypoint The Waypoint post.
+	 * @param int                              $host     The post.
+	 * @param string                           $hash     The hash of its content.
+	 * @phpstan-param array<int, Map> $maps
+	 * @return array<int, array<string, mixed>>
+	 * @phpstan-return array<int, Addable>
+	 */
+	private static function addable_in( array $maps, int $waypoint, int $host, string $hash ): array {
+		$found = array();
+		foreach ( array_values( $maps ) as $index => $map ) {
+			if ( 'block' === $map['kind'] && '' !== $map['file_url'] && array() === self::places( $map, $waypoint ) ) {
+				$found[] = array(
+					'host'    => $host,
+					'ordinal' => $map['ordinal'],
+					'hash'    => $hash,
+					'number'  => $index + 1,
+					'of'      => count( $maps ),
+					'file'    => $map['file_url'],
+				);
+			}
+		}
+
+		return $found;
+	}
+
+	/**
+	 * The maps the box offers: the first in the user can edit, leaving out
+	 * synced patterns. In chunks, stopping once it has enough, and letting go
+	 * of the posts it will not use, as a user who can edit few of a site's
+	 * posts would otherwise hold them all in memory.
+	 *
+	 * @param array<int, array<string, mixed>> $maps The maps, most recently changed first.
+	 * @phpstan-param array<int, Addable> $maps
+	 * @return array<int, array<string, mixed>>
+	 * @phpstan-return array<int, Addable>
+	 */
+	public static function addable( array $maps ): array {
+		$found = array();
+		foreach ( array_chunk( $maps, self::ADDABLE_CHUNK ) as $chunk ) {
+			_prime_post_caches( array_values( array_unique( array_column( $chunk, 'host' ) ) ), false, false );
+			foreach ( $chunk as $map ) {
+				if ( self::can_add_to( $map['host'] ) ) {
+					$found[] = $map;
+				}
+			}
+
+			if ( count( $found ) >= self::MAX_ADDABLE ) {
+				return array_slice( $found, 0, self::MAX_ADDABLE );
+			}
+		}
+
+		return $found;
+	}
+
+	/**
+	 * Whether the box offers a post's maps, letting go of the post if not.
+	 *
+	 * @param int $host The post.
+	 * @return bool
+	 */
+	private static function can_add_to( int $host ): bool {
+		if ( 'wp_block' !== get_post_type( $host ) && current_user_can( 'edit_post', $host ) ) {
+			return true;
+		}
+
+		wp_cache_delete( $host, 'posts' );
+
+		return false;
 	}
 
 	/**
@@ -140,7 +239,7 @@ final class Waypoint_Map_Rows {
 	 * only how many of its maps show the Waypoint post, and no title.
 	 *
 	 * @param array<int, array<int, array<string, mixed>>> $by_host Places, by post ID.
-	 * @phpstan-param array<int, array<int, array{where: string, position: int, number: int, of: int, file: string}>> $by_host
+	 * @phpstan-param array<int, array<int, Found>> $by_host
 	 * @return array{rows: array<int, array<string, mixed>>, hidden: int}
 	 * @phpstan-return array{rows: array<int, Row>, hidden: int}
 	 */
