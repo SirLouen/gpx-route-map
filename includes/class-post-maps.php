@@ -138,7 +138,8 @@ class Post_Maps {
 	 * @return array<mixed>
 	 */
 	private static function shortcode_attributes( string $text ): array {
-		$atts  = shortcode_parse_atts( $text ) + Plugin::shortcode_defaults();
+		// As the shortcode reads them, so a site's filter on them counts here.
+		$atts  = shortcode_atts( Plugin::shortcode_defaults(), shortcode_parse_atts( $text ), self::SHORTCODE );
 		$links = is_string( $atts['waypoints'] ) ? $atts['waypoints'] : '';
 
 		return Plugin::shortcode_file( $atts ) + array(
@@ -179,9 +180,10 @@ class Post_Maps {
 
 	/**
 	 * What a file links, read once whatever number of maps show it. This also
-	 * reads files no map has rendered yet. Never a file on another site: the
-	 * address is text a Contributor can set, and an admin's screen must not
-	 * ask for what a lower role chose.
+	 * reads files no map has rendered yet, and keeps what it read with the
+	 * attachment, as showing the map would, which is what makes the next pass
+	 * quick. Never a file on another site: the address is text a Contributor
+	 * can set, and an admin's screen must not ask for what a lower role chose.
 	 *
 	 * @param int    $attachment_id The file's attachment, or 0.
 	 * @param string $url           Its address.

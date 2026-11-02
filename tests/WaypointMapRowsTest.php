@@ -339,3 +339,69 @@ test(
 		expect( gpxrm_box_row() )->toContain( 'In a synced pattern, which shows wherever the pattern is used.' );
 	}
 );
+
+/**
+ * The box as it prints what was found for a waypoint.
+ *
+ * @param array<string, int> $found    How many are hidden and unreadable.
+ * @param WP_Post            $waypoint The waypoint.
+ * @return string
+ */
+function gpxrm_box( array $found, WP_Post $waypoint ): string {
+	ob_start();
+	( new Waypoint_Maps_Box() )->output(
+		$found + array(
+			'rows'       => array(),
+			'hidden'     => 0,
+			'unreadable' => 0,
+		),
+		$waypoint
+	);
+
+	return (string) ob_get_clean();
+}
+
+test(
+	'a box with nothing found says so',
+	function () {
+		expect( gpxrm_box( array(), new WP_Post( 12, 'Summit' ) ) )->toContain( 'No map shows this waypoint yet.' );
+	}
+);
+
+test(
+	'a box does not say no map shows the waypoint when it could not tell',
+	function ( array $found ) {
+		expect( gpxrm_box( $found, new WP_Post( 12, 'Summit' ) ) )->not->toContain( 'No map shows this waypoint yet.' );
+	}
+)->with(
+	array(
+		'a post it could not read'    => array( array( 'unreadable' => 1 ) ),
+		'a post the user cannot read' => array( array( 'hidden' => 1 ) ),
+	)
+);
+
+// A map links a post before it is published, and shows it once it is.
+test(
+	'a waypoint maps do not show yet says so',
+	function ( string $status, string $password ) {
+		$waypoint              = new WP_Post( 12, 'Summit', $password );
+		$waypoint->post_status = $status;
+
+		expect( gpxrm_box( array(), $waypoint ) )->toContain( 'Maps show this waypoint only once it is published without a password.' );
+	}
+)->with(
+	array(
+		'a draft'         => array( 'draft', '' ),
+		'pending'         => array( 'pending', '' ),
+		'scheduled'       => array( 'future', '' ),
+		'private'         => array( 'private', '' ),
+		'with a password' => array( 'publish', 'secret' ),
+	)
+);
+
+test(
+	'a published waypoint needs no such word',
+	function () {
+		expect( gpxrm_box( array(), new WP_Post( 12, 'Summit' ) ) )->not->toContain( 'Maps show this waypoint only' );
+	}
+);

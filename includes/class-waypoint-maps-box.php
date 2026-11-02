@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * The box that lists the maps showing a Waypoint post, from a block, a
- * shortcode or the GPX file, or at its own coordinates. It only reads.
+ * shortcode or the GPX file, or at its own coordinates. It changes no post.
  *
  * @phpstan-import-type Row from Waypoint_Map_Rows
  */
@@ -55,15 +55,31 @@ final class Waypoint_Maps_Box {
 			return;
 		}
 
-		$found = Waypoint_Map_Rows::for_waypoint( $post->ID );
-		$part  = Waypoint_Map_Rows::page( $found['rows'], self::asked_page() );
+		$this->output( Waypoint_Map_Rows::for_waypoint( $post->ID ), $post );
+	}
 
+	/**
+	 * Output what was found. A link to a post maps do not show yet is still a
+	 * link, and shows once the post is published, so its rows stay. No row
+	 * does not mean no map when some posts could not be looked at.
+	 *
+	 * @param array<string, mixed> $found The rows, and what they leave out.
+	 * @param \WP_Post             $post  The waypoint.
+	 * @phpstan-param array{rows: array<int, Row>, hidden: int, unreadable: int} $found
+	 * @return void
+	 */
+	public function output( array $found, \WP_Post $post ): void {
+		if ( 'publish' !== $post->post_status || '' !== $post->post_password ) {
+			echo '<p class="description">' . esc_html__( 'Maps show this waypoint only once it is published without a password.', 'gpx-route-map' ) . '</p>';
+		}
+
+		$part            = Waypoint_Map_Rows::page( $found['rows'], self::asked_page() );
 		$has_coordinates = null !== Waypoint_Coordinates::of( $post->ID );
 
 		if ( array() !== $found['rows'] ) {
 			$this->table( $part['rows'], $has_coordinates );
 			$this->pagination( $part['page'], $part['pages'] );
-		} elseif ( 0 === $found['hidden'] ) {
+		} elseif ( 0 === $found['hidden'] + $found['unreadable'] ) {
 			echo '<p>' . esc_html__( 'No map shows this waypoint yet.', 'gpx-route-map' ) . '</p>';
 		}
 

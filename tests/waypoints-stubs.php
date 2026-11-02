@@ -518,6 +518,18 @@ if ( ! function_exists( 'esc_html_e' ) ) {
 	}
 }
 
+if ( ! function_exists( 'absint' ) ) {
+	/**
+	 * A whole number from 0.
+	 *
+	 * @param string $value Value.
+	 * @return int
+	 */
+	function absint( string $value ): int {
+		return abs( (int) $value );
+	}
+}
+
 if ( ! function_exists( 'wp_kses' ) ) {
 	/**
 	 * Stand in for WordPress's kses: only the elements allowed are kept.

@@ -225,7 +225,7 @@ if ( ! function_exists( 'shortcode_atts' ) ) {
 		foreach ( $pairs as $name => $default ) {
 			$out[ $name ] = array_key_exists( $name, $atts ) ? $atts[ $name ] : $default;
 		}
-		return $out;
+		return '' === $shortcode ? $out : apply_filters( "shortcode_atts_{$shortcode}", $out );
 	}
 }
 

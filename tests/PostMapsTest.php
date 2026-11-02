@@ -126,6 +126,31 @@ test(
 );
 
 test(
+	'a shortcode map follows a filter on its attributes, as the map does',
+	function () {
+		add_filter(
+			'shortcode_atts_gpx_route_map',
+			static function ( array $atts ): array {
+				$atts['id']        = '6';
+				$atts['waypoints'] = '1:77';
+				return $atts;
+			}
+		);
+
+		$maps = gpxrm_maps_in( '[gpx_route_map id="5" waypoints="2:12"]', array( 'file_id', 'own' ) );
+
+		unset( $GLOBALS['gpxrm_test_filters']['shortcode_atts_gpx_route_map'] );
+
+		expect( $maps[0] )->toBe(
+			array(
+				'file_id' => 6,
+				'own'     => array( 0 => 77 ),
+			)
+		);
+	}
+);
+
+test(
 	'a map shows the file\'s links where it makes none of its own',
 	function () {
 		$GLOBALS['gpxrm_test_files'][5] = gpxrm_waypoint_gpx(
