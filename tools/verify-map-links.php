@@ -286,7 +286,13 @@ update_post_meta( $id, '_edit_lock', time() . ':' . $users['editor'] );
 gpxrm_verify( 'another user\'s lock is refused', 'locked' === $write( $id, sha1( $content ) ) );
 delete_post_meta( $id, '_edit_lock' );
 
+require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+WP_Upgrader::create_lock( 'gpxrm_map_' . $id, Map_Host_Writer::LOCK_SECONDS );
+gpxrm_verify( 'a post another Update is writing is refused', 'changed' === $write( $id, sha1( $content ) ) );
+WP_Upgrader::release_lock( 'gpxrm_map_' . $id );
+
 gpxrm_verify( 'a fresh hash goes through', 'done' === $write( $id, sha1( $content ) ) );
+gpxrm_verify( 'the post is let go afterwards', false === get_option( 'gpxrm_map_' . $id . '.lock' ) );
 
 $revisions = wp_get_post_revisions( $id );
 gpxrm_verify( 'a revision is not a post to write to', 'gone' === $write( (int) array_key_first( $revisions ), sha1( $content ) ) );

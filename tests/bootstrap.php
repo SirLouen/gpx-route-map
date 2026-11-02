@@ -382,6 +382,7 @@ if ( ! function_exists( 'generate_block_asset_handle' ) ) {
 require_once __DIR__ . '/waypoints-stubs.php';
 require_once __DIR__ . '/wp-query-stub.php';
 require_once __DIR__ . '/wpdb-stub.php';
+require_once __DIR__ . '/wp-upgrader-stub.php';
 require_once __DIR__ . '/wp/class-wp-block-parser-block.php';
 require_once __DIR__ . '/wp/class-wp-block-parser-frame.php';
 require_once __DIR__ . '/wp/class-wp-block-parser.php';

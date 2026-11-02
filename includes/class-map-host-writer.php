@@ -26,6 +26,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * bytes are whole numbers built on the server: everything else was stored
  * already. Nothing posted may ever reach the content.
  *
+ * A post is held from before it is read until after it is saved, as two
+ * Updates at once would both pass the check on its content, and the second
+ * would overwrite the first. The lock on a post open in an editor is a
+ * different one: that says a person has it, this that a save is under way.
+ *
  * @phpstan-type Change array{ordinal: int, op: string, position: int}
  * @phpstan-type Result array{code: string, user?: int}
  */
@@ -37,7 +42,13 @@ class Map_Host_Writer {
 	const MOVES = array( 'post_modified', 'post_modified_gmt' );
 
 	/**
-	 * Write a post's changes.
+	 * How long a post stays held if the request holding it dies.
+	 */
+	const LOCK_SECONDS = 30;
+
+	/**
+	 * Write a post's changes. A post held by another Update is about to
+	 * change, which makes this form out of date.
 	 *
 	 * @param int                              $host     The post.
 	 * @param string                           $seen     The hash of its content the form was drawn from.
@@ -48,6 +59,34 @@ class Map_Host_Writer {
 	 * @phpstan-return Result
 	 */
 	public function write( int $host, string $seen, int $waypoint, array $changes ): array {
+		if ( ! class_exists( 'WP_Upgrader' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+		}
+
+		$lock = 'gpxrm_map_' . $host;
+		if ( ! \WP_Upgrader::create_lock( $lock, self::LOCK_SECONDS ) ) {
+			return array( 'code' => 'changed' );
+		}
+
+		try {
+			return $this->write_held( $host, $seen, $waypoint, $changes );
+		} finally {
+			\WP_Upgrader::release_lock( $lock );
+		}
+	}
+
+	/**
+	 * Write a post's changes, while it is held.
+	 *
+	 * @param int                              $host     The post.
+	 * @param string                           $seen     The hash of its content the form was drawn from.
+	 * @param int                              $waypoint The Waypoint post.
+	 * @param array<int, array<string, mixed>> $changes  Its changes.
+	 * @phpstan-param array<int, Change> $changes
+	 * @return array{code: string, user?: int}
+	 * @phpstan-return Result
+	 */
+	private function write_held( int $host, string $seen, int $waypoint, array $changes ): array {
 		clean_post_cache( $host );
 		$post = get_post( $host );
 		if ( ! $post instanceof \WP_Post ) {

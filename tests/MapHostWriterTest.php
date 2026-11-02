@@ -54,6 +54,7 @@ beforeEach(
 		$GLOBALS['gpxrm_test_save_throws'] = false;
 		$GLOBALS['gpxrm_test_user']        = 1;
 		$GLOBALS['gpxrm_test_users']       = array( 2 => 'Sam' );
+		WP_Upgrader::$locks                = array();
 		$GLOBALS['gpxrm_test_meta']        = array(
 			12 => array(
 				Waypoints::META_LAT => '50.75',
@@ -422,5 +423,115 @@ test(
 		expect( $result )->toBe( array( 'code' => 'unsafe' ) );
 		expect( $GLOBALS['gpxrm_test_saves'] )->toBe( array() );
 		expect( $GLOBALS['gpxrm_test_posts'][100]->post_content )->toBe( GPXRM_HOST_CONTENT );
+	}
+);
+
+// Two Updates at once would both pass the check on the content, and the second
+// would overwrite the first.
+test(
+	'a post another Update is writing is refused, as its form is out of date',
+	function () {
+		WP_Upgrader::create_lock( 'gpxrm_map_100' );
+
+		expect( gpxrm_write() )->toBe( array( 'code' => 'changed' ) );
+		expect( $GLOBALS['gpxrm_test_saves'] )->toBe( array() );
+	}
+);
+
+test(
+	'the post stays held from before it is read until after it is saved',
+	function () {
+		$held = array();
+
+		add_filter(
+			'wp_insert_post_data',
+			static function ( array $data ) use ( &$held ): array {
+				$held[] = array_keys( WP_Upgrader::$locks );
+				return $data;
+			}
+		);
+
+		gpxrm_write();
+
+		expect( $held[0] )->toBe( array( 'gpxrm_map_100' ) );
+	}
+);
+
+test(
+	'another post is not held up',
+	function () {
+		WP_Upgrader::create_lock( 'gpxrm_map_101' );
+
+		expect( gpxrm_write() )->toBe( array( 'code' => 'done' ) );
+	}
+);
+
+test(
+	'the post is let go once written, or refused',
+	function () {
+		gpxrm_write();
+		expect( WP_Upgrader::$locks )->toBe( array() );
+
+		gpxrm_write( array(), sha1( 'stale' ) );
+		expect( WP_Upgrader::$locks )->toBe( array() );
+	}
+);
+
+test(
+	'a lock left by a request that died runs out quickly',
+	function () {
+		$timeouts = array();
+
+		add_filter(
+			'wp_insert_post_data',
+			static function ( array $data ) use ( &$timeouts ): array {
+				$timeouts[] = array_values( WP_Upgrader::$locks );
+				return $data;
+			}
+		);
+
+		gpxrm_write();
+
+		expect( $timeouts[0] )->toBe( array( Map_Host_Writer::LOCK_SECONDS ) );
+		expect( Map_Host_Writer::LOCK_SECONDS )->toBeLessThanOrEqual( 60 );
+	}
+);
+
+test(
+	'the post is let go when the save throws out of the writer',
+	function () {
+		$writer = new class() extends Map_Host_Writer {
+			/**
+			 * A save that fails outright.
+			 *
+			 * @param int    $host    The post.
+			 * @param string $content Its new content.
+			 * @return void
+			 * @throws RuntimeException Always.
+			 */
+			protected function save( int $host, string $content ): void {
+				unset( $host, $content );
+				throw new RuntimeException( 'A request ending.' );
+			}
+		};
+
+		expect(
+			static function () use ( $writer ) {
+				$writer->write(
+					100,
+					sha1( GPXRM_HOST_CONTENT ),
+					12,
+					array(
+						array(
+							'ordinal'  => 0,
+							'op'       => 'remove-position',
+							'position' => 0,
+						),
+					)
+				);
+			}
+		)->toThrow( RuntimeException::class );
+
+		expect( WP_Upgrader::$locks )->toBe( array() );
 	}
 );
