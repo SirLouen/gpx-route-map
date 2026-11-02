@@ -81,6 +81,9 @@
 		},
 		"waypointPosts": {
 			"type": [ "object", "array" ]
+		},
+		"addedWaypoints": {
+			"type": "array"
 		}
 	},
 	"editorScript": "file:./index.js",

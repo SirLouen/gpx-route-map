@@ -55,6 +55,18 @@ describe( 'sameStats', () => {
 		expect( sameStats( old, { ...STORED, max: 121 } ) ).toBe( false );
 	} );
 
+	// The server and the map add them up as they print the bar. Storing them
+	// would mark a post as changed just by opening it.
+	it( 'counts only the waypoints of the file, whatever a map adds', () => {
+		const parsed = parseGPX(
+			'<gpx><trk><trkseg>' +
+				'<trkpt lat="43.0" lon="-6.0"/><trkpt lat="43.01" lon="-6.0"/>' +
+				'</trkseg></trk><wpt lat="43.01" lon="-6.0"/></gpx>'
+		);
+
+		expect( bakeStats( parsed ).waypoints ).toBe( 1 );
+	} );
+
 	it( 'notices any changed figure, the min included', () => {
 		expect( sameStats( STORED, { ...STORED } ) ).toBe( true );
 		expect( sameStats( STORED, { ...STORED, min: 99 } ) ).toBe( false );

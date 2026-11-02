@@ -56,6 +56,21 @@ export interface WaypointPost {
 	background?: string;
 }
 
+/**
+ * A Waypoint post added to a map at its own coordinates, with or without a
+ * waypoint in the GPX file.
+ */
+export interface AddedWaypoint extends WaypointPost {
+	lat: number;
+	lon: number;
+	name: string;
+	/**
+	 * The positions of the file's waypoints linked to the same post. The
+	 * post shows at one of them when the map draws it, not at its coordinates.
+	 */
+	at: number[];
+}
+
 export interface ParsedGpx {
 	coords: Coord[];
 	waypoints: Waypoint[];

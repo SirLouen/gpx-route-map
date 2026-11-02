@@ -1,6 +1,6 @@
 <?php
 /**
- * The Waypoint posts a map links its waypoints to.
+ * The Waypoint posts a map links its waypoints to, or adds to it.
  *
  * @package GpxRouteMap
  */
@@ -14,10 +14,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * The Waypoint posts a map links its waypoints to, and what it shows for
- * them: only for published waypoints without a password.
+ * The Waypoint posts a map links its waypoints to or adds at their own
+ * coordinates, and what it shows for them: only for published waypoints
+ * without a password.
  *
  * @phpstan-import-type Marker from Waypoints
+ * @phpstan-import-type Added from Waypoints
  */
 final class Waypoint_Posts {
 
@@ -29,12 +31,29 @@ final class Waypoint_Posts {
 	private $links;
 
 	/**
-	 * The posts a map links its waypoints to.
+	 * Post IDs added at their own coordinates, in order.
+	 *
+	 * @var array<int, int>
+	 */
+	private $added;
+
+	/**
+	 * What the map shows for each post, by post ID, once read.
+	 *
+	 * @var array<int, array{marker: array<string, mixed>, coordinates: array{lat: float, lon: float}|null}>|null
+	 * @phpstan-var array<int, array{marker: Marker, coordinates: array{lat: float, lon: float}|null}>|null
+	 */
+	private $posts = null;
+
+	/**
+	 * The posts a map links its waypoints to, or adds to it.
 	 *
 	 * @param array<int, int> $links Post IDs by waypoint position.
+	 * @param array<int, int> $added Post IDs added at their own coordinates.
 	 */
-	public function __construct( array $links ) {
+	public function __construct( array $links, array $added = array() ) {
 		$this->links = $links;
+		$this->added = $added;
 	}
 
 	/**
@@ -45,11 +64,11 @@ final class Waypoint_Posts {
 	 * @phpstan-return array<int, Marker>
 	 */
 	public function markers(): array {
-		$by_id   = $this->markers_by_id();
+		$posts   = $this->posts();
 		$markers = array();
 		foreach ( $this->links as $index => $id ) {
-			if ( isset( $by_id[ $id ] ) && array() !== $by_id[ $id ] ) {
-				$markers[ $index ] = $by_id[ $id ];
+			if ( isset( $posts[ $id ] ) && array() !== $posts[ $id ]['marker'] ) {
+				$markers[ $index ] = $posts[ $id ]['marker'];
 			}
 		}
 
@@ -57,13 +76,60 @@ final class Waypoint_Posts {
 	}
 
 	/**
-	 * What the map shows for each linked post it may show, by post ID.
+	 * What the map shows for each added post it may show, in order. Only for
+	 * a post with coordinates, and whatever else it has: unlike a waypoint of
+	 * the file, it has nothing to fall back on, so it always has a name.
+	 *
+	 * Where a waypoint of the file links to the same post, `at` holds those
+	 * waypoints' positions: only the map knows which of them it draws, so it
+	 * decides where the post goes.
 	 *
 	 * @return array<int, array<string, mixed>>
-	 * @phpstan-return array<int, Marker>
+	 * @phpstan-return array<int, Added>
 	 */
-	private function markers_by_id(): array {
-		$ids = array_values( array_unique( $this->links ) );
+	public function added(): array {
+		$posts = $this->posts();
+		$added = array();
+		foreach ( $this->added as $id ) {
+			$coordinates = $posts[ $id ]['coordinates'] ?? null;
+			if ( null === $coordinates ) {
+				continue;
+			}
+
+			$entry = $coordinates + $posts[ $id ]['marker'] + array( 'name' => __( 'Waypoint', 'gpx-route-map' ) );
+			$at    = array_keys( $this->links, $id, true );
+			if ( array() !== $at ) {
+				$entry['at'] = $at;
+			}
+			$added[] = $entry;
+		}
+
+		return $added;
+	}
+
+	/**
+	 * What the map shows for each post, by post ID. One query for all of a
+	 * map's posts, however it uses them.
+	 *
+	 * @return array<int, array{marker: array<string, mixed>, coordinates: array{lat: float, lon: float}|null}>
+	 * @phpstan-return array<int, array{marker: Marker, coordinates: array{lat: float, lon: float}|null}>
+	 */
+	private function posts(): array {
+		if ( null === $this->posts ) {
+			$this->posts = $this->read_posts();
+		}
+
+		return $this->posts;
+	}
+
+	/**
+	 * Read what the map shows for each post it may show.
+	 *
+	 * @return array<int, array{marker: array<string, mixed>, coordinates: array{lat: float, lon: float}|null}>
+	 * @phpstan-return array<int, array{marker: Marker, coordinates: array{lat: float, lon: float}|null}>
+	 */
+	private function read_posts(): array {
+		$ids = array_values( array_unique( array_merge( array_values( $this->links ), $this->added ) ) );
 		if ( array() === $ids ) {
 			return array();
 		}
@@ -82,13 +148,17 @@ final class Waypoint_Posts {
 		);
 		update_post_thumbnail_cache( $query );
 
-		$by_id = array();
+		$posts = array();
 		foreach ( $query->posts as $post ) {
 			if ( $post instanceof \WP_Post ) {
-				$by_id[ $post->ID ] = ( new Waypoint_Post( $post ) )->marker();
+				$waypoint           = new Waypoint_Post( $post );
+				$posts[ $post->ID ] = array(
+					'marker'      => $waypoint->marker(),
+					'coordinates' => $waypoint->coordinates(),
+				);
 			}
 		}
 
-		return $by_id;
+		return $posts;
 	}
 }

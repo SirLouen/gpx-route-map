@@ -150,15 +150,14 @@ if ( ! function_exists( 'esc_attr' ) ) {
 
 if ( ! function_exists( 'current_user_can' ) ) {
 	/**
-	 * No-op stand-in; the renderer's capability and asset calls are not what
-	 * these tests exercise.
+	 * Whether a test gave the user this capability. None by default: the
+	 * renderer's capability and asset calls are not what these tests exercise.
 	 *
-	 * @param mixed ...$args Ignored.
+	 * @param mixed ...$args The capability, and what it applies to.
 	 * @return bool
 	 */
 	function current_user_can( ...$args ): bool {
-		unset( $args );
-		return false;
+		return in_array( $args[0] ?? '', $GLOBALS['gpxrm_test_caps'] ?? array(), true );
 	}
 }
 
@@ -351,11 +350,13 @@ if ( ! function_exists( 'generate_block_asset_handle' ) ) {
 }
 
 require_once __DIR__ . '/waypoints-stubs.php';
+require_once __DIR__ . '/wp-query-stub.php';
 
 require_once dirname( __DIR__ ) . '/includes/class-renderer.php';
 require_once dirname( __DIR__ ) . '/includes/class-dashicons.php';
 require_once dirname( __DIR__ ) . '/includes/class-gpx-link-reader.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoints.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-coordinates.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoint-links.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoint-values.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoint-description.php';
@@ -368,4 +369,5 @@ require_once dirname( __DIR__ ) . '/includes/class-waypoint-settings.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoint-meta-box.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoint-columns.php';
 require_once dirname( __DIR__ ) . '/includes/class-waypoint-edit-screen.php';
+require_once dirname( __DIR__ ) . '/includes/class-waypoint-rest.php';
 require_once dirname( __DIR__ ) . '/includes/class-plugin.php';

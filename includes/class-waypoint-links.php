@@ -16,7 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Links read from a block's `waypointPosts` attribute or a shortcode's
  * `waypoints`, by each waypoint's position among the GPX file's <wpt>
- * elements. A GPX file's own links are read by Gpx_File_Links.
+ * elements, and the posts a block's `addedWaypoints` or a shortcode's
+ * `waypoints` add to a map at their own coordinates. A GPX file's own links
+ * are read by Gpx_File_Links.
  */
 final class Waypoint_Links {
 
@@ -93,5 +95,42 @@ final class Waypoint_Links {
 		}
 
 		return self::from_attribute( $links );
+	}
+
+	/**
+	 * The posts a block adds to its map, at their own coordinates: its
+	 * `addedWaypoints` attribute, a list of post IDs. The attribute's type
+	 * lets a bare string through, which is none.
+	 *
+	 * @param mixed $raw Raw attribute value.
+	 * @return array<int, int> Post IDs, each once, in order.
+	 */
+	public static function added_from_attribute( $raw ): array {
+		if ( ! is_array( $raw ) ) {
+			return array();
+		}
+
+		$ids = array_filter( array_map( array( self::class, 'post_id' ), array_values( $raw ) ) );
+
+		return array_slice( array_values( array_unique( $ids ) ), 0, Waypoints::MAX_LINKS );
+	}
+
+	/**
+	 * The posts a shortcode adds to its map: an @ before the post ID, among
+	 * the pairs of its `waypoints` attribute, e.g. "1:12, @27".
+	 *
+	 * @param string $value Attribute value.
+	 * @return array<int, int> Post IDs, each once, in order.
+	 */
+	public static function added_from_shortcode( string $value ): array {
+		$ids = array();
+		foreach ( explode( ',', $value ) as $token ) {
+			$token = trim( $token );
+			if ( '@' === substr( $token, 0, 1 ) ) {
+				$ids[] = substr( $token, 1 );
+			}
+		}
+
+		return self::added_from_attribute( $ids );
 	}
 }

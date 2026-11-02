@@ -34,6 +34,8 @@ final class Waypoint_Edit_Screen {
 		add_filter( 'use_block_editor_for_post_type', array( $this, 'use_block_editor' ), 10, 2 );
 		add_action( 'add_meta_boxes_' . Waypoints::POST_TYPE, array( $box, 'add' ) );
 		add_action( 'save_post_' . Waypoints::POST_TYPE, array( $box, 'save' ) );
+		add_filter( 'removable_query_args', array( $box, 'removable_args' ) );
+		add_action( 'admin_notices', array( $box, 'coordinates_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_assets' ) );
 		add_filter( 'manage_' . Waypoints::POST_TYPE . '_posts_columns', array( $columns, 'columns' ) );
 		add_action( 'manage_' . Waypoints::POST_TYPE . '_posts_custom_column', array( $columns, 'column' ), 10, 2 );

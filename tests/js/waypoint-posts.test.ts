@@ -5,9 +5,18 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { addWaypointMarkers } from '../../src/view/map-core';
-import { readWaypointPosts } from '../../src/view/waypoint-posts';
-import type { MapLibreGl, Waypoint, WaypointPost } from '../../src/view/types';
+import { addAddedMarkers, addWaypointMarkers } from '../../src/view/map-core';
+import {
+	drawnAdded,
+	readAddedWaypoints,
+	readWaypointPosts,
+} from '../../src/view/waypoint-posts';
+import type {
+	AddedWaypoint,
+	MapLibreGl,
+	Waypoint,
+	WaypointPost,
+} from '../../src/view/types';
 
 /**
  * A map element carrying the attribute as the server writes it.
@@ -246,6 +255,202 @@ describe( 'readWaypointPosts', () => {
 			mapWith( { 0: { name: '  ', desc: '\n\t' } } )
 		);
 		expect( posts[ 0 ] ).toEqual( {} );
+	} );
+} );
+
+/**
+ * A map element carrying the added posts as the server writes them.
+ *
+ * @param value The attribute's value.
+ */
+function mapAdding( value: unknown ): HTMLElement {
+	const el = document.createElement( 'div' );
+	el.dataset.gpxrmAdded =
+		'string' === typeof value ? value : JSON.stringify( value );
+	return el;
+}
+
+describe( 'readAddedWaypoints', () => {
+	it( 'reads nothing from a map without the attribute', () => {
+		expect( readAddedWaypoints( document.createElement( 'div' ) ) ).toEqual(
+			[]
+		);
+	} );
+
+	it.each( [
+		[ 'malformed JSON', '[{' ],
+		[ 'a string', '"hello"' ],
+		[ 'an object', '{"0":{"lat":1,"lon":2,"name":"A"}}' ],
+		[ 'null', 'null' ],
+	] )( 'reads nothing from %s', ( _label, value ) => {
+		expect( readAddedWaypoints( mapAdding( value ) ) ).toEqual( [] );
+	} );
+
+	it( 'keeps the order of the list, and what each post changes', () => {
+		expect(
+			readAddedWaypoints(
+				mapAdding( [
+					{ lat: 50.75, lon: 5.93, name: 'Summit', at: [ 3 ] },
+					{
+						lat: 43.1,
+						lon: -6,
+						name: 'Refuge',
+						marker: 'icon',
+						icon: 'flag',
+					},
+				] )
+			)
+		).toEqual( [
+			{ lat: 50.75, lon: 5.93, name: 'Summit', at: [ 3 ] },
+			{
+				lat: 43.1,
+				lon: -6,
+				name: 'Refuge',
+				at: [],
+				marker: 'icon',
+				icon: 'flag',
+			},
+		] );
+	} );
+
+	it( 'keeps coordinates of zero', () => {
+		expect(
+			readAddedWaypoints( mapAdding( [ { lat: 0, lon: 0, name: 'A' } ] ) )
+		).toEqual( [ { lat: 0, lon: 0, name: 'A', at: [] } ] );
+	} );
+
+	it.each( [
+		[ 'a latitude as text', { lat: '50', lon: 5 } ],
+		[ 'a latitude past the pole', { lat: 95, lon: 5 } ],
+		[ 'a longitude past the antimeridian', { lat: 50, lon: 200 } ],
+		[ 'no longitude', { lat: 50 } ],
+		[ 'a latitude of null', { lat: null, lon: 5 } ],
+		[ 'not an object', 'Summit' ],
+	] )( 'leaves out an entry with %s', ( _label, entry ) => {
+		expect( readAddedWaypoints( mapAdding( [ entry ] ) ) ).toEqual( [] );
+	} );
+
+	it( 'keeps only positions that are whole numbers from 0', () => {
+		const [ post ] = readAddedWaypoints(
+			mapAdding( [
+				{ lat: 1, lon: 2, name: 'A', at: [ 0, 2, -1, 1.5, 'x' ] },
+			] )
+		);
+		expect( post.at ).toEqual( [ 0, 2 ] );
+	} );
+
+	it( 'drops what is not well formed, as for a linked post', () => {
+		const [ post ] = readAddedWaypoints(
+			mapAdding( [
+				{
+					lat: 1,
+					lon: 2,
+					name: 'A',
+					marker: 'icon',
+					icon: 'x" onclick="y',
+				},
+			] )
+		);
+		expect( post ).toEqual( { lat: 1, lon: 2, name: 'A', at: [] } );
+	} );
+} );
+
+describe( 'drawnAdded', () => {
+	const added = ( at: number[] ): AddedWaypoint => ( {
+		lat: 1,
+		lon: 2,
+		name: 'A',
+		at,
+	} );
+	const waypoints = [ { index: 0 }, { index: 2 } ] as Waypoint[];
+
+	it( 'draws a post no waypoint of the file links to', () => {
+		const post = added( [] );
+		expect( drawnAdded( [ post ], waypoints ) ).toEqual( [ post ] );
+	} );
+
+	it( 'leaves a post to the waypoint of the file that shows it', () => {
+		expect( drawnAdded( [ added( [ 2 ] ) ], waypoints ) ).toEqual( [] );
+		expect( drawnAdded( [ added( [ 1, 2 ] ) ], waypoints ) ).toEqual( [] );
+	} );
+
+	// Position 1 is off the map, or the file has changed since it was linked.
+	it( 'draws a post whose waypoint in the file is not on the map', () => {
+		const post = added( [ 1, 7 ] );
+		expect( drawnAdded( [ post ], waypoints ) ).toEqual( [ post ] );
+	} );
+} );
+
+describe( 'addAddedMarkers', () => {
+	it( 'draws each post at its own place, with its popup', () => {
+		const placed: unknown[] = [];
+		const named: HTMLElement[] = [];
+
+		class FakePopup {
+			setDOMContent( content: HTMLElement ) {
+				named.push( content );
+				return this;
+			}
+			on() {
+				return this;
+			}
+			isOpen() {
+				return false;
+			}
+			remove() {
+				return this;
+			}
+			getElement() {
+				return undefined;
+			}
+		}
+
+		class FakeMarker {
+			element: HTMLElement;
+			constructor( options: { element: HTMLElement } ) {
+				this.element = options.element;
+			}
+			setLngLat( lngLat: unknown ) {
+				placed.push( lngLat );
+				return this;
+			}
+			setPopup() {
+				return this;
+			}
+			getElement() {
+				return this.element;
+			}
+			togglePopup() {
+				return this;
+			}
+			addTo() {
+				return this;
+			}
+		}
+
+		addAddedMarkers(
+			{ Popup: FakePopup, Marker: FakeMarker } as unknown as MapLibreGl,
+			{} as unknown as Parameters< typeof addAddedMarkers >[ 1 ],
+			[
+				{
+					lat: 50.75,
+					lon: -179.5,
+					name: 'Summit',
+					desc: '<p>The top</p>',
+					at: [],
+				},
+			],
+			'#ffffff'
+		);
+
+		expect( placed ).toEqual( [ [ -179.5, 50.75 ] ] );
+		expect(
+			named[ 0 ].querySelector( '.gpxrm-popup-name' )?.textContent
+		).toBe( 'Summit' );
+		expect(
+			named[ 0 ].querySelector( '.gpxrm-popup-desc-post' )?.textContent
+		).toBe( 'The top' );
+		expect( named[ 0 ].querySelector( '.gpxrm-popup-type' ) ).toBeNull();
 	} );
 } );
 

@@ -4,9 +4,10 @@
 
 import {
 	parseGPX,
-	computeBoundsFromCoords,
+	openingBounds,
 	buildRasterStyle,
 	createMap,
+	addAddedMarkers,
 	addWaypointMarkers,
 	TRACK_COLOR,
 	TRACK_CASING,
@@ -16,6 +17,7 @@ import {
 } from './map-core';
 import { keyboardMarker } from './marker-keyboard';
 import { readMapUi } from './map-ui';
+import { drawnAdded, readAddedWaypoints } from './waypoint-posts';
 import type { FeatureCollection } from 'geojson';
 import type { GeoJSONSource } from 'maplibre-gl';
 
@@ -208,7 +210,8 @@ export async function initInstance(
 	// cannot build the map still shows them.
 	const units = readUnits( mapEl );
 	const stats = routeStats( coords, segStarts, hasEle );
-	fillStats( root, stats, waypoints.length, units );
+	const added = drawnAdded( readAddedWaypoints( mapEl ), waypoints );
+	fillStats( root, stats, waypoints.length + added.length, units );
 
 	const tileUrl = mapEl.dataset.gpxrmTileUrl || DEFAULT_TILE_URL;
 	const attribution = mapEl.dataset.gpxrmAttribution || DEFAULT_ATTRIBUTION;
@@ -216,7 +219,7 @@ export async function initInstance(
 	const tileMaxZoom = readTileMaxZoom( mapEl );
 
 	const style = buildRasterStyle( tileUrl, attribution, tileMaxZoom );
-	const bounds = computeBoundsFromCoords( coords );
+	const bounds = openingBounds( coords, added );
 	const map = createMap( {
 		maplibregl,
 		container: mapEl,
@@ -403,6 +406,7 @@ export async function initInstance(
 		addPin( coords[ coords.length - 1 ], '#ef4444', msg.end );
 
 		addWaypointMarkers( maplibregl, map, waypoints, TRACK_CASING );
+		addAddedMarkers( maplibregl, map, added, TRACK_CASING );
 
 		map.on( 'click', 'gpxrm-track-hit', ( e ) => {
 			if ( ! e.lngLat || ! profile ) {

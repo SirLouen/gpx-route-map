@@ -2,7 +2,12 @@
  * What Waypoint posts change about a map's waypoints, as the server says.
  */
 
-import type { WaypointPhoto, WaypointPost } from './types';
+import type {
+	AddedWaypoint,
+	Waypoint,
+	WaypointPhoto,
+	WaypointPost,
+} from './types';
 
 const COLOR = /^#(?:[0-9a-f]{3}){1,2}$/i;
 const ICON = /^[a-z0-9-]+$/;
@@ -205,4 +210,86 @@ export function readWaypointPosts(
 		}
 	}
 	return posts;
+}
+
+/**
+ * A coordinate from an entry, or undefined for anything but a number within
+ * its limit. Never tested by truth: 0 is a place.
+ *
+ * @param value Value.
+ * @param limit The largest it may be, either way.
+ */
+function coordinate( value: unknown, limit: number ): number | undefined {
+	return 'number' === typeof value && Math.abs( value ) <= limit
+		? value
+		: undefined;
+}
+
+/**
+ * The positions an entry names: whole numbers from 0.
+ *
+ * @param value Value.
+ */
+function positions( value: unknown ): number[] {
+	return Array.isArray( value )
+		? value.filter( ( index ) => Number.isInteger( index ) && index >= 0 )
+		: [];
+}
+
+/**
+ * One added post's entry, or null without a place on the map.
+ *
+ * @param raw Entry as decoded from JSON.
+ */
+function readAdded( raw: unknown ): AddedWaypoint | null {
+	const post = readPost( raw );
+	if ( ! post ) {
+		return null;
+	}
+	const entry = raw as Record< string, unknown >;
+	const lat = coordinate( entry.lat, 90 );
+	const lon = coordinate( entry.lon, 180 );
+	if ( undefined === lat || undefined === lon ) {
+		return null;
+	}
+	return {
+		...post,
+		lat,
+		lon,
+		name: post.name ?? '',
+		at: positions( entry.at ),
+	};
+}
+
+/**
+ * The Waypoint posts added to the map at their own coordinates, in order.
+ * Only maps that add some carry the attribute.
+ *
+ * @param mapEl The map element.
+ */
+export function readAddedWaypoints( mapEl: HTMLElement ): AddedWaypoint[] {
+	const list = decode( mapEl.dataset.gpxrmAdded );
+	return Array.isArray( list )
+		? list
+				.map( readAdded )
+				.filter( ( post ): post is AddedWaypoint => null !== post )
+		: [];
+}
+
+/**
+ * The added posts the map draws at their own coordinates. A post shows once:
+ * at a waypoint of the file linked to it when the map has that waypoint, and
+ * the server cannot tell, as only the map knows which it draws.
+ *
+ * @param added     The posts added to the map.
+ * @param waypoints The waypoints of the file on the map.
+ */
+export function drawnAdded(
+	added: AddedWaypoint[],
+	waypoints: Waypoint[]
+): AddedWaypoint[] {
+	const drawn = new Set( waypoints.map( ( { index } ) => index ) );
+	return added.filter( ( post ) =>
+		post.at.every( ( index ) => ! drawn.has( index ) )
+	);
 }
