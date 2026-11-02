@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Turns the Maps box's form into changes while the Waypoint saves, and writes
- * them once it has.
+ * Saves the place in the Maps box's form while the Waypoint saves, turns the
+ * rest of it into changes, and writes those once it has.
  *
  * Written after the Waypoint's own save, so the Waypoint's new coordinates
  * count, and with the request emptied, as another plugin's save_post on the
@@ -34,6 +34,11 @@ final class Waypoint_Maps_Save {
 	 * The most one Update changes: a page of the box, and one map to add to.
 	 */
 	const MAX_CHANGES = 101;
+
+	/**
+	 * The address argument that says coordinates could not be saved.
+	 */
+	const NOTICE_ARG = 'gpxrm_coords';
 
 	const ROW = '/^([1-9][0-9]*):b:([0-9]+):([0-9a-f]{40}):(a|p[0-9]+)$/D';
 	const ADD = '/^([1-9][0-9]*):b:([0-9]+):([0-9a-f]{40})$/D';
@@ -63,9 +68,9 @@ final class Waypoint_Maps_Save {
 	}
 
 	/**
-	 * Note what the form asks for. Autosaves, quick edit, bulk edit, the REST
-	 * API and the Trash all come without its nonce, so nothing happens for
-	 * them.
+	 * Save the place, then note what the form asks of maps. Autosaves, quick
+	 * edit, bulk edit, the REST API and the Trash all come without its nonce,
+	 * so nothing happens for them.
 	 *
 	 * @param int $post_id The Waypoint post.
 	 * @return void
@@ -75,10 +80,88 @@ final class Waypoint_Maps_Save {
 			return;
 		}
 
+		$this->save_coordinates( $post_id );
+
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- form_sent() checks the nonce, and parse() takes only what matches its patterns.
 		$rows = isset( $_POST['gpxrm_maps'] ) ? wp_unslash( $_POST['gpxrm_maps'] ) : array();
 
 		$this->queue[ $post_id ] = self::parse( is_array( $rows ) ? $rows : array(), Waypoint_Meta_Box::posted( 'gpxrm_maps_add' ) );
+	}
+
+	/**
+	 * Save the coordinates: stored when good, cleared when both fields are
+	 * empty, and when they cannot be read, kept as they were, for a notice
+	 * to say so rather than lose them. A form without the fields, such as one
+	 * from a page rendered before they existed, clears nothing.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	private function save_coordinates( int $post_id ): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- may_save() checks the nonce.
+		if ( ! isset( $_POST['gpxrm_lat'] ) && ! isset( $_POST['gpxrm_lon'] ) ) {
+			return;
+		}
+
+		$coordinates = Waypoint_Coordinates::parse( Waypoint_Meta_Box::posted( 'gpxrm_lat' ), Waypoint_Meta_Box::posted( 'gpxrm_lon' ) );
+		if ( null === $coordinates ) {
+			add_filter( 'redirect_post_location', array( $this, 'flag_invalid_coordinates' ) );
+			return;
+		}
+
+		if ( '' === $coordinates['lat'] ) {
+			delete_post_meta( $post_id, Waypoints::META_LAT );
+			delete_post_meta( $post_id, Waypoints::META_LON );
+			return;
+		}
+
+		update_post_meta( $post_id, Waypoints::META_LAT, $coordinates['lat'] );
+		update_post_meta( $post_id, Waypoints::META_LON, $coordinates['lon'] );
+	}
+
+	/**
+	 * Say in the address WordPress returns to that the coordinates were not
+	 * saved.
+	 *
+	 * @param string $location The address.
+	 * @return string
+	 */
+	public function flag_invalid_coordinates( string $location ): string {
+		return add_query_arg( self::NOTICE_ARG, 'invalid', $location );
+	}
+
+	/**
+	 * Take that from the address once it has been read.
+	 *
+	 * @param array<int, string> $args Arguments WordPress removes.
+	 * @return array<int, string>
+	 */
+	public function removable_args( array $args ): array {
+		$args[] = self::NOTICE_ARG;
+		return $args;
+	}
+
+	/**
+	 * Say that the coordinates were not saved, beside WordPress's own notice
+	 * that the post was.
+	 *
+	 * @return void
+	 */
+	public function coordinates_notice(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only chooses to show a fixed message.
+		if ( ! isset( $_GET[ self::NOTICE_ARG ] ) ) {
+			return;
+		}
+
+		$screen = get_current_screen();
+		if ( null === $screen || Waypoints::POST_TYPE !== $screen->post_type ) {
+			return;
+		}
+
+		wp_admin_notice(
+			__( 'The coordinates were not saved. Enter a latitude from -90 to 90 and a longitude from -180 to 180 in decimal degrees, such as 50.75 and 5.93. This waypoint keeps its earlier coordinates.', 'gpx-route-map' ),
+			array( 'type' => 'warning' )
+		);
 	}
 
 	/**

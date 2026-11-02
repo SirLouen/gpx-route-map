@@ -9,6 +9,8 @@ import {
 	createMap,
 	addAddedMarkers,
 	addWaypointMarkers,
+	readTileMaxZoom,
+	trackGeoJSON,
 	TRACK_COLOR,
 	TRACK_CASING,
 	DEFAULT_TILE_URL,
@@ -18,7 +20,6 @@ import {
 import { keyboardMarker } from './marker-keyboard';
 import { readMapUi } from './map-ui';
 import { drawnAdded, readAddedWaypoints } from './waypoint-posts';
-import type { FeatureCollection } from 'geojson';
 import type { GeoJSONSource } from 'maplibre-gl';
 
 import type { Coord, MapLibreGl } from './types';
@@ -58,23 +59,6 @@ function fillStats(
 	set( 'max', formatElevation( stats.maxEle, units ) );
 	set( 'min', formatElevation( stats.minEle, units ) );
 	set( 'waypoints', `${ waypoints }` );
-}
-
-/**
- * The last tile level the map's provider has, as the server says.
- *
- * Absent from pages cached before it was sent, and never trusted unless it is
- * a whole zoom level MapLibre can use: otherwise the zoom stays as open as it
- * always was.
- *
- * @param mapEl Map element.
- * @return The level, from 1 to 22, or undefined.
- */
-function readTileMaxZoom( mapEl: HTMLElement ): number | undefined {
-	const level = Number( mapEl.dataset.gpxrmTileMaxZoom );
-	return Number.isInteger( level ) && level >= 1 && level <= 22
-		? level
-		: undefined;
 }
 
 /**
@@ -130,35 +114,6 @@ export function viewMessages( mapEl: HTMLElement ): ViewMessages {
 		// Ignore malformed JSON and use the English fallback.
 	}
 	return FALLBACK_MESSAGES;
-}
-
-/**
- * The track as GeoJSON, a line for each segment with more than one point.
- *
- * @param coords        The track's coordinates.
- * @param segmentStarts Where each segment begins in them.
- */
-function trackGeoJSON(
-	coords: Coord[],
-	segmentStarts: number[]
-): FeatureCollection {
-	const coordinates = segmentStarts
-		.map( ( startIdx, s ) =>
-			coords
-				.slice( startIdx, segmentStarts[ s + 1 ] ?? coords.length )
-				.map( ( c: Coord ): [ number, number ] => [ c[ 0 ], c[ 1 ] ] )
-		)
-		.filter( ( line ) => line.length > 1 );
-	return {
-		type: 'FeatureCollection',
-		features: [
-			{
-				type: 'Feature',
-				properties: {},
-				geometry: { type: 'MultiLineString', coordinates },
-			},
-		],
-	};
 }
 
 /**

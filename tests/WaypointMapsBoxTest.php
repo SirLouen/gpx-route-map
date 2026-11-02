@@ -8,6 +8,7 @@
 declare( strict_types=1 );
 
 use Gpxrm\Waypoint_Maps_Box;
+use Gpxrm\Waypoints;
 
 beforeEach(
 	function () {
@@ -213,9 +214,10 @@ test(
 );
 
 test(
-	'a waypoint without coordinates cannot be moved to them',
+	'moving a link to the waypoint\'s coordinates waits for it to have a place',
 	function () {
-		expect( gpxrm_box_row( array(), false ) )->not->toContain( 'value="own"' );
+		expect( gpxrm_box_row( array(), false ) )->toContain( '<option value="own" disabled' );
+		expect( gpxrm_box_row() )->not->toContain( '<option value="own" disabled' );
 	}
 );
 
@@ -267,8 +269,8 @@ test(
 	'a waypoint with coordinates can be added to a map, named for the user',
 	function () {
 		$GLOBALS['gpxrm_test_meta'][12] = array(
-			Gpxrm\Waypoints::META_LAT => '50.75',
-			Gpxrm\Waypoints::META_LON => '5.93',
+			Waypoints::META_LAT => '50.75',
+			Waypoints::META_LON => '5.93',
 		);
 
 		$map = array(
@@ -285,13 +287,111 @@ test(
 	}
 );
 
+// Asking for coordinates first, and an Update to see the list, hid the list
+// from anyone who had not found that out.
 test(
-	'a waypoint without coordinates is told to get them first',
+	'the maps to add a waypoint to show whether or not it has a place yet',
 	function () {
 		$html = gpxrm_box( array( 'addable' => array( gpxrm_addable_map( 100 ) ) ), new WP_Post( 12, 'Summit' ) );
 
-		expect( $html )->not->toContain( 'gpxrm_maps_add' );
-		expect( $html )->toContain( 'Add coordinates above to add this waypoint to a map from here.' );
+		expect( $html )->toContain( 'name="gpxrm_maps_add"' );
+		expect( $html )->toContain( 'Host · route.gpx' );
+	}
+);
+
+// A new waypoint has a Publish button, and a draft a Save Draft one.
+test(
+	'the box names no button a waypoint may not have',
+	function () {
+		$html = gpxrm_box( array( 'addable' => array( gpxrm_addable_map( 100 ) ) ), new WP_Post( 12, 'Summit' ) );
+
+		expect( $html )->not->toContain( 'Click Update' );
+		expect( $html )->toContain( 'when you save' );
+	}
+);
+
+test(
+	'each map to add to says where its route is, for the map above to show',
+	function () {
+		$html = gpxrm_box( array( 'addable' => array( gpxrm_addable_map( 100 ) ) ), new WP_Post( 12, 'Summit' ) );
+
+		expect( $html )->toContain( 'data-gpxrm-gpx="https://example.test/uploads/route.gpx"' );
+	}
+);
+
+test(
+	'choosing a map without a place has something to ask for it, hidden until then',
+	function () {
+		$html = gpxrm_box( array( 'addable' => array( gpxrm_addable_map( 100 ) ) ), new WP_Post( 12, 'Summit' ) );
+
+		expect( $html )->toMatch( '/<p class="[^"]*gpxrm-maps-add-place[^"]*" hidden>/' );
+	}
+);
+
+test(
+	'the box holds the map, with the site\'s tiles and the fields the form sends',
+	function () {
+		$GLOBALS['gpxrm_test_meta'][12] = array(
+			Waypoints::META_LAT => '50.75',
+			Waypoints::META_LON => '5.93',
+		);
+
+		$html = gpxrm_box( array(), new WP_Post( 12, 'Summit' ) );
+
+		expect( $html )->toContain( 'class="gpxrm-picker"' );
+		expect( $html )->toContain( 'class="gpxrm-picker-map"' );
+		expect( $html )->toContain( 'data-gpxrm-tile-url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"' );
+		expect( $html )->toContain( 'data-gpxrm-tile-max-zoom="19"' );
+		expect( $html )->toContain( 'data-gpxrm-map-ui=' );
+		expect( $html )->toContain( 'name="gpxrm_lat" value="50.75"' );
+		expect( $html )->toContain( 'name="gpxrm_lon" value="5.93"' );
+	}
+);
+
+// A number field in a browser turns a typed 50,75 into 5075, and calls it valid.
+test(
+	'the fields take text, so a decimal comma stays one',
+	function () {
+		$html = gpxrm_box( array(), new WP_Post( 12, 'Summit' ) );
+
+		expect( $html )->toContain( '<input type="text" id="gpxrm_lat"' );
+		expect( $html )->toContain( '<input type="text" id="gpxrm_lon"' );
+	}
+);
+
+test(
+	'the words for when the map cannot load wait until then',
+	function () {
+		expect( gpxrm_box( array(), new WP_Post( 12, 'Summit' ) ) )->toMatch( '/<p class="[^"]*gpxrm-picker-failed[^"]*" hidden>/' );
+	}
+);
+
+test(
+	'a waypoint not saved yet is offered the same as any other',
+	function () {
+		$GLOBALS['wpdb']                      = new wpdb();
+		$GLOBALS['wpdb']->rows                = array( 100 => '<!-- wp:gpx-route-map/map {"gpxId":5} /-->' );
+		$GLOBALS['gpxrm_test_attachments'][5] = 'https://example.test/uploads/route.gpx';
+		$new_waypoint                         = new WP_Post( 12, '' );
+		$new_waypoint->post_status            = 'auto-draft';
+
+		ob_start();
+		( new Waypoint_Maps_Box() )->render( $new_waypoint );
+		$html = (string) ob_get_clean();
+
+		expect( $html )->toContain( 'name="gpxrm_maps_add"' );
+		expect( $html )->toContain( 'class="gpxrm-picker"' );
+		expect( $html )->not->toContain( 'Save the waypoint first' );
+	}
+);
+
+test(
+	'a waypoint not saved yet is not told it is unpublished',
+	function () {
+		$new_waypoint              = new WP_Post( 12, '' );
+		$new_waypoint->post_status = 'auto-draft';
+
+		expect( gpxrm_box( array(), $new_waypoint ) )->not->toContain( 'Maps show this waypoint only' );
 	}
 );
 

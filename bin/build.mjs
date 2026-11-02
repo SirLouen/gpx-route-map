@@ -4,6 +4,8 @@
  * Produces the same build/ layout that register_block_type() expects:
  *   index.js + index.asset.php            editor script (IIFE, wp.* externals)
  *   view.js + chunks + view.asset.php     front-end script module (ESM)
+ *   waypoint-picker.js                    Waypoint screen's map (ESM), sharing
+ *                                         those chunks
  *   style-index.css / index.css (+ -rtl)  compiled SCSS
  *   waypoint-edit.js / .css (+ -rtl)      Waypoint post screens
  *   block.json / render.php               copied from src/
@@ -153,11 +155,14 @@ async function buildView() {
 			target: 'es2020',
 			modulePreload: { polyfill: false },
 			rollupOptions: {
-				input: { view: path.join( SRC, 'view.ts' ) },
+				input: {
+					view: path.join( SRC, 'view.ts' ),
+					'waypoint-picker': path.join( SRC, 'waypoint-picker.ts' ),
+				},
 				preserveEntrySignatures: false,
 				output: {
 					format: 'es',
-					entryFileNames: 'view.js',
+					entryFileNames: '[name].js',
 					chunkFileNames: '[name]-[hash].js',
 					assetFileNames: '[name]-[hash][extname]',
 				},

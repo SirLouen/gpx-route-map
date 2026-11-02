@@ -794,6 +794,33 @@ if ( ! function_exists( 'wp_nonce_field' ) ) {
 	}
 }
 
+if ( ! function_exists( 'esc_attr_e' ) ) {
+	/**
+	 * Print text for an attribute.
+	 *
+	 * @param string $text   Text.
+	 * @param string $domain Ignored.
+	 * @return void
+	 */
+	function esc_attr_e( string $text, string $domain = 'default' ): void {
+		unset( $domain );
+		echo esc_attr( $text );
+	}
+}
+
+if ( ! function_exists( 'disabled' ) ) {
+	/**
+	 * Print the disabled attribute when two values match, as WordPress does.
+	 *
+	 * @param mixed $disabled One value.
+	 * @param mixed $current  The other.
+	 * @return void
+	 */
+	function disabled( $disabled, $current = true ): void {
+		echo (string) $disabled === (string) $current ? " disabled='disabled'" : '';
+	}
+}
+
 if ( ! function_exists( 'wp_kses' ) ) {
 	/**
 	 * Stand in for WordPress's kses: only the elements allowed are kept.
