@@ -2,6 +2,7 @@
  * Framework-agnostic map helpers: GPX parsing, bounds, MapLibre style/markers.
  */
 
+import type { FeatureCollection } from 'geojson';
 import type * as MapLibreNs from 'maplibre-gl';
 
 import type {
@@ -360,6 +361,52 @@ export function openingBounds(
 		{ lon: box[ 1 ][ 0 ], lat: box[ 1 ][ 1 ] },
 		...near,
 	] );
+}
+
+/**
+ * The last tile level the map's provider has, as the server says.
+ *
+ * Absent from pages cached before it was sent, and never trusted unless it is
+ * a whole zoom level MapLibre can use: otherwise the zoom stays as open as it
+ * always was.
+ *
+ * @param mapEl Map element, or the Waypoint screen's picker.
+ * @return The level, from 1 to 22, or undefined.
+ */
+export function readTileMaxZoom( mapEl: HTMLElement ): number | undefined {
+	const level = Number( mapEl.dataset.gpxrmTileMaxZoom );
+	return Number.isInteger( level ) && level >= 1 && level <= 22
+		? level
+		: undefined;
+}
+
+/**
+ * The track as GeoJSON, a line for each segment with more than one point.
+ *
+ * @param coords        The track's coordinates.
+ * @param segmentStarts Where each segment begins in them.
+ */
+export function trackGeoJSON(
+	coords: Coord[],
+	segmentStarts: number[]
+): FeatureCollection {
+	const coordinates = segmentStarts
+		.map( ( startIdx, s ) =>
+			coords
+				.slice( startIdx, segmentStarts[ s + 1 ] ?? coords.length )
+				.map( ( c: Coord ): [ number, number ] => [ c[ 0 ], c[ 1 ] ] )
+		)
+		.filter( ( line ) => line.length > 1 );
+	return {
+		type: 'FeatureCollection',
+		features: [
+			{
+				type: 'Feature',
+				properties: {},
+				geometry: { type: 'MultiLineString', coordinates },
+			},
+		],
+	};
 }
 
 /**

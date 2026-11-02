@@ -186,7 +186,7 @@ final class Waypoint_Maps_Report {
 			/* translators: %s: a post's title, in quotes. */
 			'trash'          => __( '%s was not changed: it is in the Trash. Restore it first.', 'gpx-route-map' ),
 			/* translators: %s: a post's title, in quotes. */
-			'no-coordinates' => __( '%s was not changed: this waypoint needs coordinates first.', 'gpx-route-map' ),
+			'no-coordinates' => __( '%s was not changed: this waypoint needs a place on the map first.', 'gpx-route-map' ),
 			/* translators: %s: a post's title, in quotes. */
 			'unsafe'         => __( '%s was not changed: its map can\'t be changed from here. Change it in the map\'s block.', 'gpx-route-map' ),
 			/* translators: %s: a post's title, in quotes. */

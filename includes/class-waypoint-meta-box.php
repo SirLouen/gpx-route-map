@@ -15,9 +15,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * The box a Waypoint post's own settings are edited in, on its classic edit
- * screen, and how they save: its coordinates, its description, its marker, and
- * the icon and colours of an icon marker. It ends with the post's ID and the
- * GPX extension that links a file's waypoint to it.
+ * screen, and how they save: its description, its marker, and the icon and
+ * colours of an icon marker. It ends with the post's ID and the GPX extension
+ * that links a file's waypoint to it. Its coordinates save here too, with its
+ * other settings, from the fields under the map in Waypoint_Maps_Box.
  */
 final class Waypoint_Meta_Box {
 
@@ -53,52 +54,11 @@ final class Waypoint_Meta_Box {
 
 		wp_nonce_field( Waypoints::NONCE_ACTION, Waypoints::NONCE );
 		echo '<div id="gpxrm-waypoint-box">';
-		$this->coordinate_fields( $post->ID );
 		$this->description_field( $settings );
 		$this->marker_field( $settings );
 		$this->icon_fields( $settings );
 		$this->link_help( $post->ID );
 		echo '</div>';
-	}
-
-	/**
-	 * Output the coordinates. Text fields, as a number field in the browser
-	 * turns a typed 50,75 into 5075 and calls it valid. With a link to see
-	 * what was saved on a map, the only check on this screen of a latitude
-	 * and longitude swapped.
-	 *
-	 * @param int $post_id The post's ID.
-	 * @return void
-	 */
-	private function coordinate_fields( int $post_id ): void {
-		$stored = Waypoint_Coordinates::stored( $post_id );
-		$saved  = Waypoint_Coordinates::of( $post_id );
-		?>
-		<fieldset class="gpxrm-coordinates">
-			<legend><strong><?php esc_html_e( 'Coordinates', 'gpx-route-map' ); ?></strong></legend>
-			<p>
-				<label for="gpxrm_lat"><?php esc_html_e( 'Latitude', 'gpx-route-map' ); ?></label>
-				<input type="text" id="gpxrm_lat" name="gpxrm_lat" value="<?php echo esc_attr( $stored['lat'] ); ?>" dir="ltr" autocomplete="off">
-				<label for="gpxrm_lon"><?php esc_html_e( 'Longitude', 'gpx-route-map' ); ?></label>
-				<input type="text" id="gpxrm_lon" name="gpxrm_lon" value="<?php echo esc_attr( $stored['lon'] ); ?>" dir="ltr" autocomplete="off">
-			</p>
-			<p class="description"><?php esc_html_e( 'To show this waypoint at its own place on a map. In decimal degrees, such as 50.75 and 5.93.', 'gpx-route-map' ); ?></p>
-			<?php if ( null !== $saved ) : ?>
-				<p><a href="<?php echo esc_url( self::map_link( $stored['lat'], $stored['lon'] ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'See these coordinates on OpenStreetMap', 'gpx-route-map' ); ?></a></p>
-			<?php endif; ?>
-		</fieldset>
-		<?php
-	}
-
-	/**
-	 * The address of a place on OpenStreetMap, with a marker on it.
-	 *
-	 * @param string $lat Latitude.
-	 * @param string $lon Longitude.
-	 * @return string
-	 */
-	private static function map_link( string $lat, string $lon ): string {
-		return sprintf( 'https://www.openstreetmap.org/?mlat=%1$s&mlon=%2$s#map=15/%1$s/%2$s', $lat, $lon );
 	}
 
 	/**

@@ -40,9 +40,16 @@ function readIfBuilt( file: string ): string {
 }
 
 describe.skipIf( ! built )( 'built view bundle', () => {
-	const view = readIfBuilt( path.join( BUILD, 'view.js' ) );
+	// The worker is asked for from a chunk the Waypoint screen's map shares.
+	const code = built
+		? fs
+				.readdirSync( BUILD )
+				.filter( ( file ) => /^(?!maplibre-gl-).*\.js$/.test( file ) )
+				.map( ( file ) => readIfBuilt( path.join( BUILD, file ) ) )
+				.join( '\n' )
+		: '';
 	const referenced = [
-		...view.matchAll( /maplibre-gl-worker-[A-Za-z0-9_-]+\.js/g ),
+		...code.matchAll( /maplibre-gl-worker-[A-Za-z0-9_-]+\.js/g ),
 	].map( ( m ) => m[ 0 ] );
 
 	it( 'asks for a MapLibre worker', () => {

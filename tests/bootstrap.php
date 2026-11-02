@@ -272,6 +272,19 @@ if ( ! function_exists( 'selected' ) ) {
 	}
 }
 
+if ( ! function_exists( 'disabled' ) ) {
+	/**
+	 * Print the disabled attribute when two values match, as WordPress does.
+	 *
+	 * @param mixed $disabled One value.
+	 * @param mixed $current  The other.
+	 * @return void
+	 */
+	function disabled( $disabled, $current = true ): void {
+		echo (string) $disabled === (string) $current ? " disabled='disabled'" : '';
+	}
+}
+
 if ( ! function_exists( 'checked' ) ) {
 	/**
 	 * Mark a checkbox as WordPress's checked() does.

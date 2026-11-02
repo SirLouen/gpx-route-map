@@ -88,7 +88,7 @@ test(
 		'changed'        => array( array( 'code' => 'changed' ), '“Host” was not changed: it was edited after you opened this screen. Check the Maps box and try again.' ),
 		'gone'           => array( array( 'code' => 'gone' ), 'The map is no longer in “Host”.' ),
 		'trash'          => array( array( 'code' => 'trash' ), '“Host” was not changed: it is in the Trash. Restore it first.' ),
-		'no-coordinates' => array( array( 'code' => 'no-coordinates' ), '“Host” was not changed: this waypoint needs coordinates first.' ),
+		'no-coordinates' => array( array( 'code' => 'no-coordinates' ), '“Host” was not changed: this waypoint needs a place on the map first.' ),
 		'unsafe'         => array( array( 'code' => 'unsafe' ), '“Host” was not changed: its map can\'t be changed from here. Change it in the map\'s block.' ),
 		'failed'         => array( array( 'code' => 'failed' ), '“Host” was not changed: WordPress could not save it. Try again.' ),
 	)

@@ -90,6 +90,7 @@ src/
   index.tsx / edit.tsx            Editor
   render.php                      Server render → Renderer
   view.ts                         Front-end entry (lazy init)
+  waypoint-picker.ts              Entry of the Waypoint screen's map
   view/
     types.ts                      Shared domain types
     map-core.ts                   GPX parse, MapLibre markers
@@ -97,6 +98,7 @@ src/
     stats.ts                      Route stats
     map-instance.ts               Assembles one map
     waypoint-posts.ts             Reads the map's Waypoint post data
+    load-maplibre.ts              Loads MapLibre, for the front end and the Waypoint screen
     description.ts                A Waypoint post's description, rebuilt for its popup
     safe-url.ts                   The link addresses a map may open
   editor/
@@ -104,6 +106,7 @@ src/
     media-url.ts                  The block's Media Library file address
   admin/
     waypoint-edit.js / .scss      The Waypoint post screens' script and styles
+    coordinate-picker.ts          The Waypoint screen's map, tied to its coordinates
   style.scss / editor.scss        Styles
 ```
 

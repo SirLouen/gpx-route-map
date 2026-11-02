@@ -999,7 +999,7 @@ class Renderer {
 	 *
 	 * @return string
 	 */
-	private static function map_ui_json(): string {
+	public static function map_ui_json(): string {
 		return self::attr_json(
 			array(
 				'Map.Title'                             => _x( 'Map', 'screen reader name of the map area', 'gpx-route-map' ),

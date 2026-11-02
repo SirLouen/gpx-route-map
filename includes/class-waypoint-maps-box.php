@@ -14,9 +14,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * The box that lists the maps showing a Waypoint post, from a block, a
- * shortcode or the GPX file, or at its own coordinates, and changes those in
- * blocks: Waypoint_Maps_Save writes what its form asks for.
+ * The box that says where a Waypoint post shows: a map to choose its place on,
+ * with its coordinates, the maps it can be added to, and those already showing
+ * it, from a block, a shortcode or the GPX file, or at its own coordinates. It
+ * changes those in blocks: Waypoint_Maps_Save writes what its form asks for.
+ * All of it is there from the start, so that one Update can set a waypoint's
+ * place and add it to a map, on a new waypoint too.
  *
  * A field holds which map it is about, by post and place among the post's map
  * blocks, with a hash of the post's content: a map added above it would
@@ -34,7 +37,8 @@ final class Waypoint_Maps_Box {
 	const PAGE_ARG = 'gpxrm_maps_page';
 
 	/**
-	 * Add the box to the edit screen, after the Waypoint box.
+	 * Add the box to the edit screen, first, as where a waypoint goes comes
+	 * before what it says, and the icon list is a long way to scroll.
 	 *
 	 * @return void
 	 */
@@ -45,7 +49,7 @@ final class Waypoint_Maps_Box {
 			array( $this, 'render' ),
 			Waypoints::POST_TYPE,
 			'normal',
-			'default'
+			'high'
 		);
 	}
 
@@ -57,11 +61,6 @@ final class Waypoint_Maps_Box {
 	 * @return void
 	 */
 	public function render( \WP_Post $post ): void {
-		if ( 'auto-draft' === $post->post_status ) {
-			echo '<p>' . esc_html__( 'Save the waypoint first.', 'gpx-route-map' ) . '</p>';
-			return;
-		}
-
 		$this->output( Waypoint_Map_Rows::for_waypoint( $post->ID ), $post );
 	}
 
@@ -78,9 +77,8 @@ final class Waypoint_Maps_Box {
 	public function output( array $found, \WP_Post $post ): void {
 		wp_nonce_field( Waypoints::MAPS_NONCE_ACTION, Waypoints::MAPS_NONCE );
 
-		if ( 'publish' !== $post->post_status || '' !== $post->post_password ) {
-			echo '<p class="description">' . esc_html__( 'Maps show this waypoint only once it is published without a password.', 'gpx-route-map' ) . '</p>';
-		}
+		$this->place_fields( $post->ID );
+		$this->add_field( $found['addable'] );
 
 		$part            = Waypoint_Map_Rows::page( $found['rows'], self::asked_page() );
 		$has_coordinates = null !== Waypoint_Coordinates::of( $post->ID );
@@ -92,8 +90,55 @@ final class Waypoint_Maps_Box {
 			echo '<p>' . esc_html__( 'No map shows this waypoint yet.', 'gpx-route-map' ) . '</p>';
 		}
 
-		$this->add_field( $found['addable'], $has_coordinates );
+		if ( self::maps_cannot_show( $post ) ) {
+			echo '<p class="description">' . esc_html__( 'Maps show this waypoint only once it is published without a password.', 'gpx-route-map' ) . '</p>';
+		}
+
 		$this->notes( $found['hidden'], $found['unreadable'] );
+	}
+
+	/**
+	 * Whether maps leave a waypoint out as it stands. One being written has
+	 * not reached that yet: publishing it is the next thing it will do.
+	 *
+	 * @param \WP_Post $post The waypoint.
+	 * @return bool
+	 */
+	private static function maps_cannot_show( \WP_Post $post ): bool {
+		if ( 'auto-draft' === $post->post_status ) {
+			return false;
+		}
+
+		return 'publish' !== $post->post_status || '' !== $post->post_password;
+	}
+
+	/**
+	 * Output the map to choose the waypoint's place on, with the site's own
+	 * tiles, and the coordinates the form sends. The fields are text, as a
+	 * number field in a browser turns a typed 50,75 into 5075 and calls it
+	 * valid, and they work without the map.
+	 *
+	 * @param int $post_id The waypoint.
+	 * @return void
+	 */
+	private function place_fields( int $post_id ): void {
+		$stored   = Waypoint_Coordinates::stored( $post_id );
+		$tile_url = Renderer::tile_url_for( Renderer::site_provider_in_use() );
+		?>
+		<fieldset class="gpxrm-picker" data-gpxrm-tile-url="<?php echo esc_attr( $tile_url ); ?>" data-gpxrm-attribution="<?php echo esc_attr( Renderer::attribution_for( $tile_url ) ); ?>" data-gpxrm-tile-max-zoom="<?php echo esc_attr( (string) Renderer::tile_max_zoom_for( $tile_url ) ); ?>" data-gpxrm-map-ui="<?php echo esc_attr( Renderer::map_ui_json() ); ?>" data-gpxrm-pin-label="<?php esc_attr_e( 'This waypoint\'s place', 'gpx-route-map' ); ?>">
+			<legend class="screen-reader-text"><?php esc_html_e( 'This waypoint\'s place', 'gpx-route-map' ); ?></legend>
+			<div class="gpxrm-picker-map" role="application" aria-label="<?php esc_attr_e( 'Map to choose this waypoint\'s place on', 'gpx-route-map' ); ?>"></div>
+			<p class="gpxrm-picker-failed description" hidden><?php esc_html_e( 'The map could not load. You can still type the coordinates below.', 'gpx-route-map' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Click the map to place this waypoint, and drag the pin to move it. Or type its coordinates, in decimal degrees, such as 50.75 and 5.93.', 'gpx-route-map' ); ?></p>
+			<p class="gpxrm-picker-fields">
+				<label for="gpxrm_lat"><?php esc_html_e( 'Latitude', 'gpx-route-map' ); ?></label>
+				<input type="text" id="gpxrm_lat" name="gpxrm_lat" value="<?php echo esc_attr( $stored['lat'] ); ?>" dir="ltr" autocomplete="off">
+				<label for="gpxrm_lon"><?php esc_html_e( 'Longitude', 'gpx-route-map' ); ?></label>
+				<input type="text" id="gpxrm_lon" name="gpxrm_lon" value="<?php echo esc_attr( $stored['lon'] ); ?>" dir="ltr" autocomplete="off">
+				<button type="button" class="button-link gpxrm-picker-clear" hidden><?php esc_html_e( 'Clear', 'gpx-route-map' ); ?></button>
+			</p>
+		</fieldset>
+		<?php
 	}
 
 	/**
@@ -184,8 +229,8 @@ final class Waypoint_Maps_Box {
 		?>
 		<select name="<?php echo esc_attr( 'gpxrm_maps[' . self::field( $row ) . ']' ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: a post's title. */ __( 'Change for the map in %s', 'gpx-route-map' ), $title ) ); ?>">
 			<option value="keep"><?php esc_html_e( 'Keep', 'gpx-route-map' ); ?></option>
-			<?php if ( 'own' === $row['where'] && $has_coordinates ) : ?>
-				<option value="own"><?php esc_html_e( 'At its own coordinates', 'gpx-route-map' ); ?></option>
+			<?php if ( 'own' === $row['where'] ) : ?>
+				<option value="own"<?php disabled( ! $has_coordinates ); ?>><?php esc_html_e( 'At its own coordinates', 'gpx-route-map' ); ?></option>
 			<?php endif; ?>
 			<option value="remove"><?php esc_html_e( 'Remove from this map', 'gpx-route-map' ); ?></option>
 		</select>
@@ -231,20 +276,15 @@ final class Waypoint_Maps_Box {
 	}
 
 	/**
-	 * Output the choice of a map to add the waypoint to, when it has
-	 * coordinates to show at.
+	 * Output the choice of a map to add the waypoint to. Whether it has a
+	 * place yet makes no difference here: choosing a map shows its route on
+	 * the map above, the easiest way to choose one, and both save together.
 	 *
-	 * @param array<int, array<string, mixed>> $maps            The maps it could go on.
-	 * @param bool                             $has_coordinates Whether it has coordinates.
+	 * @param array<int, array<string, mixed>> $maps The maps it could go on.
 	 * @phpstan-param array<int, Addable> $maps
 	 * @return void
 	 */
-	private function add_field( array $maps, bool $has_coordinates ): void {
-		if ( ! $has_coordinates ) {
-			echo '<p class="description">' . esc_html__( 'Add coordinates above to add this waypoint to a map from here.', 'gpx-route-map' ) . '</p>';
-			return;
-		}
-
+	private function add_field( array $maps ): void {
 		$offered = Waypoint_Map_Rows::addable( $maps );
 		if ( array() === $offered ) {
 			return;
@@ -255,11 +295,12 @@ final class Waypoint_Maps_Box {
 			<select id="gpxrm_maps_add" name="gpxrm_maps_add">
 				<option value=""><?php esc_html_e( 'Choose a map', 'gpx-route-map' ); ?></option>
 				<?php foreach ( $offered as $map ) : ?>
-					<option value="<?php echo esc_attr( sprintf( '%d:b:%d:%s', $map['host'], $map['ordinal'], $map['hash'] ) ); ?>"><?php echo esc_html( self::add_label( $map ) ); ?></option>
+					<option value="<?php echo esc_attr( sprintf( '%d:b:%d:%s', $map['host'], $map['ordinal'], $map['hash'] ) ); ?>" data-gpxrm-gpx="<?php echo esc_url( $map['file'] ); ?>"><?php echo esc_html( self::add_label( $map ) ); ?></option>
 				<?php endforeach; ?>
 			</select>
 		</p>
-		<p class="description"><?php esc_html_e( 'Shows this waypoint at its own coordinates on that map. To place it on one of a file\'s waypoints, use the Waypoints panel of the map\'s block.', 'gpx-route-map' ); ?></p>
+		<p class="gpxrm-maps-add-place description" hidden><?php esc_html_e( 'Now click the map above to choose this waypoint\'s place.', 'gpx-route-map' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Choosing a map shows its route above. Click Update to add this waypoint to it, at its own coordinates. To place it on one of a file\'s waypoints, use the Waypoints panel of the map\'s block.', 'gpx-route-map' ); ?></p>
 		<?php
 	}
 
