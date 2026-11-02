@@ -4,7 +4,7 @@ Tags: gpx, map, openstreetmap, elevation, route
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -203,6 +203,16 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 
 == Changelog ==
 
+= 2.2.0 =
+* New, experimental: give a Waypoint post its own place. Its screen opens with a map: click to drop a pin, drag it to move it, or type the latitude and longitude.
+* New, experimental: add a Waypoint post to a map at its own coordinates, with or without a matching waypoint in the GPX file, from the post's own screen, where choosing a map shows its route, from the block's Waypoints panel, or with `@` and its ID in the shortcode's `waypoints` attribute. It counts among the map's waypoints, and the map opens to include it when it is near the route.
+* New, experimental: a Maps box on each Waypoint post's screen lists the maps that show it, and can remove it from a map in a block or move it to its own coordinates. Each change updates that post, which gets a new modified date and, where it keeps them, a revision. A post open in an editor, or edited after the screen was opened, is not changed. Maps in shortcodes and synced patterns, and links held in a GPX file, are listed and changed where they are written.
+* Fixed: GPX files with an elevation on only some points no longer show thousands of metres of climbing. A block post saved with such a file gets corrected figures when it is opened in the editor, so it shows as changed once.
+* Fixed: the Waypoints panel said maps ignore the links of a Media Library file pasted as an address, though they use them.
+* Fixed: a plugin saving another Waypoint post during the same request could give it the first post's settings.
+* The Spanish translation covers the strings new in 2.2.0, translated here until they are reviewed on translate.wordpress.org.
+* For developers: the block attribute `addedWaypoints`, the read-only REST field `gpxrm_coords`, and the post meta `_gpxrm_lat` and `_gpxrm_lon`. The front end's `view.js` now shares a chunk with the Waypoint screen's map, so a page with a map makes one more small request.
+
 = 2.1.0 =
 * New, experimental: Waypoint posts, which give a waypoint of a GPX file its own title, a description that can hold links, bold and italic text and lists, a photo at the top of its popup, and a marker: the usual one, the photo as a thumbnail, or a Dashicon in colors of your choice. They are off until you tick "Enable Waypoint posts (experimental)" under Settings > GPX Route Map, and being experimental, how they work may change in later versions.
 * New: link a map's waypoints to Waypoint posts in the block's Waypoints panel, with the shortcode's `waypoints` attribute, or in a Media Library GPX file itself, inside each waypoint's `<extensions>`, where each Waypoint post's screen shows the lines to copy. A link made in the block or the shortcode wins over the file's. Reading the links in a file needs PHP's XMLReader extension, which PHP includes by default; the settings say when it is missing.
@@ -295,6 +305,9 @@ The map library could not be downloaded. The plugin loads its map code as a nati
 * Initial release: GPX Route Map block and `[gpx_route_map]` shortcode with MapLibre map, waypoints, stats and an interactive elevation profile.
 
 == Upgrade Notice ==
+
+= 2.2.0 =
+Waypoint posts, still experimental, can now have a place on a map and join maps from their own screen. Also fixes the climb shown for GPX files with few elevations. If you later go back to an older version, editing a block drops the waypoints added to its map.
 
 = 2.1.0 =
 Adds Waypoint posts, experimental and off by default, to give a GPX waypoint its own description with links, a photo or an icon marker. Turn them on under Settings > GPX Route Map. Also fits a waypoint popup taller than its map inside it.
