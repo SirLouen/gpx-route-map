@@ -8,7 +8,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "POT-Creation-Date: 2026-11-02T22:29:09+00:00\n"
-"PO-Revision-Date: 2026-11-02T22:29:10+00:00\n"
+"PO-Revision-Date: 2026-11-03T09:23:57+00:00\n"
 "Language: es_ES\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Domain: gpx-route-map\n"
@@ -963,8 +963,8 @@ msgstr "Aquí no se muestran los mapas añadidos por un widget, un archivo del t
 #, php-format
 msgid "This waypoint was saved, but %1$d of %2$d map changes was not made."
 msgid_plural "This waypoint was saved, but %1$d of %2$d map changes were not made."
-msgstr[0] "Este waypoint se ha guardado, pero no se ha hecho %1$d de los %2$d cambios en mapas."
-msgstr[1] "Este waypoint se ha guardado, pero no se han hecho %1$d de los %2$d cambios en mapas."
+msgstr[0] "Este waypoint se ha guardado, pero no se ha hecho %1$d de %2$d cambios en mapas."
+msgstr[1] "Este waypoint se ha guardado, pero no se han hecho %1$d de %2$d cambios en mapas."
 
 #: includes/class-waypoint-maps-report.php:157
 msgid "The map is no longer in a post that exists."
@@ -980,19 +980,19 @@ msgstr "Mapa actualizado en %s."
 #: includes/class-waypoint-maps-report.php:177
 #, php-format
 msgid "%s was not changed: you don't have permission to edit it."
-msgstr "%s no se ha cambiado: no tienes permiso para editarlo."
+msgstr "%s no se ha cambiado: no tienes permiso para editarla."
 
 #. translators: 1: a post's title, in quotes, 2: the name of the person editing it.
 #: includes/class-waypoint-maps-report.php:179
 #, php-format
 msgid "%1$s was not changed: %2$s is editing it. Try again in a few minutes."
-msgstr "%1$s no se ha cambiado: lo está editando %2$s. Inténtalo de nuevo en unos minutos."
+msgstr "%1$s no se ha cambiado: la está editando %2$s. Inténtalo de nuevo en unos minutos."
 
 #. translators: %s: a post's title, in quotes.
 #: includes/class-waypoint-maps-report.php:181
 #, php-format
 msgid "%s was not changed: you have it open in another tab or window. Save and close it, then click Update here. If you just closed it, try again in a few minutes."
-msgstr "%s no se ha cambiado: lo tienes abierto en otra pestaña o ventana. Guárdalo y ciérralo, y luego haz clic en Actualizar aquí. Si acabas de cerrarlo, inténtalo de nuevo en unos minutos."
+msgstr "%s no se ha cambiado: la tienes abierta en otra pestaña o ventana. Guárdala y ciérrala, y luego haz clic en Actualizar aquí. Si acabas de cerrarla, inténtalo de nuevo en unos minutos."
 
 #. translators: %s: a post's title, in quotes.
 #: includes/class-waypoint-maps-report.php:183
@@ -1010,7 +1010,7 @@ msgstr "El mapa ya no está en %s."
 #: includes/class-waypoint-maps-report.php:187
 #, php-format
 msgid "%s was not changed: it is in the Trash. Restore it first."
-msgstr "%s no se ha cambiado: está en la papelera. Restáuralo primero."
+msgstr "%s no se ha cambiado: está en la papelera. Restáurala primero."
 
 #. translators: %s: a post's title, in quotes.
 #: includes/class-waypoint-maps-report.php:189
@@ -1028,7 +1028,7 @@ msgstr "%s no se ha cambiado: su mapa no se puede cambiar desde aquí. Cámbialo
 #: includes/class-waypoint-maps-report.php:193
 #, php-format
 msgid "%s was not changed: WordPress could not save it. Try again."
-msgstr "%s no se ha cambiado: WordPress no ha podido guardarlo. Inténtalo de nuevo."
+msgstr "%s no se ha cambiado: WordPress no ha podido guardarla. Inténtalo de nuevo."
 
 #: includes/class-waypoint-maps-report.php:206
 msgid "A post you can't view"
@@ -1042,7 +1042,7 @@ msgstr "«%s»"
 
 #: includes/class-waypoint-maps-report.php:239
 msgid "Someone"
-msgstr "Alguien"
+msgstr "alguien"
 
 #. translators: %s: a post's title, in quotes.
 #: includes/class-waypoint-maps-report.php:260
